@@ -10,6 +10,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Press+Start+2P&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script> <!-- MANTRA BARU DISINI -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body class="min-h-screen">
@@ -39,6 +40,21 @@
                 <div class="bg-white p-4 rounded-lg shadow-md flex items-center gap-4">
                     <div class="bg-yellow-100 p-3 rounded-full"><i data-lucide="coins" class="w-6 h-6 text-yellow-500"></i></div>
                     <div><p class="text-sm text-gray-500">Koin</p><p id="coin-value" class="text-2xl font-bold">0</p></div>
+                </div>
+            </div>
+            
+            <!-- Bagian Status Efek Aktif -->
+            <div class="bg-white p-6 rounded-lg shadow-md mb-6">
+                <h3 class="text-xl font-semibold mb-4">Status Efek Aktif</h3>
+                <div id="active-status-effects" class="flex flex-wrap gap-4 justify-center md:justify-start">
+                    <p class="text-gray-500 text-sm">Tidak ada efek aktif saat ini.</p>
+                    <!-- Contoh efek (akan diisi secara dinamis oleh JavaScript) -->
+                    <!--
+                    <div class="flex flex-col items-center text-center p-3 bg-red-50 rounded-lg border border-red-200">
+                        <i data-lucide="skull" class="w-6 h-6 text-red-500 mb-1"></i>
+                        <span class="text-xs text-gray-700 font-medium">Racun</span>
+                    </div>
+                    -->
                 </div>
             </div>
             <div class="bg-white p-6 rounded-lg shadow-md">
