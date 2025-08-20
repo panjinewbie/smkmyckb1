@@ -1,1 +1,84 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DREAMY - Dasbor Admin</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Press+Start+2P&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/html5-qrcode/html5-qrcode.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="min-h-screen">
 
+    <div id="admin-dashboard-page" class="min-h-screen">
+        <header class="bg-white shadow-md sticky top-0 z-20">
+            <div class="container mx-auto px-4"><div class="h-20 flex items-center justify-between"><h1 class="text-2xl font-bold text-blue-600 font-game tracking-tighter">DREAMY</h1><div class="flex items-center space-x-2 md:space-x-4"><button class="p-2 rounded-full hover:bg-gray-100"><i data-lucide="bell" class="w-5 h-5 text-gray-600"></i></button><button class="p-2 rounded-full hover:bg-gray-100"><i data-lucide="help-circle" class="w-5 h-5 text-gray-600"></i></button><button id="admin-logout-button" class="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg"><span class="hidden md:inline">Logout</span><i data-lucide="log-out" class="w-5 h-5"></i></button></div></div></div>
+            <nav class="border-t border-gray-200"><div class="container mx-auto px-4"><div id="admin-nav-links" class="flex items-center space-x-4 md:space-x-6 overflow-x-auto"><a href="#dashboard" class="nav-link active flex items-center px-2 py-4 text-sm font-semibold border-b-2"><i data-lucide="layout-dashboard" class="w-4 h-4 mr-2"></i>Dashboard</a><a href="#attendance" class="nav-link text-gray-500 hover:text-blue-600 flex items-center px-2 py-4 text-sm font-semibold border-b-2 border-transparent"><i data-lucide="calendar-check" class="w-4 h-4 mr-2"></i>Attendance</a><a href="#quests" class="nav-link text-gray-500 hover:text-blue-600 flex items-center px-2 py-4 text-sm font-semibold border-b-2 border-transparent"><i data-lucide="swords" class="w-4 h-4 mr-2"></i>Quests</a><a href="#shop" class="nav-link text-gray-500 hover:text-blue-600 flex items-center px-2 py-4 text-sm font-semibold border-b-2 border-transparent"><i data-lucide="shopping-cart" class="w-4 h-4 mr-2"></i>Shop</a><a href="#class" class="nav-link text-gray-500 hover:text-blue-600 flex items-center px-2 py-4 text-sm font-semibold border-b-2 border-transparent"><i data-lucide="users" class="w-4 h-4 mr-2"></i>Class</a><a href="#magic" class="nav-link text-gray-500 hover:text-blue-600 flex items-center px-2 py-4 text-sm font-semibold border-b-2 border-transparent"><i data-lucide="wand-2" class="w-4 h-4 mr-2"></i>Magic Controls</a></div></div></nav>
+        </header>
+        
+        <main class="container mx-auto p-4 md:p-6">
+            <div id="admin-dashboard-main">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+                    <div><div class="bg-white p-6 rounded-lg shadow-md flex items-center justify-between"><div><p class="text-sm text-gray-500">Total Siswa</p><p id="total-students" class="text-3xl font-bold">0</p></div><div class="bg-blue-100 p-3 rounded-full"><i data-lucide="users" class="w-6 h-6 text-blue-500"></i></div></div></div>
+                    <div><div class="bg-white p-6 rounded-lg shadow-md flex items-center justify-between"><div><p class="text-sm text-gray-500">Rata-rata Level</p><p id="average-level" class="text-3xl font-bold">0</p></div><div class="bg-green-100 p-3 rounded-full"><i data-lucide="trending-up" class="w-6 h-6 text-green-500"></i></div></div></div>
+                    <div><div class="bg-white p-6 rounded-lg shadow-md flex items-center justify-between"><div><p class="text-sm text-gray-500">Total Koin Beredar</p><p id="total-coins" class="text-3xl font-bold">0</p></div><div class="bg-yellow-100 p-3 rounded-full"><i data-lucide="coins" class="w-6 h-6 text-yellow-500"></i></div></div></div>
+                </div>
+                <div class="bg-white rounded-lg shadow-md">
+                    <div class="p-6 border-b border-gray-200 flex justify-between items-center"><div><h2 class="text-xl font-semibold">Tinjauan Siswa</h2><p class="text-sm text-gray-500 mt-1">Data dari Firebase.</p></div><button id="add-student-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg flex items-center"><i data-lucide="user-plus" class="w-4 h-4 mr-2"></i>Tambah Siswa</button></div>
+                    <div class="overflow-x-auto"><table class="w-full text-sm text-left text-gray-500"><thead class="text-xs text-gray-700 uppercase bg-gray-50"><tr><th scope="col" class="px-6 py-3">Siswa</th><th scope="col" class="px-6 py-3 text-center">Level</th><th scope="col" class="px-6 py-3 text-center">XP</th><th scope="col" class="px-6 py-3 text-center">HP</th><th scope="col" class="px-6 py-3 text-center">Aksi</th></tr></thead><tbody id="student-table-body"><tr><td colspan="5" class="text-center p-8 text-gray-400">Memuat data...</td></tr></tbody></table></div>
+                </div>
+            </div>
+
+            <div id="attendance-page" class="hidden">
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex flex-wrap justify-between items-center gap-4 mb-6">
+                        <div>
+                            <h2 class="text-xl font-semibold">Manajemen Absensi</h2>
+                            <p class="text-sm text-gray-500 mt-1">Pilih status kehadiran setiap siswa.</p>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <button id="scan-qr-button" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg flex items-center"><i data-lucide="scan-line" class="w-4 h-4 mr-2"></i>Scan QR</button>
+                            <button id="print-recap-button" class="bg-gray-700 hover:bg-gray-800 text-white font-bold py-2 px-4 rounded-lg flex items-center"><i data-lucide="printer" class="w-4 h-4 mr-2"></i>Cetak Rekap</button>
+                        </div>
+                    </div>
+                     <div class="flex flex-wrap gap-4 mb-6">
+                        <div>
+                            <label for="start-date" class="block text-sm font-medium text-gray-700">Mulai Tanggal</label>
+                            <input type="date" id="start-date" class="mt-1 p-2 border border-gray-300 rounded-md">
+                        </div>
+                        <div>
+                            <label for="end-date" class="block text-sm font-medium text-gray-700">Sampai Tanggal</label>
+                            <input type="date" id="end-date" class="mt-1 p-2 border border-gray-300 rounded-md">
+                        </div>
+                    </div>
+                    <div id="attendance-container" class="space-y-8">
+                        <p class="text-center text-gray-400">Memuat data siswa...</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="student-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-30 hidden modal-overlay opacity-0"><div class="bg-white rounded-lg shadow-xl w-full max-w-lg m-4 modal-content transform scale-95 max-h-[90vh] flex flex-col"><div class="p-6 border-b flex justify-between items-center"><h3 id="modal-title" class="text-xl font-semibold">Tambah Siswa Baru</h3><button id="close-modal-button" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button></div><form id="student-form" class="p-6 space-y-4 overflow-y-auto"><input type="hidden" id="student-id"><div id="auth-fields"><div class="mb-4"><label for="email-modal" class="block text-sm font-medium text-gray-700">Email Login Siswa</label><input type="email" id="email-modal" class="mt-1 w-full p-2 border border-gray-300 rounded-md"></div><div class="mb-4"><label for="password-modal" class="block text-sm font-medium text-gray-700">Password Awal</label><input type="password" id="password-modal" class="mt-1 w-full p-2 border border-gray-300 rounded-md"></div></div><hr class="my-4"><div><label for="nama" class="block text-sm font-medium text-gray-700">Nama Siswa</label><input type="text" id="nama" required class="mt-1 w-full p-2 border border-gray-300 rounded-md"></div><div><label for="nis" class="block text-sm font-medium text-gray-700">NIS</label><input type="text" id="nis" required class="mt-1 w-full p-2 border border-gray-300 rounded-md"></div><div><label for="kelas" class="block text-sm font-medium text-gray-700">Kelas</label><select id="kelas" required class="mt-1 w-full p-2 border border-gray-300 rounded-md bg-white"><option value="X RPL">X RPL</option><option value="XI RPL">XI RPL</option><option value="XII RPL">XII RPL</option><option value="X Garmen">X Garmen</option><option value="XI Garmen">XI Garmen</option><option value="XII Garmen">XII Garmen</option></select></div><div><label for="peran" class="block text-sm font-medium text-gray-700">Peran Karakter</label><select id="peran" required class="mt-1 w-full p-2 border border-gray-300 rounded-md bg-white"><option value="Prajurit">Prajurit</option><option value="Penyihir">Penyihir</option><option value="Penyembuh">Penyembuh</option></select></div><div class="grid grid-cols-3 gap-4"><div><label for="xp" class="block text-sm font-medium text-gray-700">XP</label><input type="number" id="xp" required class="mt-1 w-full p-2 border border-gray-300 rounded-md" value="0"></div><div><label for="hp" class="block text-sm font-medium text-gray-700">HP</label><input type="number" id="hp" required class="mt-1 w-full p-2 border border-gray-300 rounded-md" value="100"></div><div><label for="coin" class="block text-sm font-medium text-gray-700">Koin</label><input type="number" id="coin" required class="mt-1 w-full p-2 border border-gray-300 rounded-md" value="0"></div></div><div><label for="foto" class="block text-sm font-medium text-gray-700">Foto Profil</label><input type="file" id="foto" accept="image/*" class="mt-1 w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"><div id="image-preview-container" class="mt-2 hidden"><p class="text-sm text-gray-600 mb-1">Pratinjau:</p><img id="image-preview" class="image-preview rounded-lg border"></div></div><div class="pt-4 flex justify-end space-x-2"><button type="button" id="cancel-button" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg">Batal</button><button type="submit" id="submit-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">Simpan</button></div></form></div></div>
+    <div id="qr-scanner-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-30 hidden modal-overlay opacity-0">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md m-4 modal-content transform scale-95">
+            <div class="p-6 border-b flex justify-between items-center">
+                <h3 class="text-xl font-semibold">Scan QR Code Siswa</h3>
+                <button id="close-qr-modal-button" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+            </div>
+            <div class="p-6">
+                <div id="qr-reader" class="w-full"></div>
+                <p id="qr-scan-result" class="mt-4 text-center text-gray-600">Arahkan kamera ke QR Code NIS siswa.</p>
+            </div>
+        </div>
+    </div>
+    <div id="toast-notification" class="fixed bottom-5 right-5 bg-green-500 text-white py-2 px-4 rounded-lg shadow-lg hidden transition-opacity duration-300"></div>
+
+    <script type="module" src="script.js"></script>
+</body>
+</html>
