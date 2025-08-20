@@ -227,6 +227,10 @@ function setupStudentDashboard(uid) {
 function setupAdminDashboard() {
     // --- ELEMEN UI ADMIN ---
     const adminDashboardMain = document.getElementById('admin-dashboard-main');
+    const questsPage = document.getElementById('quests-page');
+    const addQuestButton = document.getElementById('add-quest-button');
+    const questListContainer = document.getElementById('quest-list-container');
+
     const attendancePage = document.getElementById('attendance-page');
     const adminNavLinks = document.getElementById('admin-nav-links');
     const qrScannerModal = document.getElementById('qr-scanner-modal');
@@ -243,9 +247,11 @@ function setupAdminDashboard() {
     const closeModalButton = document.getElementById('close-modal-button');
     const cancelButton = document.getElementById('cancel-button');
     const submitButton = document.getElementById('submit-button');
+
+    let currentBattleState = {}; // Untuk menyimpan state battle (ID siswa, monster, dll)
     let html5QrCode;
     
-    // --- FUNGSI MODAL ADMIN (DENGAN SUARA) ---
+    // --- FUNGSI MODAL SISWA (DENGAN SUARA) ---
     const openModal = (isEdit = false) => {
         audioPlayer.openModal();
         studentForm.reset();
@@ -281,6 +287,7 @@ function setupAdminDashboard() {
     addStudentButton.onclick = () => openModal(false);
     closeModalButton.onclick = closeModal;
     cancelButton.onclick = closeModal;
+    addQuestButton.onclick = () => openQuestModal();
     document.getElementById('print-recap-button').addEventListener('click', handlePrintRecap);
     fotoInput.addEventListener('change', function() {
         if (this.files && this.files[0]) {
@@ -306,8 +313,10 @@ function setupAdminDashboard() {
         
         const pageId = targetLink.getAttribute('href').substring(1);
         adminDashboardMain.classList.toggle('hidden', pageId !== 'dashboard');
+        questsPage.classList.toggle('hidden', pageId !== 'quests');
         attendancePage.classList.toggle('hidden', pageId !== 'attendance');
 
+        if (pageId === 'quests') setupQuestsPage();
         if (pageId === 'attendance') setupAttendancePage();
     });
 
@@ -327,7 +336,12 @@ function setupAdminDashboard() {
                 const avatar = student.fotoProfilBase64 ? 
                     `<img src="${student.fotoProfilBase64}" alt="${student.nama}" class="w-10 h-10 rounded-full object-cover">` : 
                     `<div class="w-10 h-10 bg-gray-700 text-white flex items-center justify-center rounded-full font-bold">${student.nama.charAt(0)}</div>`;
-                studentRow.innerHTML = `<td class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap flex items-center">${avatar}<div class="ml-4"><div class="font-bold">${student.nama}</div><div class="text-xs text-gray-500">NIS: ${student.nis} | ${student.kelas}</div></div></td><td class="px-6 py-4 text-center text-lg font-bold">${student.level || 1}</td><td class="px-6 py-4 text-center">${student.xp || 0}</td><td class="px-6 py-4"><div class="w-full bg-gray-200 rounded-full h-4 relative"><div class="bg-red-500 h-4 rounded-full" style="width: ${student.hp || 100}%"></div><span class="absolute inset-0 text-center text-xs font-bold text-white">${student.hp || 100}/100</span></div></td><td class="px-6 py-4 text-center"><button class="edit-btn p-1 text-blue-600 hover:text-blue-800" data-id="${key}"><i data-lucide="edit" class="w-4 h-4"></i></button><button class="delete-btn p-1 text-red-600 hover:text-red-800" data-id="${key}"><i data-lucide="trash-2" class="w-4 h-4"></i></button></td>`;
+                studentRow.innerHTML = `<td class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap flex items-center">${avatar}<div class="ml-4"><div class="font-bold">${student.nama}</div><div class="text-xs text-gray-500">NIS: ${student.nis} | ${student.kelas}</div></div></td><td class="px-6 py-4 text-center text-lg font-bold">${student.level || 1}</td><td class="px-6 py-4 text-center">${student.xp || 0}</td><td class="px-6 py-4"><div class="w-full bg-gray-200 rounded-full h-4 relative"><div class="bg-red-500 h-4 rounded-full" style="width: ${student.hp || 100}%"></div><span class="absolute inset-0 text-center text-xs font-bold text-white">${student.hp || 100}/100</span></div></td>
+                <td class="px-6 py-4 text-center space-x-1">
+                    <button class="battle-init-btn p-2 bg-red-100 text-red-600 hover:bg-red-200 rounded-lg" data-id="${key}" title="Mulai Battle"><i data-lucide="swords" class="w-4 h-4"></i></button>
+                    <button class="edit-btn p-2 bg-blue-100 text-blue-600 hover:bg-blue-200 rounded-lg" data-id="${key}" title="Edit Siswa"><i data-lucide="edit" class="w-4 h-4"></i></button>
+                    <button class="delete-btn p-2 bg-gray-100 text-gray-600 hover:bg-gray-200 rounded-lg" data-id="${key}" title="Hapus Siswa"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                </td>`;
                 studentTableBody.appendChild(studentRow);
                 totalStudents++;
                 totalLevel += (student.level || 1);
@@ -424,9 +438,387 @@ function setupAdminDashboard() {
                     imagePreviewContainer.classList.remove('hidden');
                 }
             }
+        } else if (target.classList.contains('battle-init-btn')) {
+            const studentId = target.dataset.id;
+            openMonsterSelectionModal(studentId);
         }
     });
 
+    // =======================================================
+    //                  LOGIKA HALAMAN QUESTS
+    // =======================================================
+    const questModal = document.getElementById('quest-modal');
+    const questForm = document.getElementById('quest-form');
+    const closeQuestModalButton = document.getElementById('close-quest-modal-button');
+    const cancelQuestButton = document.getElementById('cancel-quest-button');
+    const monsterImageInput = document.getElementById('monster-image');
+    const monsterImagePreview = document.getElementById('monster-image-preview');
+    const addQuestionButton = document.getElementById('add-question-button');
+    const questionsContainer = document.getElementById('questions-container');
+
+    const openQuestModal = (isEdit = false, questData = null, questId = null) => {
+        audioPlayer.openModal();
+        questForm.reset();
+        document.getElementById('quest-id').value = questId || '';
+        questionsContainer.innerHTML = '';
+        monsterImagePreview.classList.add('hidden');
+        document.getElementById('quest-modal-title').textContent = isEdit ? 'Edit Monster' : 'Buat Monster Baru';
+
+        if (isEdit && questData) {
+            document.getElementById('monster-name').value = questData.monsterName;
+            document.getElementById('monster-hp').value = questData.monsterHp;
+            document.getElementById('monster-reward-coin').value = questData.rewardCoin;
+            if (questData.monsterImageBase64) {
+                monsterImagePreview.src = questData.monsterImageBase64;
+                monsterImagePreview.classList.remove('hidden');
+            }
+            // Set skills
+            questForm.querySelectorAll('.monster-skill').forEach(skillCheckbox => {
+                skillCheckbox.checked = questData.skills?.[skillCheckbox.dataset.skill] || false;
+            });
+            // Set questions
+            questData.questions?.forEach(q => addQuestionField(q));
+        } else {
+            addQuestionField(); // Add one empty question field by default
+        }
+
+        questModal.classList.remove('hidden');
+        setTimeout(() => questModal.classList.remove('opacity-0'), 10);
+    };
+
+    const closeQuestModal = () => {
+        audioPlayer.closeModal();
+        questModal.classList.add('opacity-0');
+        setTimeout(() => questModal.classList.add('hidden'), 300);
+    };
+
+    const addQuestionField = (data = {}) => {
+        const questionId = `q-${Date.now()}`;
+        const field = document.createElement('div');
+        field.className = 'p-3 border rounded-md space-y-2 bg-gray-50 relative';
+        field.innerHTML = `
+            <button type="button" class="absolute top-2 right-2 text-red-500 hover:text-red-700 remove-question-btn">&times;</button>
+            <input type="text" placeholder="Tulis pertanyaan..." value="${data.question || ''}" class="w-full p-2 border rounded-md question-input">
+            <div class="grid grid-cols-2 gap-2">
+                ${[0,1,2,3].map(i => `
+                <div class="flex items-center">
+                    <input type="radio" name="correct-answer-${questionId}" value="${i}" ${data.answer === i ? 'checked' : ''} class="mr-2 correct-answer-radio">
+                    <input type="text" placeholder="Pilihan ${i+1}" value="${data.options?.[i] || ''}" class="w-full p-1 border rounded-md option-input">
+                </div>`).join('')}
+            </div>
+        `;
+        questionsContainer.appendChild(field);
+        field.querySelector('.remove-question-btn').onclick = () => field.remove();
+    };
+
+    monsterImageInput.onchange = async function() {
+        if (this.files && this.files[0]) {
+            const base64 = await processImageToBase64(this.files[0]);
+            const resized = await resizeImage(base64, 200, 200);
+            monsterImagePreview.src = resized;
+            monsterImagePreview.classList.remove('hidden');
+        }
+    };
+
+    addQuestionButton.onclick = () => addQuestionField();
+    closeQuestModalButton.onclick = closeQuestModal;
+    cancelQuestButton.onclick = closeQuestModal;
+
+    questForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const questId = document.getElementById('quest-id').value;
+        const questions = [];
+        questionsContainer.querySelectorAll('.p-3.border').forEach(qDiv => {
+            const options = Array.from(qDiv.querySelectorAll('.option-input')).map(opt => opt.value);
+            const correctAnswerRadio = qDiv.querySelector('.correct-answer-radio:checked');
+            if (qDiv.querySelector('.question-input').value && options.every(o => o) && correctAnswerRadio) {
+                questions.push({
+                    question: qDiv.querySelector('.question-input').value,
+                    options: options,
+                    answer: parseInt(correctAnswerRadio.value)
+                });
+            }
+        });
+
+        const skills = {};
+        questForm.querySelectorAll('.monster-skill:checked').forEach(skill => {
+            skills[skill.dataset.skill] = true;
+        });
+
+        const questData = {
+            monsterName: document.getElementById('monster-name').value,
+            monsterHp: parseInt(document.getElementById('monster-hp').value),
+            monsterMaxHp: parseInt(document.getElementById('monster-hp').value),
+            rewardCoin: parseInt(document.getElementById('monster-reward-coin').value),
+            monsterImageBase64: monsterImagePreview.src.startsWith('data:image') ? monsterImagePreview.src : null,
+            skills: skills,
+            questions: questions
+        };
+
+        try {
+            if (questId) {
+                await update(ref(db, `quests/${questId}`), questData);
+                showToast('Monster berhasil diperbarui!');
+            } else {
+                await push(ref(db, 'quests'), questData);
+                showToast('Monster baru berhasil dibuat!');
+            }
+            closeQuestModal();
+        } catch (error) {
+            showToast('Gagal menyimpan monster!', true);
+            console.error(error);
+        }
+    });
+
+    function setupQuestsPage() {
+        const questsRef = ref(db, 'quests');
+        onValue(questsRef, (snapshot) => {
+            questListContainer.innerHTML = '';
+            if (!snapshot.exists()) {
+                questListContainer.innerHTML = '<p class="text-center text-gray-400 col-span-full">Belum ada monster quest.</p>';
+                return;
+            }
+            const questsData = snapshot.val();
+            Object.entries(questsData).forEach(([questId, quest]) => {
+                const card = document.createElement('div');
+                card.className = 'bg-white p-4 rounded-lg shadow-lg flex flex-col';
+                card.innerHTML = `
+                    <img src="${quest.monsterImageBase64 || 'https://placehold.co/300x200/a0aec0/ffffff?text=Monster'}" class="w-full h-32 object-cover rounded-md mb-4">
+                    <h4 class="text-lg font-bold">${quest.monsterName}</h4>
+                    <p class="text-sm text-red-500">HP: ${quest.monsterHp}</p>
+                    <p class="text-sm text-yellow-500">Reward: ${quest.rewardCoin} Koin</p>
+                    <div class="mt-auto pt-4 flex justify-end items-center">
+                        <button data-id="${questId}" class="edit-quest-btn p-1 text-blue-600 hover:text-blue-800" title="Edit Monster"><i data-lucide="edit" class="w-4 h-4"></i></button>
+                        <button data-id="${questId}" class="delete-quest-btn p-1 text-red-600 hover:text-red-800" title="Hapus Monster"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    </div>
+                `;
+                questListContainer.appendChild(card);
+            });
+            lucide.createIcons();
+        });
+    }
+
+    questListContainer.addEventListener('click', async (e) => {
+        const button = e.target.closest('button');
+        if (!button) return;
+        const questId = button.dataset.id;
+
+        if (button.classList.contains('delete-quest-btn')) {
+            if (confirm('Yakin mau hapus monster ini?')) {
+                await remove(ref(db, `quests/${questId}`));
+                showToast('Monster berhasil dihapus.');
+            }
+        } else if (button.classList.contains('edit-quest-btn')) {
+            const questSnap = await get(ref(db, `quests/${questId}`));
+            if (questSnap.exists()) {
+                openQuestModal(true, questSnap.val(), questId);
+            }
+        }
+    });
+
+    // =======================================================
+    //                  LOGIKA BATTLE BARU
+    // =======================================================
+    async function openMonsterSelectionModal(studentId) {
+        currentBattleState = { studentId: studentId }; // Reset dan set ID siswa
+        const monsterSelectionModal = document.getElementById('monster-selection-modal');
+        const monsterListDiv = document.getElementById('monster-selection-list');
+        const closeButton = document.getElementById('close-monster-selection-modal-button');
+
+        monsterListDiv.innerHTML = '<p class="text-center text-gray-400">Memuat data monster...</p>';
+        
+        audioPlayer.openModal();
+        monsterSelectionModal.classList.remove('hidden');
+        setTimeout(() => monsterSelectionModal.classList.remove('opacity-0'), 10);
+
+        const questsRef = ref(db, 'quests');
+        const snapshot = await get(questsRef);
+
+        if (!snapshot.exists()) {
+            monsterListDiv.innerHTML = '<p class="text-center text-gray-400">Tidak ada monster yang tersedia untuk dilawan.</p>';
+            return;
+        }
+
+        monsterListDiv.innerHTML = ''; // Hapus teks loading
+        const questsData = snapshot.val();
+        Object.entries(questsData).forEach(([questId, quest]) => {
+            const monsterCard = document.createElement('div');
+            monsterCard.className = 'flex items-center p-4 border rounded-lg hover:bg-gray-100 cursor-pointer transition-colors';
+            monsterCard.dataset.id = questId;
+            monsterCard.innerHTML = `
+                <img src="${quest.monsterImageBase64 || 'https://placehold.co/64x64/a0aec0/ffffff?text=M'}" class="w-16 h-16 object-cover rounded-md mr-4">
+                <div>
+                    <h4 class="font-bold text-lg">${quest.monsterName}</h4>
+                    <p class="text-sm text-gray-600">HP: ${quest.monsterHp} | Reward: ${quest.rewardCoin} Koin</p>
+                </div>
+            `;
+            monsterListDiv.appendChild(monsterCard);
+        });
+
+        const closeMonsterModal = () => {
+            audioPlayer.closeModal();
+            monsterSelectionModal.classList.add('opacity-0');
+            setTimeout(() => monsterSelectionModal.classList.add('hidden'), 300);
+        };
+
+        closeButton.onclick = closeMonsterModal;
+
+        monsterListDiv.onclick = (e) => {
+            const selectedCard = e.target.closest('[data-id]');
+            if (selectedCard && selectedCard.dataset.id) {
+                currentBattleState.monsterId = selectedCard.dataset.id;
+                closeMonsterModal();
+                startBattle(currentBattleState.studentId, currentBattleState.monsterId);
+            }
+        };
+    }
+
+    async function startBattle(studentId, monsterId) {
+        const studentSnap = await get(ref(db, `students/${studentId}`));
+        const monsterSnap = await get(ref(db, `quests/${monsterId}`));
+
+        if (!studentSnap.exists() || !monsterSnap.exists()) {
+            showToast("Data siswa atau monster tidak ditemukan!", true);
+            return;
+        }
+
+        let student = { id: studentId, ...studentSnap.val() };
+        let monster = { id: monsterId, ...monsterSnap.val() };
+        
+        monster.currentHp = monster.monsterHp;
+        monster.maxHp = monster.monsterMaxHp || monster.monsterHp;
+        student.currentHp = student.hp;
+        student.maxHp = 100;
+
+        let currentQuestionIndex = 0;
+        const questions = monster.questions || [];
+
+        const battleModal = document.getElementById('battle-modal');
+        const battleLog = document.getElementById('battle-log');
+        const studentInfoDiv = document.getElementById('battle-student-info');
+        const monsterInfoDiv = document.getElementById('battle-monster-info');
+        const questionText = document.getElementById('battle-question-text');
+        const correctButton = document.getElementById('answer-correct-button');
+        const incorrectButton = document.getElementById('answer-incorrect-button');
+        const closeBattleButton = document.getElementById('close-battle-modal-button');
+
+        const addLog = (text) => {
+            battleLog.innerHTML += `> ${text}\n`;
+            battleLog.scrollTop = battleLog.scrollHeight;
+        };
+
+        const updateUI = () => {
+            const studentHpPercent = Math.max(0, (student.currentHp / student.maxHp) * 100);
+            studentInfoDiv.innerHTML = `
+                <h4 class="text-lg font-bold">${student.nama}</h4>
+                <img src="${student.fotoProfilBase64 || `https://placehold.co/128x128/e2e8f0/3d4852?text=${student.nama.charAt(0)}`}" class="w-32 h-32 rounded-full object-cover mx-auto my-2 border-4 border-blue-300">
+                <div class="w-full bg-gray-200 rounded-full h-6 relative"><div class="bg-red-500 h-6 rounded-full" style="width: ${studentHpPercent}%"></div><span class="absolute inset-0 text-center font-bold text-white leading-6">${student.currentHp} / ${student.maxHp}</span></div>`;
+            
+            const monsterHpPercent = Math.max(0, (monster.currentHp / monster.maxHp) * 100);
+            monsterInfoDiv.innerHTML = `
+                <h4 class="text-lg font-bold">${monster.monsterName}</h4>
+                <img src="${monster.monsterImageBase64 || 'https://placehold.co/128x128/a0aec0/ffffff?text=M'}" class="w-32 h-32 object-contain mx-auto my-2">
+                <div class="w-full bg-gray-200 rounded-full h-6 relative"><div class="bg-red-500 h-6 rounded-full" style="width: ${monsterHpPercent}%"></div><span class="absolute inset-0 text-center font-bold text-white leading-6">${monster.currentHp} / ${monster.maxHp}</span></div>`;
+        };
+        
+        const loadQuestion = () => {
+            correctButton.disabled = false;
+            incorrectButton.disabled = false;
+            if (questions.length > 0 && currentQuestionIndex < questions.length) {
+                questionText.textContent = questions[currentQuestionIndex].question;
+            } else {
+                questionText.textContent = "Tidak ada pertanyaan lagi. Monster akan menyerang jika jawaban salah!";
+            }
+        };
+
+        const endBattle = async (isVictory) => {
+            correctButton.disabled = true;
+            incorrectButton.disabled = true;
+            
+            const updates = {};
+            if (isVictory) {
+                addLog(`🎉 ${monster.monsterName} telah dikalahkan!`);
+                questionText.textContent = "SELAMAT! KAMU MENANG!";
+                
+                const xpReward = 50; // Contoh reward XP
+                const coinReward = monster.rewardCoin || 0;
+
+                const currentTotalXp = ((student.level || 1) - 1) * 1000 + (student.xp || 0);
+                const newTotalXp = currentTotalXp + xpReward;
+                
+                updates[`/students/${student.id}/xp`] = newTotalXp % 1000;
+                updates[`/students/${student.id}/level`] = Math.floor(newTotalXp / 1000) + 1;
+                updates[`/students/${student.id}/coin`] = (student.coin || 0) + coinReward;
+                updates[`/students/${student.id}/hp`] = student.currentHp; // Simpan HP terakhir
+                
+                addLog(`Siswa mendapat ${xpReward} XP dan ${coinReward} Koin.`);
+                audioPlayer.success();
+            } else {
+                addLog(`☠️ ${student.nama} telah dikalahkan!`);
+                questionText.textContent = "YAH, KAMU KALAH...";
+                updates[`/students/${student.id}/hp`] = student.currentHp; // Simpan HP terakhir (kemungkinan 0)
+                audioPlayer.error();
+            }
+
+            if (Object.keys(updates).length > 0) {
+                await update(ref(db), updates);
+                addLog("Data siswa telah diperbarui di database.");
+            }
+        };
+
+        const handleAnswer = (isCorrect) => {
+            correctButton.disabled = true;
+            incorrectButton.disabled = true;
+
+            if (isCorrect) {
+                const studentDamage = 25 + Math.floor(Math.random() * 10); // Contoh damage
+                monster.currentHp = Math.max(0, monster.currentHp - studentDamage);
+                addLog(`Jawaban BENAR! ${student.nama} menyerang, ${studentDamage} damage.`);
+                audioPlayer.xpGain();
+                updateUI();
+                if (monster.currentHp <= 0) {
+                    endBattle(true);
+                    return;
+                }
+            } else {
+                const monsterDamage = 15 + Math.floor(Math.random() * 10); // Contoh damage
+                student.currentHp = Math.max(0, student.currentHp - monsterDamage);
+                addLog(`Jawaban SALAH! ${monster.monsterName} menyerang, ${monsterDamage} damage.`);
+                audioPlayer.hpLoss();
+                updateUI();
+                if (student.currentHp <= 0) {
+                    endBattle(false);
+                    return;
+                }
+            }
+
+            currentQuestionIndex++;
+            setTimeout(loadQuestion, 1200); // Jeda sebelum pertanyaan berikutnya
+        };
+
+        battleLog.innerHTML = '';
+        addLog("Pertarungan dimulai!");
+        updateUI();
+        loadQuestion();
+
+        correctButton.onclick = () => handleAnswer(true);
+        incorrectButton.onclick = () => handleAnswer(false);
+
+        const closeAndResetBattle = () => {
+            audioPlayer.closeModal();
+            battleModal.classList.add('opacity-0');
+            setTimeout(() => battleModal.classList.add('hidden'), 300);
+            correctButton.onclick = null;
+            incorrectButton.onclick = null;
+            closeBattleButton.onclick = null;
+        };
+        closeBattleButton.onclick = closeAndResetBattle;
+
+        audioPlayer.openModal();
+        battleModal.classList.remove('hidden');
+        setTimeout(() => battleModal.classList.remove('opacity-0'), 10);
+    }
+    
     // --- LOGIKA HALAMAN ATTENDANCE ---
     async function setupAttendancePage() {
         const attendanceContainer = document.getElementById('attendance-container');
