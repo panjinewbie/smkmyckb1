@@ -197,7 +197,7 @@ function setupStudentDashboard(uid) {
         if(!snapshot.exists()) return;
         const studentData = snapshot.val();
         document.getElementById('student-name').textContent = studentData.nama;
-        document.getElementById('student-class-role').textContent = `${studentData.kelas} | ${studentData.peran}`;
+        document.getElementById('student-class-role').textContent = `${studentData.kelas} | ${studentData.peran} | Guild ${studentData.guild || ''}`;
         document.getElementById('student-avatar').src = studentData.fotoProfilBase64 || `https://placehold.co/128x128/e2e8f0/3d4852?text=${studentData.nama.charAt(0)}`;
         document.getElementById('hp-value').textContent = `${studentData.hp} / 100`;
         document.getElementById('hp-bar').style.width = `${studentData.hp}%`;
@@ -336,7 +336,7 @@ function setupAdminDashboard() {
                 const avatar = student.fotoProfilBase64 ? 
                     `<img src="${student.fotoProfilBase64}" alt="${student.nama}" class="w-10 h-10 rounded-full object-cover">` : 
                     `<div class="w-10 h-10 bg-gray-700 text-white flex items-center justify-center rounded-full font-bold">${student.nama.charAt(0)}</div>`;
-                studentRow.innerHTML = `<td class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap flex items-center">${avatar}<div class="ml-4"><div class="font-bold">${student.nama}</div><div class="text-xs text-gray-500">NIS: ${student.nis} | ${student.kelas}</div></div></td><td class="px-6 py-4 text-center text-lg font-bold">${student.level || 1}</td><td class="px-6 py-4 text-center">${student.xp || 0}</td><td class="px-6 py-4"><div class="w-full bg-gray-200 rounded-full h-4 relative"><div class="bg-red-500 h-4 rounded-full" style="width: ${student.hp || 100}%"></div><span class="absolute inset-0 text-center text-xs font-bold text-white">${student.hp || 100}/100</span></div></td>
+                studentRow.innerHTML = `<td class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap flex items-center">${avatar}<div class="ml-4"><div class="font-bold">${student.nama}</div><div class="text-xs text-gray-500">NIS: ${student.nis} | ${student.kelas} | ${student.guild || 'No Guild'}</div></div></td><td class="px-6 py-4 text-center text-lg font-bold">${student.level || 1}</td><td class="px-6 py-4 text-center">${student.xp || 0}</td><td class="px-6 py-4"><div class="w-full bg-gray-200 rounded-full h-4 relative"><div class="bg-red-500 h-4 rounded-full" style="width: ${student.hp || 100}%"></div><span class="absolute inset-0 text-center text-xs font-bold text-white">${student.hp || 100}/100</span></div></td>
                 <td class="px-6 py-4 text-center space-x-1">
                     <button class="battle-init-btn p-2 bg-red-100 text-red-600 hover:bg-red-200 rounded-lg" data-id="${key}" title="Mulai Battle"><i data-lucide="swords" class="w-4 h-4"></i></button>
                     <button class="edit-btn p-2 bg-blue-100 text-blue-600 hover:bg-blue-200 rounded-lg" data-id="${key}" title="Edit Siswa"><i data-lucide="edit" class="w-4 h-4"></i></button>
@@ -370,6 +370,7 @@ function setupAdminDashboard() {
             nis: document.getElementById('nis').value,
             kelas: document.getElementById('kelas').value,
             peran: document.getElementById('peran').value,
+            guild: document.getElementById('guild').value,
             hp: parseInt(document.getElementById('hp').value),
             coin: parseInt(document.getElementById('coin').value),
             level: calculatedLevel,
@@ -430,6 +431,7 @@ function setupAdminDashboard() {
                 document.getElementById('nis').value = student.nis;
                 document.getElementById('kelas').value = student.kelas;
                 document.getElementById('peran').value = student.peran;
+                document.getElementById('guild').value = student.guild;
                 document.getElementById('xp').value = ((student.level - 1) * 1000) + student.xp;
                 document.getElementById('hp').value = student.hp;
                 document.getElementById('coin').value = student.coin || 0;
