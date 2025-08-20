@@ -18,6 +18,50 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 const auth = getAuth(app);
 
+// --- MANTRA BARU: Audio Player dengan Tone.js (VERSI DIPERBARUI) ---
+const audioPlayer = {
+    isReady: false,
+    synth: null,
+    // FUNGSI INIT DIPERBARUI DENGAN MANTRA PALING SAKTI
+    async init() {
+        if (this.isReady || typeof Tone === 'undefined') return;
+        try {
+            // Mantra ini "memaksa" browser untuk mengaktifkan audio
+            await Tone.start();
+            this.synth = new Tone.Synth().toDestination();
+            this.isReady = true;
+            console.log("Konteks audio berhasil dimulai! Siap beraksi!");
+        } catch (e) {
+            console.error("Gagal memulai audio:", e);
+        }
+    },
+    play(note, duration = '8n') {
+        if (!this.isReady) return;
+        this.synth.triggerAttackRelease(note, duration);
+    },
+    click() { this.play('C4', '16n'); },
+    success() { this.play('G5', '16n'); },
+    error() { this.play('C3', '8n'); },
+    xpGain() {
+        if (!this.isReady) return;
+        const now = Tone.now();
+        this.synth.triggerAttackRelease("C5", "16n", now);
+        this.synth.triggerAttackRelease("E5", "16n", now + 0.1);
+        this.synth.triggerAttackRelease("G5", "16n", now + 0.2);
+    },
+    hpLoss() {
+        if (!this.isReady) return;
+        const now = Tone.now();
+        this.synth.triggerAttackRelease("G3", "16n", now);
+        this.synth.triggerAttackRelease("C3", "16n", now + 0.1);
+    },
+    openModal() { this.play('E4', '16n'); },
+    closeModal() { this.play('C4', '16n'); }
+};
+
+// Audio harus dimulai setelah interaksi pengguna (klik, sentuh, dll)
+document.body.addEventListener('click', () => audioPlayer.init(), { once: true });
+
 
 // --- LOGIKA UTAMA (ROUTER PINTAR) ---
 onAuthStateChanged(auth, async (user) => {
@@ -57,7 +101,7 @@ onAuthStateChanged(auth, async (user) => {
 });
 
 
-// --- FUNGSI TAMPILAN & NOTIFIKASI (shared) ---
+// --- FUNGSI TAMPILAN & NOTIFIKASI (DENGAN SUARA) ---
 const showToast = (message, isError = false) => {
     const toast = document.getElementById('toast-notification');
     if (!toast) return;
@@ -65,6 +109,13 @@ const showToast = (message, isError = false) => {
     toast.classList.remove('hidden', 'bg-green-500', 'bg-red-500');
     toast.classList.add(isError ? 'bg-red-500' : 'bg-green-500');
     setTimeout(() => toast.classList.add('hidden'), 3000);
+    
+    // Mainkan suara sesuai kondisi
+    if (isError) {
+        audioPlayer.error();
+    } else {
+        audioPlayer.success();
+    }
 };
 
 // --- FUNGSI PEMROSESAN GAMBAR (shared) ---
@@ -128,6 +179,7 @@ if(loginForm) {
             loginNotification.textContent = 'Email atau password salah!';
             loginNotification.classList.remove('hidden');
             loginNotification.classList.add('bg-red-500');
+            audioPlayer.error(); // Suara error saat login gagal
             loginButton.disabled = false;
             loginButton.textContent = 'Masuk Dunia DREAMY';
         }
@@ -193,8 +245,9 @@ function setupAdminDashboard() {
     const submitButton = document.getElementById('submit-button');
     let html5QrCode;
     
-    // --- FUNGSI MODAL ADMIN ---
+    // --- FUNGSI MODAL ADMIN (DENGAN SUARA) ---
     const openModal = (isEdit = false) => {
+        audioPlayer.openModal();
         studentForm.reset();
         studentIdInput.value = '';
         authFields.style.display = isEdit ? 'none' : 'block';
@@ -204,15 +257,18 @@ function setupAdminDashboard() {
         setTimeout(() => studentModal.classList.remove('opacity-0'), 10);
     };
     const closeModal = () => {
+        audioPlayer.closeModal();
         studentModal.classList.add('opacity-0');
         setTimeout(() => studentModal.classList.add('hidden'), 300);
     };
     const openQrModal = () => {
+        audioPlayer.openModal();
         qrScannerModal.classList.remove('hidden');
         setTimeout(() => qrScannerModal.classList.remove('opacity-0'), 10);
         startQrScanner();
     };
     const closeQrModal = () => {
+        audioPlayer.closeModal();
         qrScannerModal.classList.add('opacity-0');
         if (html5QrCode && html5QrCode.isScanning) {
             html5QrCode.stop().catch(err => console.error("Gagal stop scanner.", err));
@@ -225,6 +281,7 @@ function setupAdminDashboard() {
     addStudentButton.onclick = () => openModal(false);
     closeModalButton.onclick = closeModal;
     cancelButton.onclick = closeModal;
+    document.getElementById('print-recap-button').addEventListener('click', handlePrintRecap);
     fotoInput.addEventListener('change', function() {
         if (this.files && this.files[0]) {
             const reader = new FileReader();
@@ -418,38 +475,58 @@ function setupAdminDashboard() {
         }
     }
     
+    // --- FUNGSI UPDATE STATS & LOG ABSENSI (DENGAN SUARA) ---
     async function updateStudentStats(uid, action, studentData = null) {
         const studentRef = ref(db, `students/${uid}`);
         const data = studentData || (await get(studentRef)).val();
         if (!data) return;
 
-        let updates = {};
+        const allUpdates = {};
         let message = '';
         const xpPerLevel = 1000;
         
+        let statUpdates = {};
         switch(action) {
             case 'hadir':
-                const newTotalXp = ((data.level || 1) - 1) * xpPerLevel + (data.xp || 0) + 10;
-                updates.xp = newTotalXp % xpPerLevel;
-                updates.level = Math.floor(newTotalXp / xpPerLevel) + 1;
-                updates.coin = (data.coin || 0) + 10;
+                const currentTotalXp = ((data.level || 1) - 1) * xpPerLevel + (data.xp || 0);
+                const newTotalXp = currentTotalXp + 10;
+                statUpdates.xp = newTotalXp % xpPerLevel;
+                statUpdates.level = Math.floor(newTotalXp / xpPerLevel) + 1;
+                statUpdates.coin = (data.coin || 0) + 10;
                 message = `+10 XP, +10 Koin untuk ${data.nama}!`;
+                audioPlayer.xpGain(); // Suara dapat XP
                 break;
             case 'sakit':
-                updates.hp = Math.max(0, (data.hp || 100) - 2);
+                statUpdates.hp = Math.max(0, (data.hp || 100) - 2);
                 message = `-2 HP untuk ${data.nama}. Cepat sembuh!`;
+                audioPlayer.hpLoss(); // Suara kena damage
                 break;
             case 'izin':
-                updates.hp = Math.max(0, (data.hp || 100) - 5);
+                statUpdates.hp = Math.max(0, (data.hp || 100) - 5);
                 message = `-5 HP untuk ${data.nama}.`;
+                audioPlayer.hpLoss(); // Suara kena damage
                 break;
             case 'alfa':
-                updates.hp = Math.max(0, (data.hp || 100) - 10);
+                statUpdates.hp = Math.max(0, (data.hp || 100) - 10);
                 message = `-10 HP untuk ${data.nama}. Jangan diulangi!`;
+                audioPlayer.hpLoss(); // Suara kena damage
                 break;
         }
-        await update(studentRef, updates);
-        showToast(message);
+
+        // Gabungkan semua update dalam satu operasi
+        for (const key in statUpdates) {
+            allUpdates[`/students/${uid}/${key}`] = statUpdates[key];
+        }
+        const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+        allUpdates[`/attendance/${today}/${uid}`] = { status: action };
+
+        try {
+            await update(ref(db), allUpdates);
+            showToast(message);
+        } catch (error) {
+            showToast('Gagal update data & absensi!', true);
+            console.error(error);
+        }
     }
     
     document.getElementById('attendance-container').addEventListener('click', (e) => {
@@ -483,6 +560,90 @@ function setupAdminDashboard() {
             showToast(`Siswa dengan NIS ${nis} tidak ditemukan!`, true);
         }
     }
+
+    // --- FUNGSI BARU UNTUK CETAK REKAP ---
+    async function handlePrintRecap() {
+        const startDate = document.getElementById('start-date').value;
+        const endDate = document.getElementById('end-date').value;
+
+        if (!startDate || !endDate) {
+            showToast('Silakan pilih rentang tanggal terlebih dahulu!', true);
+            return;
+        }
+
+        showToast('Mempersiapkan rekap...');
+
+        const studentsSnap = await get(ref(db, 'students'));
+        const attendanceSnap = await get(ref(db, 'attendance'));
+
+        if (!studentsSnap.exists()) {
+            showToast('Tidak ada data siswa untuk direkap.', true);
+            return;
+        }
+
+        const studentsData = studentsSnap.val();
+        const attendanceData = attendanceSnap.exists() ? attendanceSnap.val() : {};
+
+        const dateList = [];
+        let currentDate = new Date(startDate);
+        const lastDate = new Date(endDate);
+        while (currentDate <= lastDate) {
+            dateList.push(currentDate.toISOString().slice(0, 10));
+            currentDate.setDate(currentDate.getDate() + 1);
+        }
+
+        const reportData = Object.fromEntries(
+            Object.entries(studentsData).map(([uid, student]) => [
+                uid,
+                {
+                    name: student.nama,
+                    nis: student.nis,
+                    attendance: {},
+                    summary: { H: 0, S: 0, I: 0, A: 0 }
+                }
+            ])
+        );
+
+        dateList.forEach(date => {
+            for (const uid in reportData) {
+                const statusChar = attendanceData[date]?.[uid]?.status.charAt(0).toUpperCase() || '-';
+                reportData[uid].attendance[date] = statusChar;
+                if (statusChar !== '-') {
+                    if (statusChar === 'H') reportData[uid].summary.H++;
+                    else if (statusChar === 'S') reportData[uid].summary.S++;
+                    else if (statusChar === 'I') reportData[uid].summary.I++;
+                    else if (statusChar === 'A') reportData[uid].summary.A++;
+                }
+            }
+        });
+
+        let html = `
+            <!DOCTYPE html><html><head><title>Rekap Absensi</title><style>
+            body { font-family: sans-serif; } table { width: 100%; border-collapse: collapse; font-size: 10px; }
+            th, td { border: 1px solid black; padding: 4px; text-align: center; } th { background-color: #f2f2f2; }
+            .student-name { text-align: left; } @media print { @page { size: landscape; } body { -webkit-print-color-adjust: exact; } }
+            </style></head><body><h2>Rekap Absensi Siswa</h2><p>Periode: ${startDate} s/d ${endDate}</p><table><thead>
+            <tr><th rowspan="2">No</th><th rowspan="2">Nama Siswa</th><th rowspan="2">NIS</th><th colspan="${dateList.length}">Tanggal</th><th colspan="4">Total</th></tr>
+            <tr>${dateList.map(d => `<th>${d.slice(8,10)}</th>`).join('')}<th>H</th><th>S</th><th>I</th><th>A</th></tr></thead><tbody>`;
+
+        let counter = 1;
+        for (const uid in reportData) {
+            const student = reportData[uid];
+            html += `<tr><td>${counter++}</td><td class="student-name">${student.name}</td><td>${student.nis}</td>
+                ${dateList.map(date => `<td>${student.attendance[date]}</td>`).join('')}
+                <td>${student.summary.H}</td><td>${student.summary.S}</td><td>${student.summary.I}</td><td>${student.summary.A}</td></tr>`;
+        }
+
+        html += `</tbody></table></body></html>`;
+
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(html);
+        printWindow.document.close();
+        printWindow.focus();
+        printWindow.print();
+        printWindow.close();
+    }
+
     lucide.createIcons();
 }
 
