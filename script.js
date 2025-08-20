@@ -247,6 +247,8 @@ function setupAdminDashboard() {
     const closeModalButton = document.getElementById('close-modal-button');
     const cancelButton = document.getElementById('cancel-button');
     const submitButton = document.getElementById('submit-button');
+    const partyBattleButton = document.getElementById('party-battle-button');
+
 
     let currentBattleState = {}; // Untuk menyimpan state battle (ID siswa, monster, dll)
     let html5QrCode;
@@ -288,6 +290,7 @@ function setupAdminDashboard() {
     closeModalButton.onclick = closeModal;
     cancelButton.onclick = closeModal;
     addQuestButton.onclick = () => openQuestModal();
+    partyBattleButton.onclick = () => openPartyBattleModal();
     document.getElementById('print-recap-button').addEventListener('click', handlePrintRecap);
     fotoInput.addEventListener('change', function() {
         if (this.files && this.files[0]) {
@@ -691,15 +694,110 @@ function setupAdminDashboard() {
         monster.maxHp = monster.monsterMaxHp || monster.monsterHp;
         student.currentHp = student.hp;
         student.maxHp = 100;
+        
+        const party = [student]; // Untuk solo battle, party berisi 1 siswa
 
+        setupBattleUI(party, monster);
+    }
+    
+    // --- LOGIKA PARTY BATTLE ---
+    async function openPartyBattleModal() {
+        const partyBattleModal = document.getElementById('party-battle-modal');
+        const closeButton = document.getElementById('close-party-battle-modal-button');
+        const startButton = document.getElementById('start-party-battle-button');
+        const monsterListDiv = document.getElementById('party-monster-selection-list');
+
+        monsterListDiv.innerHTML = '<p class="text-center text-gray-400">Memuat monster...</p>';
+        audioPlayer.openModal();
+        partyBattleModal.classList.remove('hidden');
+        setTimeout(() => partyBattleModal.classList.remove('opacity-0'), 10);
+        
+        const questsRef = ref(db, 'quests');
+        const snapshot = await get(questsRef);
+
+        if (!snapshot.exists()) {
+            monsterListDiv.innerHTML = '<p class="text-center text-gray-400">Tidak ada monster.</p>';
+        } else {
+            monsterListDiv.innerHTML = '';
+            const questsData = snapshot.val();
+            Object.entries(questsData).forEach(([questId, quest], index) => {
+                const checked = index === 0 ? 'checked' : '';
+                monsterListDiv.innerHTML += `
+                    <label class="flex items-center p-2 rounded-md hover:bg-gray-100">
+                        <input type="radio" name="monster-select" value="${questId}" class="mr-3" ${checked}>
+                        <span>${quest.monsterName} (HP: ${quest.monsterHp})</span>
+                    </label>
+                `;
+            });
+        }
+        
+        const closePartyModal = () => {
+            audioPlayer.closeModal();
+            partyBattleModal.classList.add('opacity-0');
+            setTimeout(() => partyBattleModal.classList.add('hidden'), 300);
+        };
+
+        closeButton.onclick = closePartyModal;
+        startButton.onclick = async () => {
+            const selectedGuild = document.getElementById('guild-select').value;
+            const selectedMonsterId = document.querySelector('input[name="monster-select"]:checked')?.value;
+
+            if (!selectedMonsterId) {
+                showToast("Pilih monster dulu, Beb!", true);
+                return;
+            }
+            
+            const studentsQuery = query(ref(db, 'students'), orderByChild('guild'), equalTo(selectedGuild));
+            const studentsSnap = await get(studentsQuery);
+            
+            if (!studentsSnap.exists()) {
+                showToast(`Tidak ada siswa di Guild ${selectedGuild}!`, true);
+                return;
+            }
+            
+            const party = [];
+            studentsSnap.forEach(childSnap => {
+                party.push({ id: childSnap.key, ...childSnap.val() });
+            });
+            
+            const monsterSnap = await get(ref(db, `quests/${selectedMonsterId}`));
+            if (!monsterSnap.exists()) {
+                 showToast("Monster tidak ditemukan!", true);
+                 return;
+            }
+            
+            let monster = { id: selectedMonsterId, ...monsterSnap.val() };
+            // Scaling HP monster berdasarkan jumlah anggota party
+            monster.monsterHp *= party.length;
+            monster.monsterMaxHp = monster.monsterHp;
+
+            closePartyModal();
+            setupBattleUI(party, monster);
+        };
+    }
+    
+    
+    // FUNGSI INTI UNTUK MENGATUR BATTLE (SOLO & PARTY)
+    async function setupBattleUI(party, monster) {
+        
+        // Inisialisasi state pertarungan
+        party.forEach(p => {
+            p.currentHp = p.hp;
+            p.maxHp = 100;
+        });
+        monster.currentHp = monster.monsterHp;
+
+        let currentTurnIndex = 0;
         let currentQuestionIndex = 0;
         const questions = monster.questions || [];
 
+        // Elemen UI
         const battleModal = document.getElementById('battle-modal');
         const battleLog = document.getElementById('battle-log');
         const studentInfoDiv = document.getElementById('battle-student-info');
         const monsterInfoDiv = document.getElementById('battle-monster-info');
         const questionText = document.getElementById('battle-question-text');
+        const turnIndicator = document.getElementById('turn-indicator');
         const correctButton = document.getElementById('answer-correct-button');
         const incorrectButton = document.getElementById('answer-incorrect-button');
         const closeBattleButton = document.getElementById('close-battle-modal-button');
@@ -710,26 +808,45 @@ function setupAdminDashboard() {
         };
 
         const updateUI = () => {
-            const studentHpPercent = Math.max(0, (student.currentHp / student.maxHp) * 100);
-            studentInfoDiv.innerHTML = `
-                <h4 class="text-lg font-bold">${student.nama}</h4>
-                <img src="${student.fotoProfilBase64 || `https://placehold.co/128x128/e2e8f0/3d4852?text=${student.nama.charAt(0)}`}" class="w-32 h-32 rounded-full object-cover mx-auto my-2 border-4 border-blue-300">
-                <div class="w-full bg-gray-200 rounded-full h-6 relative"><div class="bg-red-500 h-6 rounded-full" style="width: ${studentHpPercent}%"></div><span class="absolute inset-0 text-center font-bold text-white leading-6">${student.currentHp} / ${student.maxHp}</span></div>`;
+            // Update Info Party
+            studentInfoDiv.innerHTML = '';
+            party.forEach(p => {
+                const hpPercent = Math.max(0, (p.currentHp / p.maxHp) * 100);
+                const isTurn = party[currentTurnIndex].id === p.id;
+                const turnClass = isTurn ? 'border-blue-500 border-4' : 'border-gray-200 border-2';
+                studentInfoDiv.innerHTML += `
+                    <div class="flex items-center gap-3 p-2 rounded-lg ${turnClass}">
+                        <img src="${p.fotoProfilBase64 || `https://placehold.co/64x64/e2e8f0/3d4852?text=${p.nama.charAt(0)}`}" class="w-12 h-12 rounded-full object-cover">
+                        <div class="flex-grow">
+                            <p class="font-bold text-sm">${p.nama}</p>
+                            <div class="w-full bg-gray-200 rounded-full h-4 relative mt-1">
+                                <div class="bg-red-500 h-4 rounded-full" style="width: ${hpPercent}%"></div>
+                                <span class="absolute inset-0 text-center text-xs font-bold text-white">${p.currentHp}/${p.maxHp}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
             
+            // Update Info Monster
             const monsterHpPercent = Math.max(0, (monster.currentHp / monster.maxHp) * 100);
             monsterInfoDiv.innerHTML = `
-                <h4 class="text-lg font-bold">${monster.monsterName}</h4>
+                <h4 class="text-lg font-bold">MONSTER</h4>
+                <h4 class="text-xl font-bold">${monster.monsterName}</h4>
                 <img src="${monster.monsterImageBase64 || 'https://placehold.co/128x128/a0aec0/ffffff?text=M'}" class="w-32 h-32 object-contain mx-auto my-2">
-                <div class="w-full bg-gray-200 rounded-full h-6 relative"><div class="bg-red-500 h-6 rounded-full" style="width: ${monsterHpPercent}%"></div><span class="absolute inset-0 text-center font-bold text-white leading-6">${monster.currentHp} / ${monster.maxHp}</span></div>`;
+                <div class="w-full bg-gray-200 rounded-full h-6 relative"><div class="bg-green-500 h-6 rounded-full" style="width: ${monsterHpPercent}%"></div><span class="absolute inset-0 text-center font-bold text-white leading-6">${monster.currentHp} / ${monster.maxHp}</span></div>`;
+            
+            // Update giliran
+            turnIndicator.textContent = `Giliran: ${party[currentTurnIndex].nama}`;
         };
         
         const loadQuestion = () => {
             correctButton.disabled = false;
             incorrectButton.disabled = false;
-            if (questions.length > 0 && currentQuestionIndex < questions.length) {
-                questionText.textContent = questions[currentQuestionIndex].question;
+            if (questions.length > 0) {
+                questionText.textContent = questions[currentQuestionIndex % questions.length].question;
             } else {
-                questionText.textContent = "Tidak ada pertanyaan lagi. Monster akan menyerang jika jawaban salah!";
+                questionText.textContent = "Tidak ada pertanyaan. Monster akan menyerang jika jawaban salah!";
             }
         };
 
@@ -739,43 +856,51 @@ function setupAdminDashboard() {
             
             const updates = {};
             if (isVictory) {
-                addLog(`🎉 ${monster.monsterName} telah dikalahkan!`);
-                questionText.textContent = "SELAMAT! KAMU MENANG!";
+                addLog(`🎉 ${monster.monsterName} telah dikalahkan! Guild Menang!`);
+                questionText.textContent = "SELAMAT! KALIAN MENANG!";
                 
-                const xpReward = 50; // Contoh reward XP
-                const coinReward = monster.rewardCoin || 0;
+                const xpReward = 50;
+                const coinReward = Math.ceil((monster.rewardCoin || 0) / party.length);
 
-                const currentTotalXp = ((student.level || 1) - 1) * 1000 + (student.xp || 0);
-                const newTotalXp = currentTotalXp + xpReward;
+                party.forEach(p => {
+                     if (p.currentHp > 0) { // Hanya yang selamat dapat hadiah
+                        const currentTotalXp = ((p.level || 1) - 1) * 1000 + (p.xp || 0);
+                        const newTotalXp = currentTotalXp + xpReward;
+                        updates[`/students/${p.id}/xp`] = newTotalXp % 1000;
+                        updates[`/students/${p.id}/level`] = Math.floor(newTotalXp / 1000) + 1;
+                        updates[`/students/${p.id}/coin`] = (p.coin || 0) + coinReward;
+                     }
+                     updates[`/students/${p.id}/hp`] = p.currentHp; // Update HP terakhir
+                });
                 
-                updates[`/students/${student.id}/xp`] = newTotalXp % 1000;
-                updates[`/students/${student.id}/level`] = Math.floor(newTotalXp / 1000) + 1;
-                updates[`/students/${student.id}/coin`] = (student.coin || 0) + coinReward;
-                updates[`/students/${student.id}/hp`] = student.currentHp; // Simpan HP terakhir
-                
-                addLog(`Siswa mendapat ${xpReward} XP dan ${coinReward} Koin.`);
+                addLog(`Setiap anggota yang selamat mendapat ${xpReward} XP dan ${coinReward} Koin.`);
                 audioPlayer.success();
+
             } else {
-                addLog(`☠️ ${student.nama} telah dikalahkan!`);
-                questionText.textContent = "YAH, KAMU KALAH...";
-                updates[`/students/${student.id}/hp`] = student.currentHp; // Simpan HP terakhir (kemungkinan 0)
+                addLog(`☠️ Semua anggota party telah dikalahkan!`);
+                questionText.textContent = "YAH, KALIAN KALAH...";
+                party.forEach(p => {
+                    updates[`/students/${p.id}/hp`] = p.currentHp; // Simpan HP terakhir
+                });
                 audioPlayer.error();
             }
 
             if (Object.keys(updates).length > 0) {
                 await update(ref(db), updates);
-                addLog("Data siswa telah diperbarui di database.");
+                addLog("Data semua siswa telah diperbarui.");
             }
         };
 
         const handleAnswer = (isCorrect) => {
             correctButton.disabled = true;
             incorrectButton.disabled = true;
+            
+            const currentPlayer = party[currentTurnIndex];
 
             if (isCorrect) {
                 const studentDamage = 25 + Math.floor(Math.random() * 10); // Contoh damage
                 monster.currentHp = Math.max(0, monster.currentHp - studentDamage);
-                addLog(`Jawaban BENAR! ${student.nama} menyerang, ${studentDamage} damage.`);
+                addLog(`Jawaban BENAR! ${currentPlayer.nama} menyerang, ${studentDamage} damage.`);
                 audioPlayer.xpGain();
                 updateUI();
                 if (monster.currentHp <= 0) {
@@ -784,18 +909,26 @@ function setupAdminDashboard() {
                 }
             } else {
                 const monsterDamage = 15 + Math.floor(Math.random() * 10); // Contoh damage
-                student.currentHp = Math.max(0, student.currentHp - monsterDamage);
-                addLog(`Jawaban SALAH! ${monster.monsterName} menyerang, ${monsterDamage} damage.`);
+                currentPlayer.currentHp = Math.max(0, currentPlayer.currentHp - monsterDamage);
+                addLog(`Jawaban SALAH! ${monster.monsterName} menyerang ${currentPlayer.nama}, ${monsterDamage} damage.`);
                 audioPlayer.hpLoss();
                 updateUI();
-                if (student.currentHp <= 0) {
+
+                const isPartyDefeated = party.every(p => p.currentHp <= 0);
+                if (isPartyDefeated) {
                     endBattle(false);
                     return;
                 }
             }
+            
+            // Pindah ke giliran berikutnya yang masih hidup
+            do {
+                currentTurnIndex = (currentTurnIndex + 1) % party.length;
+            } while (party[currentTurnIndex].currentHp <= 0);
 
             currentQuestionIndex++;
             setTimeout(loadQuestion, 1200); // Jeda sebelum pertanyaan berikutnya
+            updateUI();
         };
 
         battleLog.innerHTML = '';
@@ -820,6 +953,7 @@ function setupAdminDashboard() {
         battleModal.classList.remove('hidden');
         setTimeout(() => battleModal.classList.remove('opacity-0'), 10);
     }
+
     
     // --- LOGIKA HALAMAN ATTENDANCE ---
     async function setupAttendancePage() {
