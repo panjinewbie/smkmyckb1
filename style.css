@@ -1,0 +1,8 @@
+body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+.font-game { font-family: 'Press Start 2P', cursive; }
+.nav-link.active { color: #3b82f6; border-bottom-color: #3b82f6; }
+.modal-overlay, .modal-content { transition: all 0.3s ease; }
+button:disabled { opacity: 0.7; cursor: not-allowed; }
+.hp-bar, .xp-bar { transition: width 0.5s ease-in-out; }
+.image-preview { max-width: 150px; max-height: 150px; object-fit: cover; }
+#qr-reader { border: 2px dashed #3b82f6; border-radius: 8px; }
