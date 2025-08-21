@@ -434,9 +434,13 @@ async function handleUseItem(uid, itemIndex, itemData, closeModalCallback) {
 
         // Terapkan efek item dan hapus dari inventaris dalam satu operasi
         if (itemData.effect === 'heal_hp') {
-            updates[`/students/${uid}/hp`] = Math.min(100, (studentData.hp || 0) + itemData.effectValue);
+            const currentHp = Number(studentData.hp) || 0;
+            const healAmount = Number(itemData.effectValue) || 0;
+            updates[`/students/${uid}/hp`] = Math.min(100, currentHp + healAmount);
         } else if (itemData.effect === 'add_coin') {
-            updates[`/students/${uid}/coin`] = (studentData.coin || 0) + itemData.effectValue;
+            const currentCoin = Number(studentData.coin) || 0;
+            const addAmount = Number(itemData.effectValue) || 0;
+            updates[`/students/${uid}/coin`] = currentCoin + addAmount;
         }
         updates[`/students/${uid}/inventory/${itemIndex}`] = null;
 
