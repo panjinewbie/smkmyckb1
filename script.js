@@ -192,11 +192,17 @@ if(loginForm) {
 // =======================================================
 function setupStudentDashboard(uid) {
     document.getElementById('student-logout-button').onclick = () => signOut(auth);
-    // Tambahkan event listener untuk tombol toko
-    const openShopButton = document.getElementById('open-shop-button');
-    if (openShopButton) {
-        openShopButton.onclick = () => openStudentShop(uid);
+    
+    // --- MANTRA BARU DISINI ---
+    // Menghubungkan tombol navigasi Shop ke fungsi buka toko
+    const shopNavButton = document.getElementById('open-shop-button');
+    if (shopNavButton) {
+        shopNavButton.addEventListener('click', (e) => {
+            e.preventDefault(); // Mencegah link pindah halaman
+            openStudentShop(uid);
+        });
     }
+
     const studentRef = ref(db, `students/${uid}`);
     onValue(studentRef, (snapshot) => {
         if(!snapshot.exists()) return;
@@ -210,16 +216,36 @@ function setupStudentDashboard(uid) {
         document.getElementById('xp-value').textContent = `${studentData.xp} / 1000`;
         document.getElementById('xp-bar').style.width = `${(studentData.xp / 1000) * 100}%`;
         document.getElementById('coin-value').textContent = studentData.coin;
+        
         const inventorySlots = document.getElementById('inventory-slots');
         inventorySlots.innerHTML = '';
         const inventorySize = 2 + ((studentData.level - 1) * 1);
         for (let i = 0; i < inventorySize; i++) {
             const item = studentData.inventory ? studentData.inventory[i] : null;
-            const slot = document.createElement('div');
-            slot.className = 'w-20 h-20 bg-gray-200 rounded-lg border-2 border-dashed border-gray-400 flex items-center justify-center text-gray-400';
-            slot.innerHTML = item ? `<img src="${item.iconUrl}" title="${item.name}">` : `<span>Kosong</span>`;
+            const slot = document.createElement('button'); // Diubah menjadi button agar interaktif
+            slot.className = 'inventory-slot w-20 h-20 bg-gray-200 rounded-lg border-2 border-dashed border-gray-400 flex items-center justify-center text-gray-400 relative transition-transform active:scale-90 disabled:cursor-not-allowed disabled:opacity-50';
+            slot.dataset.index = i;
+
+            if (item) {
+                slot.innerHTML = `<img src="${item.iconUrl}" title="${item.name}: ${item.description}" class="w-full h-full object-cover rounded-lg pointer-events-none">`;
+                slot.classList.remove('border-dashed', 'bg-gray-200');
+                slot.classList.add('inventory-item', 'cursor-pointer', 'hover:ring-2', 'hover:ring-blue-500');
+                slot.itemData = item; // Menyimpan data item langsung di elemen
+            } else {
+                slot.innerHTML = `<span>Kosong</span>`;
+                slot.disabled = true;
+            }
             inventorySlots.appendChild(slot);
         }
+
+        // Event listener untuk semua slot inventory (event delegation)
+        inventorySlots.onclick = (e) => {
+            const slot = e.target.closest('.inventory-item');
+            if (slot && slot.itemData) {
+                openUseItemModal(uid, slot.dataset.index, slot.itemData);
+            }
+        };
+
         setTimeout(() => document.getElementById('student-main-content').classList.remove('opacity-0'), 100);
         lucide.createIcons();
     });
@@ -341,6 +367,90 @@ async function openStudentShop(uid) {
         shopItemList.appendChild(card);
     });
     lucide.createIcons();
+}
+
+// =======================================================
+//                  LOGIKA PENGGUNAAN ITEM
+// =======================================================
+function openUseItemModal(uid, itemIndex, itemData) {
+    const modal = document.getElementById('use-item-modal');
+    const nameEl = document.getElementById('use-item-name');
+    const iconEl = document.getElementById('use-item-icon');
+    const descEl = document.getElementById('use-item-description');
+    const effectEl = document.getElementById('use-item-effect-text');
+    const useButton = document.getElementById('use-item-confirm-button');
+    const closeButton = document.getElementById('close-use-item-modal-button');
+
+    if (!modal || !nameEl || !iconEl || !descEl || !effectEl || !useButton || !closeButton) {
+        console.error("Elemen UI modal penggunaan item tidak ditemukan.");
+        return;
+    }
+
+    // Isi modal dengan data item
+    nameEl.textContent = itemData.name;
+    iconEl.src = itemData.iconUrl || 'https://placehold.co/128x128/e2e8f0/3d4852?text=Item';
+    descEl.textContent = itemData.description;
+    
+    let effectText = 'Efek tidak diketahui.';
+    switch (itemData.effect) {
+        case 'heal_hp':
+            effectText = `Memulihkan ${itemData.effectValue} HP.`;
+            break;
+        case 'add_coin':
+            effectText = `Menambahkan ${itemData.effectValue} Koin.`;
+            break;
+    }
+    effectEl.textContent = effectText;
+
+    const closeModal = () => {
+        audioPlayer.closeModal();
+        modal.classList.add('opacity-0');
+        setTimeout(() => modal.classList.add('hidden'), 300);
+        useButton.onclick = null; // Hapus listener untuk mencegah kebocoran memori
+    };
+
+    useButton.onclick = () => handleUseItem(uid, itemIndex, itemData, closeModal);
+    closeButton.onclick = closeModal;
+
+    // Tampilkan modal
+    audioPlayer.openModal();
+    modal.classList.remove('hidden');
+    setTimeout(() => modal.classList.remove('opacity-0'), 10);
+}
+
+async function handleUseItem(uid, itemIndex, itemData, closeModalCallback) {
+    const useButton = document.getElementById('use-item-confirm-button');
+    useButton.disabled = true;
+    useButton.textContent = 'Menggunakan...';
+
+    try {
+        const studentRef = ref(db, `students/${uid}`);
+        const studentSnap = await get(studentRef);
+        if (!studentSnap.exists()) throw new Error("Data siswa tidak ditemukan.");
+
+        const studentData = studentSnap.val();
+        const updates = {};
+        let successMessage = `Berhasil menggunakan ${itemData.name}!`;
+
+        // Terapkan efek item dan hapus dari inventaris dalam satu operasi
+        if (itemData.effect === 'heal_hp') {
+            updates[`/students/${uid}/hp`] = Math.min(100, (studentData.hp || 0) + itemData.effectValue);
+        } else if (itemData.effect === 'add_coin') {
+            updates[`/students/${uid}/coin`] = (studentData.coin || 0) + itemData.effectValue;
+        }
+        updates[`/students/${uid}/inventory/${itemIndex}`] = null;
+
+        await update(ref(db), updates);
+        showToast(successMessage);
+        audioPlayer.success();
+        closeModalCallback();
+    } catch (error) {
+        showToast(error.message, true);
+        audioPlayer.error();
+    } finally {
+        useButton.disabled = false;
+        useButton.textContent = 'Gunakan Item';
+    }
 }
 
 // =======================================================
