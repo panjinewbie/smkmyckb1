@@ -641,10 +641,15 @@ function setupAdminDashboard() {
             }
             closeModal();
         } catch (error) {
-            let message = 'Gagal menyimpan data!';
-            if (error.code === 'auth/email-already-in-use') message = 'Email ini sudah terdaftar!';
-            else if (error.code === 'auth/weak-password') message = 'Password terlalu lemah!';
-            else if (error.message === 'Email dan Password harus diisi!') message = error.message;
+            let message;
+            if (id) { // Jika dalam mode edit
+                message = `Gagal memperbarui data: ${error.message}`;
+            } else { // Jika dalam mode tambah
+                message = 'Gagal menambahkan siswa baru!';
+                if (error.code === 'auth/email-already-in-use') message = 'Email ini sudah terdaftar!';
+                else if (error.code === 'auth/weak-password') message = 'Password terlalu lemah (minimal 6 karakter)!';
+                else if (error.message === 'Email dan Password harus diisi!') message = error.message;
+            }
             showToast(message, true);
         } finally {
             submitButton.disabled = false;
