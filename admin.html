@@ -86,6 +86,25 @@
                     </div>
                 </div>
             </div>
+
+            <div id="shop-page" class="hidden">
+                <div class="bg-white rounded-lg shadow-md">
+                    <div class="p-6 border-b border-gray-200 flex flex-wrap gap-4 justify-between items-center">
+                        <div>
+                            <h2 class="text-xl font-semibold">Manajemen Toko</h2>
+                            <p class="text-sm text-gray-500 mt-1">Tambah, edit, atau hapus item yang dijual di toko.</p>
+                        </div>
+                        <button id="add-shop-item-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg flex items-center">
+                            <i data-lucide="plus-circle" class="w-4 h-4 mr-2"></i>Tambah Item
+                        </button>
+                    </div>
+                    <div id="shop-item-list" class="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                        <!-- Daftar item akan dimuat di sini oleh JavaScript -->
+                        <p class="text-center text-gray-400 col-span-full">Memuat item toko...</p>
+                    </div>
+                </div>
+            </div>
+
         </main>
     </div>
 
@@ -158,6 +177,47 @@
             <div id="monster-selection-list" class="p-6 space-y-4 overflow-y-auto">
                 <p class="text-center text-gray-400">Memuat data monster...</p>
             </div>
+        </div>
+    </div>
+
+    <div id="shop-item-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40 hidden modal-overlay opacity-0">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl m-4 modal-content transform scale-95 max-h-[90vh] flex flex-col">
+            <div class="p-6 border-b flex justify-between items-center">
+                <h3 id="shop-item-modal-title" class="text-xl font-semibold">Tambah Item Baru</h3>
+                <button id="close-shop-item-modal-button" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+            </div>
+            <form id="shop-item-form" class="p-6 space-y-4 overflow-y-auto">
+                <input type="hidden" id="shop-item-id">
+                <div>
+                    <label for="item-name" class="block text-sm font-medium text-gray-700">Nama Item</label>
+                    <input type="text" id="item-name" required class="mt-1 w-full p-2 border border-gray-300 rounded-md">
+                </div>
+                <div>
+                    <label for="item-description" class="block text-sm font-medium text-gray-700">Deskripsi / Kegunaan</label>
+                    <textarea id="item-description" rows="3" required class="mt-1 w-full p-2 border border-gray-300 rounded-md"></textarea>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="item-effect" class="block text-sm font-medium text-gray-700">Efek Item</label>
+                        <select id="item-effect" required class="mt-1 w-full p-2 border border-gray-300 rounded-md bg-white">
+                            <option value="HEAL_HP">Pulihkan HP</option>
+                            <option value="GAIN_XP">Dapatkan XP</option>
+                            <option value="BLOCK_ATTACK">Blok Serangan Musuh (1x)</option>
+                            <option value="NONE">Tidak ada efek khusus</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="item-effect-value" class="block text-sm font-medium text-gray-700">Nilai Efek (jika ada)</label>
+                        <input type="number" id="item-effect-value" class="mt-1 w-full p-2 border border-gray-300 rounded-md" placeholder="Contoh: 50 untuk HP">
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div><label for="item-price" class="block text-sm font-medium text-gray-700">Harga (Koin)</label><input type="number" id="item-price" required class="mt-1 w-full p-2 border border-gray-300 rounded-md" value="10"></div>
+                    <div><label for="item-stock" class="block text-sm font-medium text-gray-700">Stok</label><input type="number" id="item-stock" required class="mt-1 w-full p-2 border border-gray-300 rounded-md" value="1"></div>
+                </div>
+                <div><label for="item-image" class="block text-sm font-medium text-gray-700">Gambar Item</label><input type="file" id="item-image" accept="image/*" class="mt-1 w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"><img id="item-image-preview" class="mt-2 h-24 w-24 object-cover rounded-md hidden border"></div>
+                <div class="pt-4 flex justify-end space-x-2"><button type="button" id="cancel-shop-item-button" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg">Batal</button><button type="submit" id="submit-shop-item-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">Simpan Item</button></div>
+            </form>
         </div>
     </div>
 
