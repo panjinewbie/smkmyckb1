@@ -192,6 +192,11 @@ if(loginForm) {
 // =======================================================
 function setupStudentDashboard(uid) {
     document.getElementById('student-logout-button').onclick = () => signOut(auth);
+    // Tambahkan event listener untuk tombol toko
+    const openShopButton = document.getElementById('open-shop-button');
+    if (openShopButton) {
+        openShopButton.onclick = () => openStudentShop(uid);
+    }
     const studentRef = ref(db, `students/${uid}`);
     onValue(studentRef, (snapshot) => {
         if(!snapshot.exists()) return;
@@ -220,6 +225,123 @@ function setupStudentDashboard(uid) {
     });
 }
 
+// =======================================================
+//                  LOGIKA TOKO SISWA
+// =======================================================
+async function openStudentShop(uid) {
+    const shopModal = document.getElementById('student-shop-modal');
+    const shopItemList = document.getElementById('student-shop-item-list');
+    const studentCoinDisplay = document.getElementById('student-shop-coin-display');
+    const closeButton = document.getElementById('close-student-shop-modal-button');
+
+    if (!shopModal || !shopItemList || !studentCoinDisplay || !closeButton) {
+        console.error("Elemen UI Toko Siswa tidak ditemukan! Pastikan ID elemen di student.html sudah benar.");
+        showToast("Gagal membuka toko.", true);
+        return;
+    }
+
+    let buyHandler; // Dideklarasikan di sini agar bisa dihapus nanti
+
+    const closeShop = () => {
+        audioPlayer.closeModal();
+        shopModal.classList.add('opacity-0');
+        setTimeout(() => {
+            shopModal.classList.add('hidden');
+            if (buyHandler) {
+                shopItemList.removeEventListener('click', buyHandler); // Membersihkan event listener
+            }
+        }, 300);
+    };
+
+    buyHandler = async (e) => {
+        const button = e.target.closest('.buy-item-btn');
+        if (!button) return;
+
+        button.disabled = true;
+        button.textContent = 'Memproses...';
+
+        const itemId = button.dataset.id;
+
+        try {
+            const studentRef = ref(db, `students/${uid}`);
+            const itemRef = ref(db, `shopItems/${itemId}`);
+            
+            const studentSnap = await get(studentRef);
+            const itemSnap = await get(itemRef);
+
+            if (!studentSnap.exists() || !itemSnap.exists()) throw new Error("Data siswa atau item tidak ditemukan.");
+
+            const studentData = studentSnap.val();
+            const itemData = itemSnap.val();
+
+            if ((studentData.coin || 0) < itemData.price) throw new Error("Koin tidak cukup!");
+            if ((itemData.stock || 0) <= 0) throw new Error("Stok item habis!");
+
+            const inventory = studentData.inventory || [];
+            const inventorySize = 2 + ((studentData.level - 1) * 1);
+            let emptySlotIndex = -1;
+            for (let i = 0; i < inventorySize; i++) {
+                if (!inventory[i]) { // Mencari slot kosong (null atau undefined)
+                    emptySlotIndex = i;
+                    break;
+                }
+            }
+            if (emptySlotIndex === -1) throw new Error("Inventaris penuh!");
+
+            const newCoin = (studentData.coin || 0) - itemData.price;
+            const newStock = (itemData.stock || 0) - 1;
+            const newItemForInventory = { name: itemData.name, description: itemData.description, effect: itemData.effect, effectValue: itemData.effectValue, iconUrl: itemData.imageBase64 };
+
+            const updates = {};
+            updates[`/students/${uid}/coin`] = newCoin;
+            updates[`/shopItems/${itemId}/stock`] = newStock;
+            updates[`/students/${uid}/inventory/${emptySlotIndex}`] = newItemForInventory;
+            
+            await update(ref(db), updates);
+            
+            showToast(`Berhasil membeli ${itemData.name}!`);
+            audioPlayer.success();
+            closeShop();
+
+        } catch (error) {
+            showToast(error.message, true);
+            audioPlayer.error();
+            // Menutup modal saat error agar pengguna melihat data terbaru saat membuka kembali
+            closeShop();
+        }
+    };
+
+    shopItemList.addEventListener('click', buyHandler);
+    closeButton.onclick = closeShop;
+
+    audioPlayer.openModal();
+    shopModal.classList.remove('hidden');
+    setTimeout(() => shopModal.classList.remove('opacity-0'), 10);
+
+    shopItemList.innerHTML = '<p class="text-center text-gray-400 col-span-full">Memuat item...</p>';
+
+    const [studentSnap, itemsSnap] = await Promise.all([get(ref(db, `students/${uid}`)), get(ref(db, 'shopItems'))]);
+
+    if (!studentSnap.exists()) { showToast("Data siswa tidak ditemukan!", true); closeShop(); return; }
+
+    const studentData = studentSnap.val();
+    studentCoinDisplay.textContent = studentData.coin || 0;
+
+    shopItemList.innerHTML = '';
+    if (!itemsSnap.exists() || Object.keys(itemsSnap.val()).length === 0) { shopItemList.innerHTML = '<p class="text-center text-gray-400 col-span-full">Toko masih kosong.</p>'; return; }
+
+    const itemsData = itemsSnap.val();
+    Object.entries(itemsData).forEach(([itemId, item]) => {
+        const canAfford = (studentData.coin || 0) >= item.price;
+        const inStock = (item.stock || 0) > 0;
+        const isBuyable = canAfford && inStock;
+        const card = document.createElement('div');
+        card.className = 'bg-white p-3 rounded-lg shadow flex flex-col';
+        card.innerHTML = `<img src="${item.imageBase64 || 'https://placehold.co/300x200/e2e8f0/3d4852?text=Item'}" class="w-full h-24 object-cover rounded-md mb-2"><h4 class="text-md font-bold">${item.name}</h4><p class="text-xs text-gray-600 flex-grow mb-2">${item.description}</p><div class="flex justify-between items-center mt-2 text-sm"><span class="font-semibold text-yellow-600 flex items-center"><i data-lucide="coins" class="w-4 h-4 mr-1"></i>${item.price}</span><span class="text-gray-500 text-xs">Stok: ${item.stock}</span></div><div class="mt-auto pt-2"><button data-id="${itemId}" class="buy-item-btn w-full p-2 rounded-lg text-white font-bold text-sm ${isBuyable ? 'bg-green-500 hover:bg-green-600' : 'bg-gray-400 cursor-not-allowed'}" ${!isBuyable ? 'disabled' : ''}>${canAfford ? (inStock ? 'Beli' : 'Stok Habis') : 'Koin Kurang'}</button></div>`;
+        shopItemList.appendChild(card);
+    });
+    lucide.createIcons();
+}
 
 // =======================================================
 //                  LOGIKA DASBOR ADMIN
@@ -230,6 +352,10 @@ function setupAdminDashboard() {
     const questsPage = document.getElementById('quests-page');
     const addQuestButton = document.getElementById('add-quest-button');
     const questListContainer = document.getElementById('quest-list-container');
+
+    const shopPage = document.getElementById('shop-page');
+    const addShopItemButton = document.getElementById('add-shop-item-button');
+    const shopItemList = document.getElementById('shop-item-list');
 
     const attendancePage = document.getElementById('attendance-page');
     const adminNavLinks = document.getElementById('admin-nav-links');
@@ -317,10 +443,12 @@ function setupAdminDashboard() {
         const pageId = targetLink.getAttribute('href').substring(1);
         adminDashboardMain.classList.toggle('hidden', pageId !== 'dashboard');
         questsPage.classList.toggle('hidden', pageId !== 'quests');
+        shopPage.classList.toggle('hidden', pageId !== 'shop');
         attendancePage.classList.toggle('hidden', pageId !== 'attendance');
 
         if (pageId === 'quests') setupQuestsPage();
         if (pageId === 'attendance') setupAttendancePage();
+        if (pageId === 'shop') setupShopPage();
     });
 
     // --- FUNGSI DATA SISWA (ADMIN) ---
@@ -622,6 +750,138 @@ function setupAdminDashboard() {
     });
 
     // =======================================================
+    //                  LOGIKA HALAMAN SHOP
+    // =======================================================
+    const shopItemModal = document.getElementById('shop-item-modal');
+    const shopItemForm = document.getElementById('shop-item-form');
+    const closeShopItemModalButton = document.getElementById('close-shop-item-modal-button');
+    const cancelShopItemButton = document.getElementById('cancel-shop-item-button');
+    const itemImageInput = document.getElementById('item-image');
+    const itemImagePreview = document.getElementById('item-image-preview');
+
+    const openShopItemModal = (isEdit = false, itemData = null, itemId = null) => {
+        audioPlayer.openModal();
+        shopItemForm.reset();
+        document.getElementById('shop-item-id').value = itemId || '';
+        itemImagePreview.classList.add('hidden');
+        itemImagePreview.src = '';
+        document.getElementById('shop-item-modal-title').textContent = isEdit ? 'Edit Item' : 'Tambah Item Baru';
+
+        if (isEdit && itemData) {
+            document.getElementById('item-name').value = itemData.name;
+            document.getElementById('item-description').value = itemData.description;
+            document.getElementById('item-effect').value = itemData.effect;
+            document.getElementById('item-effect-value').value = itemData.effectValue || '';
+            document.getElementById('item-price').value = itemData.price;
+            document.getElementById('item-stock').value = itemData.stock;
+            if (itemData.imageBase64) {
+                itemImagePreview.src = itemData.imageBase64;
+                itemImagePreview.classList.remove('hidden');
+            }
+        }
+
+        shopItemModal.classList.remove('hidden');
+        setTimeout(() => shopItemModal.classList.remove('opacity-0'), 10);
+    };
+
+    const closeShopItemModal = () => {
+        audioPlayer.closeModal();
+        shopItemModal.classList.add('opacity-0');
+        setTimeout(() => shopItemModal.classList.add('hidden'), 300);
+    };
+
+    addShopItemButton.onclick = () => openShopItemModal();
+    closeShopItemModalButton.onclick = closeShopItemModal;
+    cancelShopItemButton.onclick = closeShopItemModal;
+
+    itemImageInput.onchange = async function() {
+        if (this.files && this.files[0]) {
+            const base64 = await processImageToBase64(this.files[0]);
+            const resized = await resizeImage(base64, 200, 200);
+            itemImagePreview.src = resized;
+            itemImagePreview.classList.remove('hidden');
+        }
+    };
+
+    shopItemForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const itemId = document.getElementById('shop-item-id').value;
+        
+        const itemData = {
+            name: document.getElementById('item-name').value,
+            description: document.getElementById('item-description').value,
+            effect: document.getElementById('item-effect').value,
+            effectValue: parseInt(document.getElementById('item-effect-value').value) || 0,
+            price: parseInt(document.getElementById('item-price').value),
+            stock: parseInt(document.getElementById('item-stock').value),
+            imageBase64: itemImagePreview.src.startsWith('data:image') ? itemImagePreview.src : null,
+        };
+
+        try {
+            if (itemId) {
+                await update(ref(db, `shopItems/${itemId}`), itemData);
+                showToast('Item berhasil diperbarui!');
+            } else {
+                await push(ref(db, 'shopItems'), itemData);
+                showToast('Item baru berhasil ditambahkan ke toko!');
+            }
+            closeShopItemModal();
+        } catch (error) {
+            showToast('Gagal menyimpan item!', true);
+            console.error(error);
+        }
+    });
+
+    function setupShopPage() {
+        const shopItemsRef = ref(db, 'shopItems');
+        onValue(shopItemsRef, (snapshot) => {
+            shopItemList.innerHTML = '';
+            if (!snapshot.exists()) {
+                shopItemList.innerHTML = '<p class="text-center text-gray-400 col-span-full">Toko masih kosong. Tambahkan item baru!</p>';
+                return;
+            }
+            const itemsData = snapshot.val();
+            Object.entries(itemsData).forEach(([itemId, item]) => {
+                const card = document.createElement('div');
+                card.className = 'bg-white p-4 rounded-lg shadow-lg flex flex-col';
+                card.innerHTML = `
+                    <img src="${item.imageBase64 || 'https://placehold.co/300x200/e2e8f0/3d4852?text=Item'}" class="w-full h-32 object-cover rounded-md mb-4">
+                    <h4 class="text-lg font-bold">${item.name}</h4>
+                    <p class="text-sm text-gray-600 flex-grow mb-2">${item.description}</p>
+                    <div class="flex justify-between items-center mt-2 text-sm">
+                        <span class="font-semibold text-yellow-600">${item.price} Koin</span>
+                        <span class="text-gray-500">Stok: ${item.stock}</span>
+                    </div>
+                    <div class="mt-auto pt-4 flex justify-end items-center gap-2">
+                        <button data-id="${itemId}" class="edit-item-btn p-2 bg-blue-100 text-blue-600 hover:bg-blue-200 rounded-lg" title="Edit Item"><i data-lucide="edit" class="w-4 h-4"></i></button>
+                        <button data-id="${itemId}" class="delete-item-btn p-2 bg-red-100 text-red-600 hover:bg-red-200 rounded-lg" title="Hapus Item"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    </div>
+                `;
+                shopItemList.appendChild(card);
+            });
+            lucide.createIcons();
+        });
+    }
+
+    shopItemList.addEventListener('click', async (e) => {
+        const button = e.target.closest('button');
+        if (!button) return;
+        const itemId = button.dataset.id;
+
+        if (button.classList.contains('delete-item-btn')) {
+            if (confirm('Yakin mau hapus item ini dari toko?')) {
+                await remove(ref(db, `shopItems/${itemId}`));
+                showToast('Item berhasil dihapus.');
+            }
+        } else if (button.classList.contains('edit-item-btn')) {
+            const itemSnap = await get(ref(db, `shopItems/${itemId}`));
+            if (itemSnap.exists()) {
+                openShopItemModal(true, itemSnap.val(), itemId);
+            }
+        }
+    });
+
+    // =======================================================
     //                  LOGIKA BATTLE BARU
     // =======================================================
     async function openMonsterSelectionModal(studentId) {
@@ -706,6 +966,40 @@ function setupAdminDashboard() {
         const closeButton = document.getElementById('close-party-battle-modal-button');
         const startButton = document.getElementById('start-party-battle-button');
         const monsterListDiv = document.getElementById('party-monster-selection-list');
+        const guildSelect = document.getElementById('guild-select');
+
+        // Reset UI state saat modal dibuka
+        startButton.disabled = true;
+        guildSelect.disabled = true;
+        guildSelect.innerHTML = '<option value="">Memuat daftar guild...</option>';
+
+        // --- LOGIKA BARU: Mengambil dan mengisi daftar guild dari database ---
+        try {
+            const studentsSnap = await get(ref(db, 'students'));
+            const guilds = new Set(); // Menggunakan Set agar nama guild tidak duplikat
+            if (studentsSnap.exists()) {
+                studentsSnap.forEach(childSnap => {
+                    const student = childSnap.val();
+                    if (student.guild && student.guild.trim() !== '') {
+                        guilds.add(student.guild);
+                    }
+                });
+            }
+
+            guildSelect.innerHTML = ''; // Hapus pesan "Memuat..."
+            if (guilds.size > 0) {
+                guilds.forEach(guild => {
+                    guildSelect.innerHTML += `<option value="${guild}">Guild ${guild}</option>`;
+                });
+                guildSelect.disabled = false; // Aktifkan dropdown
+                startButton.disabled = false; // Aktifkan tombol start
+            } else {
+                guildSelect.innerHTML = '<option value="">Tidak ada guild ditemukan</option>';
+            }
+        } catch (error) {
+            console.error("Gagal memuat data guild:", error);
+            guildSelect.innerHTML = '<option value="">Gagal memuat guild</option>';
+        }
 
         monsterListDiv.innerHTML = '<p class="text-center text-gray-400">Memuat monster...</p>';
         audioPlayer.openModal();
