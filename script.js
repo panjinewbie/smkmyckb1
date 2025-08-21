@@ -28,7 +28,8 @@ const audioPlayer = {
         try {
             // Mantra ini "memaksa" browser untuk mengaktifkan audio
             await Tone.start();
-            this.synth = new Tone.Synth().toDestination();
+            // MANTRA SAKTI: Gunakan PolySynth untuk menghindari konflik suara saat diputar bersamaan
+            this.synth = new Tone.PolySynth(Tone.Synth).toDestination();
             this.isReady = true;
             console.log("Konteks audio berhasil dimulai! Siap beraksi!");
         } catch (e) {
@@ -392,12 +393,19 @@ function openUseItemModal(uid, itemIndex, itemData) {
     descEl.textContent = itemData.description;
     
     let effectText = 'Efek tidak diketahui.';
+    // PENYESUAIAN DI SINI: Menggunakan format efek dari admin (HEAL_HP, GAIN_XP, dll)
     switch (itemData.effect) {
-        case 'heal_hp':
+        case 'HEAL_HP':
             effectText = `Memulihkan ${itemData.effectValue} HP.`;
             break;
-        case 'add_coin':
-            effectText = `Menambahkan ${itemData.effectValue} Koin.`;
+        case 'GAIN_XP':
+            effectText = `Menambahkan ${itemData.effectValue} XP.`;
+            break;
+        case 'BLOCK_ATTACK':
+            effectText = `Memblok 1x serangan musuh.`;
+            break;
+        case 'NONE':
+            effectText = 'Tidak ada efek khusus.';
             break;
     }
     effectEl.textContent = effectText;
@@ -432,21 +440,24 @@ async function handleUseItem(uid, itemIndex, itemData, closeModalCallback) {
         const updates = {};
         let successMessage = `Berhasil menggunakan ${itemData.name}!`;
 
-        // Terapkan efek item dan hapus dari inventaris dalam satu operasi
-        if (itemData.effect === 'heal_hp') {
+        // PENAMBAHAN LOGIKA EFEK DI SINI
+        if (itemData.effect === 'HEAL_HP') {
             const currentHp = Number(studentData.hp) || 0;
             const healAmount = Number(itemData.effectValue) || 0;
             updates[`/students/${uid}/hp`] = Math.min(100, currentHp + healAmount);
-        } else if (itemData.effect === 'add_coin') {
-            const currentCoin = Number(studentData.coin) || 0;
-            const addAmount = Number(itemData.effectValue) || 0;
-            updates[`/students/${uid}/coin`] = currentCoin + addAmount;
+        } else if (itemData.effect === 'GAIN_XP') {
+            const xpPerLevel = 1000;
+            const currentTotalXp = ((studentData.level || 1) - 1) * xpPerLevel + (studentData.xp || 0);
+            const newTotalXp = currentTotalXp + (Number(itemData.effectValue) || 0);
+            updates[`/students/${uid}/level`] = Math.floor(newTotalXp / xpPerLevel) + 1;
+            updates[`/students/${uid}/xp`] = newTotalXp % xpPerLevel;
         }
-        updates[`/students/${uid}/inventory/${itemIndex}`] = null;
+        // Efek lain seperti BLOCK_ATTACK atau NONE tidak mengubah data siswa secara langsung,
+        // jadi kita hanya perlu menghapus itemnya dari inventaris.
 
+        updates[`/students/${uid}/inventory/${itemIndex}`] = null; // Hapus item setelah digunakan
         await update(ref(db), updates);
         showToast(successMessage);
-        audioPlayer.success();
         closeModalCallback();
     } catch (error) {
         showToast(error.message, true);
@@ -817,7 +828,8 @@ function setupAdminDashboard() {
             }
             closeQuestModal();
         } catch (error) {
-            showToast('Gagal menyimpan monster!', true);
+            const message = questId ? 'Gagal memperbarui monster!' : 'Gagal membuat monster baru!';
+            showToast(message, true);
             console.error(error);
         }
     });
@@ -946,7 +958,8 @@ function setupAdminDashboard() {
             }
             closeShopItemModal();
         } catch (error) {
-            showToast('Gagal menyimpan item!', true);
+            const message = itemId ? 'Gagal memperbarui item!' : 'Gagal menambahkan item baru!';
+            showToast(message, true);
             console.error(error);
         }
     });
