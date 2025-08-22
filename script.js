@@ -246,7 +246,33 @@ function setupStudentDashboard(uid) {
                 openUseItemModal(uid, slot.dataset.index, slot.itemData);
             }
         };
+// --- MANTRA BARU: Tampilkan Status Efek Aktif ---
+        const activeStatusEffectsContainer = document.getElementById('active-status-effects');
+        activeStatusEffectsContainer.innerHTML = ''; // Kosongkan dulu
+        
+        if (studentData.statusEffects && Object.keys(studentData.statusEffects).length > 0) {
+            const effectMap = {
+                racun: { icon: 'skull', text: 'Racun', color: 'red' },
+                diam: { icon: 'mic-off', text: 'Diam', color: 'gray' },
+                knock: { icon: 'dizzy', text: 'Knock', color: 'yellow' }
+            };
 
+            for (const effectKey in studentData.statusEffects) {
+                if (studentData.statusEffects[effectKey] === true && effectMap[effectKey]) {
+                    const effectInfo = effectMap[effectKey];
+                    const effectDiv = document.createElement('div');
+                    effectDiv.className = `flex flex-col items-center text-center p-3 bg-${effectInfo.color}-50 rounded-lg border border-${effectInfo.color}-200`;
+                    effectDiv.innerHTML = `
+                        <i data-lucide="${effectInfo.icon}" class="w-6 h-6 text-${effectInfo.color}-500 mb-1"></i>
+                        <span class="text-xs text-gray-700 font-medium">${effectInfo.text}</span>
+                    `;
+                    activeStatusEffectsContainer.appendChild(effectDiv);
+                }
+            }
+        } else {
+            activeStatusEffectsContainer.innerHTML = '<p class="text-gray-500 text-sm">Tidak ada efek aktif saat ini.</p>';
+        }
+        // --- AKHIR MANTRA ---
         setTimeout(() => document.getElementById('student-main-content').classList.remove('opacity-0'), 100);
         lucide.createIcons();
     });
@@ -481,6 +507,7 @@ function setupAdminDashboard() {
     const shopPage = document.getElementById('shop-page');
     const addShopItemButton = document.getElementById('add-shop-item-button');
     const shopItemList = document.getElementById('shop-item-list');
+    const magicControlsPage = document.getElementById('magic-controls-page');
 
     const attendancePage = document.getElementById('attendance-page');
     const adminNavLinks = document.getElementById('admin-nav-links');
@@ -570,10 +597,12 @@ function setupAdminDashboard() {
         questsPage.classList.toggle('hidden', pageId !== 'quests');
         shopPage.classList.toggle('hidden', pageId !== 'shop');
         attendancePage.classList.toggle('hidden', pageId !== 'attendance');
+        magicControlsPage.classList.toggle('hidden', pageId !== 'magic');
 
         if (pageId === 'quests') setupQuestsPage();
         if (pageId === 'attendance') setupAttendancePage();
         if (pageId === 'shop') setupShopPage();
+        if (pageId === 'magic') setupMagicControlsPage();
     });
 
     // --- FUNGSI DATA SISWA (ADMIN) ---
@@ -861,7 +890,121 @@ function setupAdminDashboard() {
             lucide.createIcons();
         });
     }
+// =======================================================
+    //               LOGIKA HALAMAN MAGIC CONTROLS
+    // =======================================================
+    async function setupMagicControlsPage() {
+        const container = document.getElementById('magic-student-list-container');
+        const selectAllCheckbox = document.getElementById('select-all-students-magic');
+        if (!container) return;
 
+        container.innerHTML = '<p class="text-center text-gray-400">Memuat data siswa...</p>';
+
+        const studentsSnap = await get(ref(db, 'students'));
+        if (!studentsSnap.exists()) {
+            container.innerHTML = '<p class="text-center text-gray-400">Belum ada siswa.</p>';
+            return;
+        }
+
+        container.innerHTML = '';
+        const studentsData = studentsSnap.val();
+        Object.entries(studentsData).forEach(([uid, student]) => {
+            const studentLabel = document.createElement('label');
+            studentLabel.className = 'flex items-center p-2 rounded-md hover:bg-gray-100 cursor-pointer';
+            studentLabel.innerHTML = `
+                <input type="checkbox" data-uid="${uid}" class="magic-student-checkbox mr-3 rounded">
+                <img src="${student.fotoProfilBase64 || `https://placehold.co/40x40/e2e8f0/3d4852?text=${student.nama.charAt(0)}`}" class="w-10 h-10 rounded-full object-cover mr-3">
+                <span class="font-medium">${student.nama}</span>
+                <span class="text-sm text-gray-500 ml-auto">${student.kelas}</span>
+            `;
+            container.appendChild(studentLabel);
+        });
+        
+        selectAllCheckbox.onchange = (e) => {
+            container.querySelectorAll('.magic-student-checkbox').forEach(checkbox => {
+                checkbox.checked = e.target.checked;
+            });
+        };
+    }
+
+    async function applyMagicToSelectedStudents(action) {
+        const selectedCheckboxes = document.querySelectorAll('.magic-student-checkbox:checked');
+        if (selectedCheckboxes.length === 0) {
+            showToast('Pilih minimal satu siswa target!', true);
+            return;
+        }
+        
+        const uids = Array.from(selectedCheckboxes).map(cb => cb.dataset.uid);
+        const updates = {};
+        let successMessage = '';
+        
+        try {
+            // Ambil semua data siswa yang dipilih dalam satu panggilan
+            const studentPromises = uids.map(uid => get(ref(db, `students/${uid}`)));
+            const studentSnapshots = await Promise.all(studentPromises);
+            
+            for (const studentSnap of studentSnapshots) {
+                if (studentSnap.exists()) {
+                    const uid = studentSnap.key;
+                    const studentData = studentSnap.val();
+
+                    if (action.type === 'stat') {
+                        const stat = document.getElementById('stat-type').value;
+                        const value = parseInt(document.getElementById('stat-value').value);
+                        let currentValue = parseInt(studentData[stat] || 0);
+                        
+                        let newValue = action.operation === 'add' ? currentValue + value : currentValue - value;
+
+                        if (stat === 'hp') {
+                            newValue = Math.max(0, Math.min(100, newValue)); // Batasi HP 0-100
+                        } else {
+                            newValue = Math.max(0, newValue); // Stat lain tidak boleh minus
+                        }
+
+                        // Logika khusus untuk XP dan Level
+                        if (stat === 'xp') {
+                             const xpPerLevel = 1000;
+                             const currentTotalXp = ((studentData.level || 1) - 1) * xpPerLevel + (studentData.xp || 0);
+                             const newTotalXp = action.operation === 'add' ? currentTotalXp + value : Math.max(0, currentTotalXp - value);
+                             
+                             updates[`/students/${uid}/level`] = Math.floor(newTotalXp / xpPerLevel) + 1;
+                             updates[`/students/${uid}/xp`] = newTotalXp % xpPerLevel;
+                        } else {
+                            updates[`/students/${uid}/${stat}`] = newValue;
+                        }
+                        successMessage = `${action.operation === 'add' ? 'Menambahkan' : 'Mengurangi'} ${value} ${stat.toUpperCase()} untuk ${uids.length} siswa.`;
+                        
+                    } else if (action.type === 'effect') {
+                        const effect = document.getElementById('effect-type').value;
+                        
+                        if (action.operation === 'add') {
+                            updates[`/students/${uid}/statusEffects/${effect}`] = true;
+                             successMessage = `Memberikan efek ${effect} ke ${uids.length} siswa.`;
+                        } else {
+                            updates[`/students/${uid}/statusEffects/${effect}`] = null; // Hapus efek
+                            successMessage = `Menghapus efek ${effect} dari ${uids.length} siswa.`;
+                        }
+                    }
+                }
+            }
+
+            if (Object.keys(updates).length > 0) {
+                await update(ref(db), updates);
+                showToast(successMessage);
+                audioPlayer.success();
+            }
+
+        } catch (error) {
+            showToast('Gagal merapal sihir!', true);
+            console.error(error);
+        }
+    }
+    
+    // Event Listeners untuk Tombol Sihir
+    document.getElementById('apply-stat-addition')?.addEventListener('click', () => applyMagicToSelectedStudents({type: 'stat', operation: 'add'}));
+    document.getElementById('apply-stat-subtraction')?.addEventListener('click', () => applyMagicToSelectedStudents({type: 'stat', operation: 'subtract'}));
+    document.getElementById('apply-effect')?.addEventListener('click', () => applyMagicToSelectedStudents({type: 'effect', operation: 'add'}));
+    document.getElementById('remove-effect')?.addEventListener('click', () => applyMagicToSelectedStudents({type: 'effect', operation: 'remove'}));
     questListContainer.addEventListener('click', async (e) => {
         const button = e.target.closest('button');
         if (!button) return;
