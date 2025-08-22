@@ -18,7 +18,7 @@
     <div id="student-dashboard-page" class="min-h-screen">
          <header class="bg-white shadow-md sticky top-0 z-20">
             <div class="container mx-auto px-4"><div class="h-20 flex items-center justify-between"><h1 class="text-2xl font-bold text-blue-600 font-game tracking-tighter">DREAMY</h1><div class="flex items-center space-x-2 md:space-x-4"><button class="p-2 rounded-full hover:bg-gray-100"><i data-lucide="bell" class="w-5 h-5 text-gray-600"></i></button><button class="p-2 rounded-full hover:bg-gray-100"><i data-lucide="help-circle" class="w-5 h-5 text-gray-600"></i></button><button id="student-logout-button" class="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg"><span class="hidden md:inline">Logout</span><i data-lucide="log-out" class="w-5 h-5"></i></button></div></div></div>
-            <nav class="border-t border-gray-200"><div class="container mx-auto px-4"><div class="flex items-center space-x-4 md:space-x-6 overflow-x-auto"><a href="#" class="nav-link active flex items-center px-2 py-4 text-sm font-semibold border-b-2"><i data-lucide="user-2" class="w-4 h-4 mr-2"></i>Profil</a><a href="#" class="nav-link text-gray-500 hover:text-blue-600 flex items-center px-2 py-4 text-sm font-semibold border-b-2 border-transparent"><i data-lucide="swords" class="w-4 h-4 mr-2"></i>Quests</a><a href="#" id="open-shop-button" class="nav-link text-gray-500 hover:text-blue-600 flex items-center px-2 py-4 text-sm font-semibold border-b-2 border-transparent"><i data-lucide="shopping-cart" class="w-4 h-4 mr-2"></i>Shop</a><a href="#" class="nav-link text-gray-500 hover:text-blue-600 flex items-center px-2 py-4 text-sm font-semibold border-b-2 border-transparent"><i data-lucide="users" class="w-4 h-4 mr-2"></i>Guild</a></div></div></nav>
+            <nav class="border-t border-gray-200"><div class="container mx-auto px-4"><div class="flex items-center space-x-4 md:space-x-6 overflow-x-auto"><a href="#" class="nav-link active flex items-center px-2 py-4 text-sm font-semibold border-b-2"><i data-lucide="user-2" class="w-4 h-4 mr-2"></i>Profil</a><a href="#bounty-board" id="bounty-board-nav-link" class="nav-link text-gray-500 hover:text-blue-600 flex items-center px-2 py-4 text-sm font-semibold border-b-2 border-transparent"><i data-lucide="clipboard-list" class="w-4 h-4 mr-2"></i>Bounty Board</a><a href="#" id="open-shop-button" class="nav-link text-gray-500 hover:text-blue-600 flex items-center px-2 py-4 text-sm font-semibold border-b-2 border-transparent"><i data-lucide="shopping-cart" class="w-4 h-4 mr-2"></i>Shop</a><a href="#" class="nav-link text-gray-500 hover:text-blue-600 flex items-center px-2 py-4 text-sm font-semibold border-b-2 border-transparent"><i data-lucide="users" class="w-4 h-4 mr-2"></i>Guild</a></div></div></nav>
         </header>
         <main id="student-main-content" class="container mx-auto p-4 md:p-6 opacity-0 transition-opacity duration-500">
             <div class="flex flex-col md:flex-row items-center md:items-start gap-6 mb-6">
@@ -63,6 +63,22 @@
                     </div>
             </div>
         </main>
+        <div id="bounty-board-page" class="container mx-auto p-4 md:p-6 hidden">
+    <div class="bg-white rounded-lg shadow-md">
+        <div class="p-6 border-b border-gray-200 flex flex-wrap gap-4 justify-between items-center">
+            <div>
+                <h2 class="text-xl font-semibold">Bounty Board</h2>
+                <p class="text-sm text-gray-500 mt-1">Lihat, ambil, atau buat misimu sendiri!</p>
+            </div>
+            <button id="create-bounty-button" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg flex items-center">
+                <i data-lucide="plus-circle" class="w-4 h-4 mr-2"></i>Buat Misi Baru
+            </button>
+        </div>
+        <div id="bounty-list-container" class="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <p class="text-center text-gray-400 col-span-full">Memuat daftar misi...</p>
+        </div>
+    </div>
+</div>
     </div>
 
     <div id="toast-notification" class="fixed bottom-5 right-5 bg-green-500 text-white py-2 px-4 rounded-lg shadow-lg hidden transition-opacity duration-300"></div>
@@ -106,5 +122,65 @@
     </div>
 
     <script type="module" src="script.js"></script>
+    <div id="create-bounty-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-300 z-50">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+        <div class="p-6 border-b flex justify-between items-center">
+            <h3 class="text-xl font-semibold">Buat Misi Bounty Baru</h3>
+            <button id="close-create-bounty-modal-button" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+        </div>
+        <form id="create-bounty-form" class="p-6 space-y-4 overflow-y-auto">
+            <div>
+                <label for="bounty-title" class="block text-sm font-medium text-gray-700">Judul Misi</label>
+                <input type="text" id="bounty-title" required class="mt-1 w-full p-2 border border-gray-300 rounded-md">
+            </div>
+            <div>
+                <label for="bounty-description" class="block text-sm font-medium text-gray-700">Deskripsi Singkat</label>
+                <textarea id="bounty-description" rows="3" required class="mt-1 w-full p-2 border border-gray-300 rounded-md"></textarea>
+            </div>
+             <div>
+                <label for="bounty-image" class="block text-sm font-medium text-gray-700">Gambar Misi</label>
+                <input type="file" id="bounty-image" accept="image/*" class="mt-1 w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                <img id="bounty-image-preview" class="mt-2 h-24 w-24 object-cover rounded-md hidden border">
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label for="bounty-taker-limit" class="block text-sm font-medium text-gray-700">Batas Pengambil Misi</label>
+                    <input type="number" id="bounty-taker-limit" required class="mt-1 w-full p-2 border border-gray-300 rounded-md" value="1" min="1">
+                </div>
+                <div>
+                    <label for="bounty-reward-coin" class="block text-sm font-medium text-gray-700">Total Hadiah (Koin)</label>
+                    <input type="number" id="bounty-reward-coin" required class="mt-1 w-full p-2 border border-gray-300 rounded-md" value="10" min="1">
+                </div>
+            </div>
+            <div class="pt-4 flex justify-end space-x-2">
+                <button type="button" id="cancel-create-bounty-button" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg">Batal</button>
+                <button type="submit" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg">Publikasikan Misi</button>
+            </div>
+        </form>
+    </div>
+</div>
+<div id="complete-bounty-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-300 z-50">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col">
+        <div class="p-6 border-b flex justify-between items-center">
+            <h3 class="text-xl font-semibold">Selesaikan Misi & Beri Hadiah</h3>
+            <button id="close-complete-bounty-modal-button" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+        </div>
+        <div class="p-6 space-y-4 overflow-y-auto">
+            <h4 id="complete-bounty-title" class="text-lg font-bold text-center">Judul Misi</h4>
+            <p class="text-sm text-gray-600">Misi ini akan dihapus setelah selesai. Hadiah koin akan otomatis dibagikan kepada semua siswa yang telah mengambil misi ini.</p>
+            <div>
+                <h5 class="font-semibold mb-2">Siswa Pengambil Misi:</h5>
+                <div id="bounty-takers-list" class="space-y-2 max-h-48 overflow-y-auto border rounded-md p-2 bg-gray-50">
+                    <p class="text-gray-400">Memuat daftar...</p>
+                </div>
+            </div>
+        </div>
+        <div class="p-6 bg-gray-50 rounded-b-lg mt-auto">
+            <button id="confirm-complete-bounty-button" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-lg flex items-center justify-center">
+                <i data-lucide="check-circle" class="w-5 h-5 mr-2"></i>Konfirmasi & Selesaikan Misi
+            </button>
+        </div>
+    </div>
+</div>
 </body>
 </html>
