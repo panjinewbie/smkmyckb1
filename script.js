@@ -191,6 +191,41 @@ if(loginForm) {
 // =======================================================
 //                  LOGIKA DASBOR SISWA
 // =======================================================
+// Event listener untuk tombol "Ambil Misi" (event delegation)
+document.getElementById('bounty-list-container').addEventListener('click', async (e) => {
+    const takeButton = e.target.closest('.take-bounty-btn');
+    const completeButton = e.target.closest('.complete-bounty-btn');
+
+    if (takeButton) {
+        takeButton.disabled = true;
+        takeButton.textContent = 'Memproses...';
+        const bountyId = takeButton.dataset.id;
+        const uid = auth.currentUser.uid;
+
+        try {
+            // ... (kode yang sudah ada untuk mengambil misi, tidak perlu diubah)
+             const bountyRef = ref(db, `bounties/${bountyId}`);
+            const bountySnap = await get(bountyRef);
+            if(!bountySnap.exists()) throw new Error("Misi tidak ditemukan!");
+
+            const bountyData = bountySnap.val();
+            const takersCount = bountyData.takers ? Object.keys(bountyData.takers).length : 0;
+            if(takersCount >= bountyData.takerLimit) throw new Error("Slot misi sudah penuh!");
+            if(bountyData.takers && bountyData.takers[uid]) throw new Error("Kamu sudah mengambil misi ini!");
+
+            await update(ref(db, `/bounties/${bountyId}/takers`), { [uid]: true });
+            showToast('Berhasil mengambil misi!');
+        } catch(error) {
+            showToast(error.message, true);
+            takeButton.disabled = false;
+            takeButton.textContent = 'Ambil Misi';
+        }
+    } else if (completeButton) {
+        // Ini adalah logika baru untuk tombol selesaikan misi
+        const bountyId = completeButton.dataset.id;
+        openCompleteBountyModal(bountyId);
+    }
+});
 function setupStudentDashboard(uid) {
     document.getElementById('student-logout-button').onclick = () => signOut(auth);
     
@@ -203,7 +238,43 @@ function setupStudentDashboard(uid) {
             openStudentShop(uid);
         });
     }
+// Di dalam fungsi setupStudentDashboard(uid)
 
+// ... (kode untuk shopNavButton ada di atasnya)
+
+const bountyBoardNavLink = document.getElementById('bounty-board-nav-link');
+const profilePage = document.getElementById('student-main-content');
+const bountyBoardPage = document.getElementById('bounty-board-page');
+
+if (bountyBoardNavLink) {
+    bountyBoardNavLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        // Sembunyikan halaman lain dan tampilkan bounty board
+        profilePage.classList.add('hidden');
+        bountyBoardPage.classList.remove('hidden');
+
+        // Atur style link aktif
+        document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+        bountyBoardNavLink.classList.add('active');
+
+        // Panggil fungsi untuk memuat data bounty board
+        setupBountyBoardPage(uid);
+    });
+}
+
+// Tambahkan juga event listener untuk link profil agar bisa kembali
+const profileNavLink = document.querySelector('a[href="#"]'); // Asumsi link profil href="#"
+if(profileNavLink && profileNavLink.textContent === 'Profil'){
+    profileNavLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        bountyBoardPage.classList.add('hidden');
+        profilePage.classList.remove('hidden');
+        document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+        profileNavLink.classList.add('active');
+    });
+}
+
+// ... (sisa kode onValue(studentRef, ...) ada di bawahnya)
     const studentRef = ref(db, `students/${uid}`);
     onValue(studentRef, (snapshot) => {
         if(!snapshot.exists()) return;
@@ -493,7 +564,251 @@ async function handleUseItem(uid, itemIndex, itemData, closeModalCallback) {
         useButton.textContent = 'Gunakan Item';
     }
 }
+// =======================================================
+//                  LOGIKA BOUNTY BOARD (SISWA)
+// =======================================================
+function setupBountyBoardPage(uid) {
+    const bountyListContainer = document.getElementById('bounty-list-container');
+    const createBountyButton = document.getElementById('create-bounty-button');
+    const createBountyModal = document.getElementById('create-bounty-modal');
+    const createBountyForm = document.getElementById('create-bounty-form');
+    const closeCreateBountyModalButton = document.getElementById('close-create-bounty-modal-button');
+    const cancelCreateBountyButton = document.getElementById('cancel-create-bounty-button');
+    const bountyImageInput = document.getElementById('bounty-image');
+    const bountyImagePreview = document.getElementById('bounty-image-preview');
 
+    // Fungsi untuk membuka/menutup modal
+    const openCreateModal = () => {
+        audioPlayer.openModal();
+        createBountyForm.reset();
+        bountyImagePreview.classList.add('hidden');
+        createBountyModal.classList.remove('hidden');
+        setTimeout(() => createBountyModal.classList.remove('opacity-0'), 10);
+    };
+    const closeCreateModal = () => {
+        audioPlayer.closeModal();
+        createBountyModal.classList.add('opacity-0');
+        setTimeout(() => createBountyModal.classList.add('hidden'), 300);
+    };
+
+    // Event listener untuk tombol-tombol modal
+    createBountyButton.onclick = openCreateModal;
+    closeCreateBountyModalButton.onclick = closeCreateModal;
+    cancelCreateBountyButton.onclick = closeCreateModal;
+
+    bountyImageInput.onchange = async function() {
+        if (this.files && this.files[0]) {
+            const base64 = await processImageToBase64(this.files[0]);
+            const resized = await resizeImage(base64, 300, 200);
+            bountyImagePreview.src = resized;
+            bountyImagePreview.classList.remove('hidden');
+        }
+    };
+
+    // Logika saat form submit
+    createBountyForm.onsubmit = async (e) => {
+        e.preventDefault();
+        const submitButton = createBountyForm.querySelector('button[type="submit"]');
+        submitButton.disabled = true;
+        submitButton.textContent = 'Memproses...';
+
+        const title = document.getElementById('bounty-title').value;
+        const description = document.getElementById('bounty-description').value;
+        const takerLimit = parseInt(document.getElementById('bounty-taker-limit').value);
+        const rewardCoin = parseInt(document.getElementById('bounty-reward-coin').value);
+
+        try {
+            const studentRef = ref(db, `students/${uid}`);
+            const studentSnap = await get(studentRef);
+            if (!studentSnap.exists()) throw new Error("Data kamu tidak ditemukan!");
+
+            const studentData = studentSnap.val();
+            if ((studentData.coin || 0) < rewardCoin) throw new Error("Koin kamu tidak cukup untuk dijadikan hadiah!");
+
+            const bountyData = {
+                creatorId: uid,
+                creatorName: studentData.nama,
+                creatorAvatar: studentData.fotoProfilBase64 || null,
+                title,
+                description,
+                takerLimit,
+                rewardCoin,
+                rewardPerTaker: Math.floor(rewardCoin / takerLimit),
+                status: 'open',
+                createdAt: new Date().toISOString(),
+                takers: {},
+                imageUrl: bountyImagePreview.src.startsWith('data:image') ? bountyImagePreview.src : null,
+            };
+
+            const newBountyRef = push(ref(db, 'bounties'));
+            const newCoin = studentData.coin - rewardCoin;
+
+            const updates = {};
+            updates[`/bounties/${newBountyRef.key}`] = bountyData;
+            updates[`/students/${uid}/coin`] = newCoin;
+
+            await update(ref(db), updates);
+            showToast('Misi bounty berhasil dipublikasikan!');
+            closeCreateModal();
+
+        } catch (error) {
+            showToast(error.message, true);
+        } finally {
+            submitButton.disabled = false;
+            submitButton.textContent = 'Publikasikan Misi';
+        }
+    };
+
+    // Memuat dan menampilkan semua bounty
+    const bountiesRef = ref(db, 'bounties');
+    onValue(bountiesRef, (snapshot) => {
+        bountyListContainer.innerHTML = '';
+        if (!snapshot.exists()) {
+            bountyListContainer.innerHTML = '<p class="text-center text-gray-400 col-span-full">Belum ada misi di papan bounty.</p>';
+            return;
+        }
+
+        const bountiesData = snapshot.val();
+        Object.entries(bountiesData).forEach(([bountyId, bounty]) => {
+            const takersCount = bounty.takers ? Object.keys(bounty.takers).length : 0;
+            const isTakenByCurrentUser = bounty.takers && bounty.takers[uid];
+            const isFull = takersCount >= bounty.takerLimit;
+            const isCreator = bounty.creatorId === uid;
+
+            let buttonHtml = '';
+            if(isCreator) {
+                 buttonHtml = `<button data-id="${bountyId}" class="complete-bounty-btn w-full p-2 rounded-lg text-white font-bold text-sm bg-purple-600 hover:bg-purple-700">Selesaikan Misi</button>`;
+            } else if(isTakenByCurrentUser) {
+                buttonHtml = `<button disabled class="w-full p-2 rounded-lg text-white font-bold text-sm bg-blue-400 cursor-not-allowed">Sudah Diambil</button>`;
+            } else if (isFull) {
+                buttonHtml = `<button disabled class="w-full p-2 rounded-lg text-white font-bold text-sm bg-red-400 cursor-not-allowed">Penuh</button>`;
+            } else {
+                buttonHtml = `<button data-id="${bountyId}" class="take-bounty-btn w-full p-2 rounded-lg text-white font-bold text-sm bg-green-500 hover:bg-green-600">Ambil Misi</button>`;
+            }
+
+            const card = document.createElement('div');
+            card.className = 'bg-white p-4 rounded-lg shadow-lg flex flex-col';
+            card.innerHTML = `
+                <img src="${bounty.imageUrl || 'https://placehold.co/300x200/e2e8f0/3d4852?text=Misi'}" class="w-full h-32 object-cover rounded-md mb-4">
+                <h4 class="text-lg font-bold">${bounty.title}</h4>
+                <p class="text-xs text-gray-500 mb-2">Oleh: ${bounty.creatorName}</p>
+                <p class="text-sm text-gray-600 flex-grow mb-2">${bounty.description}</p>
+                <div class="flex justify-between items-center mt-2 text-sm">
+                    <span class="font-semibold text-yellow-600 flex items-center"><i data-lucide="coins" class="w-4 h-4 mr-1"></i>${bounty.rewardPerTaker} / orang</span>
+                    <span class="text-gray-500 text-xs">Slot: ${takersCount} / ${bounty.takerLimit}</span>
+                </div>
+                <div class="mt-auto pt-4">${buttonHtml}</div>
+            `;
+            bountyListContainer.appendChild(card);
+        });
+        lucide.createIcons();
+    });
+}
+
+
+// Letakkan ini sebelum bagian LOGIKA DASBOR ADMIN
+
+// --- LOGIKA UNTUK MENYELESAIKAN BOUNTY ---
+
+async function openCompleteBountyModal(bountyId) {
+    const modal = document.getElementById('complete-bounty-modal');
+    const titleEl = document.getElementById('complete-bounty-title');
+    const takersListEl = document.getElementById('bounty-takers-list');
+    const confirmButton = document.getElementById('confirm-complete-bounty-button');
+    const closeButton = document.getElementById('close-complete-bounty-modal-button');
+
+    const closeModal = () => {
+        audioPlayer.closeModal();
+        modal.classList.add('opacity-0');
+        setTimeout(() => modal.classList.add('hidden'), 300);
+        confirmButton.onclick = null; // Penting untuk hapus listener!
+    };
+
+    closeButton.onclick = closeModal;
+
+    // Ambil data bounty
+    const bountySnap = await get(ref(db, `bounties/${bountyId}`));
+    if (!bountySnap.exists()) {
+        showToast("Misi tidak ditemukan!", true);
+        return;
+    }
+    const bountyData = bountySnap.val();
+    titleEl.textContent = bountyData.title;
+
+    // Ambil data para pengambil misi
+    takersListEl.innerHTML = '';
+    if (bountyData.takers && Object.keys(bountyData.takers).length > 0) {
+        const takerIds = Object.keys(bountyData.takers);
+        const takerPromises = takerIds.map(uid => get(ref(db, `students/${uid}`)));
+        const takerSnaps = await Promise.all(takerPromises);
+
+        takerSnaps.forEach(snap => {
+            if (snap.exists()) {
+                takersListEl.innerHTML += `<p class="text-sm p-1">${snap.val().nama}</p>`;
+            }
+        });
+    } else {
+        takersListEl.innerHTML = '<p class="text-sm text-gray-500 p-1">Belum ada yang mengambil misi ini.</p>';
+    }
+
+    // Set event untuk tombol konfirmasi
+    confirmButton.onclick = () => handleCompleteBounty(bountyId, closeModal);
+
+    // Tampilkan modal
+    audioPlayer.openModal();
+    modal.classList.remove('hidden');
+    setTimeout(() => modal.classList.remove('opacity-0'), 10);
+}
+
+async function handleCompleteBounty(bountyId, closeModalCallback) {
+    const confirmButton = document.getElementById('confirm-complete-bounty-button');
+    confirmButton.disabled = true;
+    confirmButton.textContent = 'Memproses...';
+
+    try {
+        const bountyRef = ref(db, `bounties/${bountyId}`);
+        const bountySnap = await get(bountyRef);
+        if (!bountySnap.exists()) throw new Error("Misi sudah tidak ada!");
+
+        const bountyData = bountySnap.val();
+        const updates = {};
+
+        // Siapkan update untuk menghapus bounty
+        updates[`/bounties/${bountyId}`] = null;
+
+        // Jika ada yang mengambil misi, bagikan hadiahnya
+        if (bountyData.takers && Object.keys(bountyData.takers).length > 0) {
+            const takerIds = Object.keys(bountyData.takers);
+            const rewardPerTaker = bountyData.rewardPerTaker || 0;
+
+            // Ambil data semua taker dalam satu waktu
+            const studentPromises = takerIds.map(uid => get(ref(db, `students/${uid}`)));
+            const studentSnaps = await Promise.all(studentPromises);
+
+            studentSnaps.forEach(studentSnap => {
+                if (studentSnap.exists()) {
+                    const uid = studentSnap.key;
+                    const studentData = studentSnap.val();
+                    const newCoin = (studentData.coin || 0) + rewardPerTaker;
+                    updates[`/students/${uid}/coin`] = newCoin;
+                }
+            });
+        }
+
+        // Jalankan semua update ke database
+        await update(ref(db), updates);
+
+        showToast('Misi berhasil diselesaikan dan hadiah telah dibagikan!');
+        audioPlayer.success();
+        closeModalCallback();
+
+    } catch (error) {
+        showToast(error.message, true);
+    } finally {
+        confirmButton.disabled = false;
+        confirmButton.textContent = 'Konfirmasi & Selesaikan Misi';
+    }
+}
 // =======================================================
 //                  LOGIKA DASBOR ADMIN
 // =======================================================
