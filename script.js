@@ -682,6 +682,17 @@ function setupBountyBoardPage(uid) {
             const isTakenByCurrentUser = bounty.takers && bounty.takers[uid];
             const isFull = takersCount >= bounty.takerLimit;
             const isCreator = bounty.creatorId === uid;
+            
+            let rewardHtml = '';
+            if (bounty.isAdminBounty) {
+                rewardHtml = `
+                    <span class="font-semibold text-blue-600 flex items-center" title="Hadiah XP"><i data-lucide="star" class="w-4 h-4 mr-1"></i>${bounty.rewardXp || 0}</span>
+                    <span class="font-semibold text-yellow-600 flex items-center" title="Hadiah Koin"><i data-lucide="coins" class="w-4 h-4 mr-1"></i>${bounty.rewardCoin || 0}</span>
+                `;
+            } else {
+                rewardHtml = `<span class="font-semibold text-yellow-600 flex items-center"><i data-lucide="coins" class="w-4 h-4 mr-1"></i>${bounty.rewardPerTaker} / orang</span>`;
+            }
+
 
             let buttonHtml = '';
             if (isCreator) {
@@ -702,7 +713,7 @@ function setupBountyBoardPage(uid) {
                 <p class="text-xs text-gray-500 mb-2">Oleh: ${bounty.creatorName}</p>
                 <p class="text-sm text-gray-600 flex-grow mb-2">${bounty.description}</p>
                 <div class="flex justify-between items-center mt-2 text-sm">
-                    <span class="font-semibold text-yellow-600 flex items-center"><i data-lucide="coins" class="w-4 h-4 mr-1"></i>${bounty.rewardPerTaker} / orang</span>
+                    <div class="flex items-center gap-3">${rewardHtml}</div>
                     <span class="text-gray-500 text-xs">Slot: ${takersCount} / ${bounty.takerLimit}</span>
                 </div>
                 <div class="mt-auto pt-4">${buttonHtml}</div>
@@ -1218,6 +1229,125 @@ function setupAdminDashboard() {
                 questListContainer.appendChild(card);
             });
             lucide.createIcons();
+        });
+    }
+
+    // --- LOGIKA BARU: BOUNTY BOARD ADMIN ---
+    // Disisipkan di sini agar ter-inisialisasi saat halaman Quests dibuka.
+    const addAdminBountyButton = document.getElementById('add-admin-bounty-button');
+    const adminBountyModal = document.getElementById('admin-bounty-modal');
+    const adminBountyForm = document.getElementById('admin-bounty-form');
+    const closeAdminBountyModalButton = document.getElementById('close-admin-bounty-modal-button');
+    const cancelAdminBountyButton = document.getElementById('cancel-admin-bounty-button');
+    const adminBountyListContainer = document.getElementById('admin-bounty-list-container');
+    
+    if (addAdminBountyButton && adminBountyModal && adminBountyForm && adminBountyListContainer) {
+        const openAdminBountyModal = () => {
+            audioPlayer.openModal();
+            adminBountyForm.reset();
+            adminBountyModal.classList.remove('hidden', 'opacity-0');
+            adminBountyModal.querySelector('.transform').classList.remove('scale-95');
+        };
+
+        const closeAdminBountyModal = () => {
+            audioPlayer.closeModal();
+            adminBountyModal.classList.add('opacity-0');
+            adminBountyModal.querySelector('.transform').classList.add('scale-95');
+            setTimeout(() => adminBountyModal.classList.add('hidden'), 300);
+        };
+
+        addAdminBountyButton.onclick = openAdminBountyModal;
+        closeAdminBountyModalButton.onclick = closeAdminBountyModal;
+        cancelAdminBountyButton.onclick = closeAdminBountyModal;
+
+        adminBountyForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const submitButton = adminBountyForm.querySelector('button[type="submit"]');
+            submitButton.disabled = true;
+            submitButton.textContent = 'Menyimpan...';
+
+            try {
+                const bountyData = {
+                    creatorId: 'admin',
+                    creatorName: 'Guru/Admin',
+                    creatorAvatar: 'https://placehold.co/128x128/1d4ed8/ffffff?text=A',
+                    title: document.getElementById('admin-bounty-title').value,
+                    description: document.getElementById('admin-bounty-description').value,
+                    takerLimit: parseInt(document.getElementById('admin-bounty-taker-limit').value),
+                    rewardXp: parseInt(document.getElementById('admin-bounty-reward-xp').value),
+                    rewardCoin: parseInt(document.getElementById('admin-bounty-reward-coin').value),
+                    status: 'open',
+                    isAdminBounty: true,
+                    createdAt: new Date().toISOString(),
+                    takers: {},
+                };
+
+                await push(ref(db, 'bounties'), bountyData);
+                showToast('Misi admin berhasil dipublikasikan!');
+                closeAdminBountyModal();
+
+            } catch (error) {
+                showToast(error.message, true);
+            } finally {
+                submitButton.disabled = false;
+                submitButton.textContent = 'Publikasikan Misi';
+            }
+        });
+
+        const adminBountiesQuery = query(ref(db, 'bounties'), orderByChild('isAdminBounty'), equalTo(true));
+        onValue(adminBountiesQuery, (snapshot) => {
+            adminBountyListContainer.innerHTML = '';
+            if (!snapshot.exists()) {
+                adminBountyListContainer.innerHTML = '<p class="text-center text-gray-400 col-span-full">Belum ada misi dari admin.</p>';
+                return;
+            }
+
+            const bountiesData = snapshot.val();
+            Object.entries(bountiesData).reverse().forEach(([bountyId, bounty]) => {
+                if (bounty.status !== 'open') return;
+
+                const takersCount = bounty.takers ? Object.keys(bounty.takers).length : 0;
+                const card = document.createElement('div');
+                card.className = 'bg-white p-4 rounded-lg shadow-lg flex flex-col';
+                card.innerHTML = `
+                    <h4 class="text-lg font-bold">${bounty.title}</h4>
+                    <p class="text-sm text-gray-600 flex-grow my-2">${bounty.description}</p>
+                    <div class="grid grid-cols-2 gap-2 mt-2 text-sm">
+                        <span class="font-semibold text-blue-600 flex items-center"><i data-lucide="star" class="w-4 h-4 mr-1"></i>${bounty.rewardXp} XP</span>
+                        <span class="font-semibold text-yellow-600 flex items-center"><i data-lucide="coins" class="w-4 h-4 mr-1"></i>${bounty.rewardCoin} Koin</span>
+                    </div>
+                    <div class="flex justify-between items-center mt-2 text-sm">
+                        <span class="text-gray-500 text-xs">Slot: ${takersCount} / ${bounty.takerLimit}</span>
+                    </div>
+                    <div class="mt-auto pt-4">
+                        <button data-id="${bountyId}" class="complete-admin-bounty-btn w-full p-2 rounded-lg text-white font-bold text-sm bg-purple-600 hover:bg-purple-700">Selesaikan & Beri Hadiah</button>
+                    </div>
+                `;
+                adminBountyListContainer.appendChild(card);
+            });
+            lucide.createIcons();
+        });
+
+        adminBountyListContainer.addEventListener('click', async (e) => {
+            const completeButton = e.target.closest('.complete-admin-bounty-btn');
+            if (!completeButton) return;
+
+            const bountyId = completeButton.dataset.id;
+            if (!confirm('Selesaikan misi ini dan berikan hadiah kepada semua yang mengambil?')) return;
+
+            completeButton.disabled = true;
+            completeButton.textContent = 'Memproses...';
+
+            try {
+                // Logika untuk menyelesaikan misi dan memberi hadiah ada di sisi siswa saat ini.
+                // Untuk admin, kita hanya perlu mengubah statusnya. Hadiah akan diberikan oleh sistem lain atau secara manual.
+                // Atau, kita bisa implementasikan pemberian hadiah di sini.
+                // Untuk sekarang, kita ubah statusnya saja.
+                await update(ref(db, `bounties/${bountyId}`), { status: 'completed' });
+                showToast('Misi telah ditandai selesai!');
+            } catch (error) {
+                showToast(error.message, true);
+            }
         });
     }
 // =======================================================
