@@ -1240,13 +1240,28 @@ function setupAdminDashboard() {
     const closeAdminBountyModalButton = document.getElementById('close-admin-bounty-modal-button');
     const cancelAdminBountyButton = document.getElementById('cancel-admin-bounty-button');
     const adminBountyListContainer = document.getElementById('admin-bounty-list-container');
-    
-    if (addAdminBountyButton && adminBountyModal && adminBountyForm && adminBountyListContainer) {
+    const adminBountyImageInput = document.getElementById('admin-bounty-image');
+const adminBountyImagePreview = document.getElementById('admin-bounty-image-preview');
+   // --- MANTRA BARU UNTUK TAMPILIN GAMBAR MISI ADMIN ---
+if (adminBountyImageInput && adminBountyImagePreview) {
+    adminBountyImageInput.onchange = async function() {
+        if (this.files && this.files[0]) {
+            const base64 = await processImageToBase64(this.files[0]);
+            const resized = await resizeImage(base64, 300, 200); // Ukuran bisa disesuaikan
+            adminBountyImagePreview.src = resized;
+            adminBountyImagePreview.classList.remove('hidden');
+        }
+    };
+}
+// --- AKHIR MANTRA ---
+if (addAdminBountyButton && adminBountyModal && adminBountyForm && adminBountyListContainer) {
         const openAdminBountyModal = () => {
             audioPlayer.openModal();
             adminBountyForm.reset();
             adminBountyModal.classList.remove('hidden', 'opacity-0');
             adminBountyModal.querySelector('.transform').classList.remove('scale-95');
+            adminBountyImagePreview.classList.add('hidden');
+            adminBountyImagePreview.src = '';
         };
 
         const closeAdminBountyModal = () => {
@@ -1273,6 +1288,7 @@ function setupAdminDashboard() {
                     creatorAvatar: 'https://placehold.co/128x128/1d4ed8/ffffff?text=A',
                     title: document.getElementById('admin-bounty-title').value,
                     description: document.getElementById('admin-bounty-description').value,
+                   imageUrl: adminBountyImagePreview.src.startsWith('data:image') ? adminBountyImagePreview.src : null,
                     takerLimit: parseInt(document.getElementById('admin-bounty-taker-limit').value),
                     rewardXp: parseInt(document.getElementById('admin-bounty-reward-xp').value),
                     rewardCoin: parseInt(document.getElementById('admin-bounty-reward-coin').value),
