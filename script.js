@@ -191,41 +191,7 @@ if(loginForm) {
 // =======================================================
 //                  LOGIKA DASBOR SISWA
 // =======================================================
-// Event listener untuk tombol "Ambil Misi" (event delegation)
-document.getElementById('bounty-list-container').addEventListener('click', async (e) => {
-    const takeButton = e.target.closest('.take-bounty-btn');
-    const completeButton = e.target.closest('.complete-bounty-btn');
 
-    if (takeButton) {
-        takeButton.disabled = true;
-        takeButton.textContent = 'Memproses...';
-        const bountyId = takeButton.dataset.id;
-        const uid = auth.currentUser.uid;
-
-        try {
-            // ... (kode yang sudah ada untuk mengambil misi, tidak perlu diubah)
-             const bountyRef = ref(db, `bounties/${bountyId}`);
-            const bountySnap = await get(bountyRef);
-            if(!bountySnap.exists()) throw new Error("Misi tidak ditemukan!");
-
-            const bountyData = bountySnap.val();
-            const takersCount = bountyData.takers ? Object.keys(bountyData.takers).length : 0;
-            if(takersCount >= bountyData.takerLimit) throw new Error("Slot misi sudah penuh!");
-            if(bountyData.takers && bountyData.takers[uid]) throw new Error("Kamu sudah mengambil misi ini!");
-
-            await update(ref(db, `/bounties/${bountyId}/takers`), { [uid]: true });
-            showToast('Berhasil mengambil misi!');
-        } catch(error) {
-            showToast(error.message, true);
-            takeButton.disabled = false;
-            takeButton.textContent = 'Ambil Misi';
-        }
-    } else if (completeButton) {
-        // Ini adalah logika baru untuk tombol selesaikan misi
-        const bountyId = completeButton.dataset.id;
-        openCompleteBountyModal(bountyId);
-    }
-});
 function setupStudentDashboard(uid) {
     document.getElementById('student-logout-button').onclick = () => signOut(auth);
     
@@ -347,6 +313,40 @@ if(profileNavLink && profileNavLink.textContent === 'Profil'){
         setTimeout(() => document.getElementById('student-main-content').classList.remove('opacity-0'), 100);
         lucide.createIcons();
     });
+    document.getElementById('bounty-list-container').addEventListener('click', async (e) => {
+    const takeButton = e.target.closest('.take-bounty-btn');
+    const completeButton = e.target.closest('.complete-bounty-btn');
+
+    if (takeButton) {
+        takeButton.disabled = true;
+        takeButton.textContent = 'Memproses...';
+        const bountyId = takeButton.dataset.id;
+        const uid = auth.currentUser.uid;
+
+        try {
+            // ... (kode yang sudah ada untuk mengambil misi, tidak perlu diubah)
+             const bountyRef = ref(db, `bounties/${bountyId}`);
+            const bountySnap = await get(bountyRef);
+            if(!bountySnap.exists()) throw new Error("Misi tidak ditemukan!");
+
+            const bountyData = bountySnap.val();
+            const takersCount = bountyData.takers ? Object.keys(bountyData.takers).length : 0;
+            if(takersCount >= bountyData.takerLimit) throw new Error("Slot misi sudah penuh!");
+            if(bountyData.takers && bountyData.takers[uid]) throw new Error("Kamu sudah mengambil misi ini!");
+
+            await update(ref(db, `/bounties/${bountyId}/takers`), { [uid]: true });
+            showToast('Berhasil mengambil misi!');
+        } catch(error) {
+            showToast(error.message, true);
+            takeButton.disabled = false;
+            takeButton.textContent = 'Ambil Misi';
+        }
+    } else if (completeButton) {
+        // Ini adalah logika baru untuk tombol selesaikan misi
+        const bountyId = completeButton.dataset.id;
+        openCompleteBountyModal(bountyId);
+    }
+});
 }
 
 // =======================================================
@@ -669,16 +669,24 @@ function setupBountyBoardPage(uid) {
         }
 
         const bountiesData = snapshot.val();
-        Object.entries(bountiesData).forEach(([bountyId, bounty]) => {
+        // --- PERUBAHAN: Filter untuk hanya menampilkan misi yang masih 'open' ---
+        const openBounties = Object.entries(bountiesData).filter(([_, bounty]) => bounty.status === 'open');
+
+        if (openBounties.length === 0) {
+            bountyListContainer.innerHTML = '<p class="text-center text-gray-400 col-span-full">Tidak ada misi yang aktif saat ini.</p>';
+            return;
+        }
+
+        openBounties.forEach(([bountyId, bounty]) => {
             const takersCount = bounty.takers ? Object.keys(bounty.takers).length : 0;
             const isTakenByCurrentUser = bounty.takers && bounty.takers[uid];
             const isFull = takersCount >= bounty.takerLimit;
             const isCreator = bounty.creatorId === uid;
 
             let buttonHtml = '';
-            if(isCreator) {
+            if (isCreator) {
                  buttonHtml = `<button data-id="${bountyId}" class="complete-bounty-btn w-full p-2 rounded-lg text-white font-bold text-sm bg-purple-600 hover:bg-purple-700">Selesaikan Misi</button>`;
-            } else if(isTakenByCurrentUser) {
+            } else if (isTakenByCurrentUser) {
                 buttonHtml = `<button disabled class="w-full p-2 rounded-lg text-white font-bold text-sm bg-blue-400 cursor-not-allowed">Sudah Diambil</button>`;
             } else if (isFull) {
                 buttonHtml = `<button disabled class="w-full p-2 rounded-lg text-white font-bold text-sm bg-red-400 cursor-not-allowed">Penuh</button>`;
@@ -716,6 +724,13 @@ async function openCompleteBountyModal(bountyId) {
     const takersListEl = document.getElementById('bounty-takers-list');
     const confirmButton = document.getElementById('confirm-complete-bounty-button');
     const closeButton = document.getElementById('close-complete-bounty-modal-button');
+
+    // Pemeriksaan elemen untuk mencegah error
+    if (!modal || !titleEl || !takersListEl || !confirmButton || !closeButton) {
+        console.error("Elemen UI untuk modal selesaikan bounty tidak ditemukan. Pastikan HTML-nya ada di student.html.");
+        showToast("Gagal membuka detail misi.", true);
+        return;
+    }
 
     const closeModal = () => {
         audioPlayer.closeModal();
@@ -773,8 +788,8 @@ async function handleCompleteBounty(bountyId, closeModalCallback) {
         const bountyData = bountySnap.val();
         const updates = {};
 
-        // Siapkan update untuk menghapus bounty
-        updates[`/bounties/${bountyId}`] = null;
+        // --- PERUBAHAN: Ubah status bounty menjadi 'completed' alih-alih menghapusnya ---
+        updates[`/bounties/${bountyId}/status`] = 'completed';
 
         // Jika ada yang mengambil misi, bagikan hadiahnya
         if (bountyData.takers && Object.keys(bountyData.takers).length > 0) {
