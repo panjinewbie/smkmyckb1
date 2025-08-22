@@ -104,7 +104,73 @@
                     </div>
                 </div>
             </div>
+<div id="magic-controls-page" class="hidden">
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="mb-6">
+                        <h2 class="text-xl font-semibold">Magic Controls</h2>
+                        <p class="text-sm text-gray-500 mt-1">Berikan efek, hadiah, atau hukuman kepada siswa secara langsung.</p>
+                    </div>
 
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 border-t pt-6">
+                        <div class="space-y-4">
+                            <h3 class="font-semibold text-lg">Ubah Stats</h3>
+                            <div>
+                                <label for="stat-type" class="block text-sm font-medium text-gray-700">Jenis Stat</label>
+                                <select id="stat-type" class="mt-1 w-full p-2 border border-gray-300 rounded-md bg-white">
+                                    <option value="hp">❤️ Health Points (HP)</option>
+                                    <option value="xp">✨ Experience (XP)</option>
+                                    <option value="coin">💰 Koin</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="stat-value" class="block text-sm font-medium text-gray-700">Jumlah</label>
+                                <input type="number" id="stat-value" value="10" class="mt-1 w-full p-2 border border-gray-300 rounded-md">
+                            </div>
+                            <div class="flex gap-4">
+                                <button id="apply-stat-addition" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center">
+                                    <i data-lucide="plus" class="w-4 h-4 mr-2"></i> Tambahkan
+                                </button>
+                                <button id="apply-stat-subtraction" class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center">
+                                    <i data-lucide="minus" class="w-4 h-4 mr-2"></i> Kurangi
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="space-y-4">
+                            <h3 class="font-semibold text-lg">Beri Status Efek</h3>
+                            <div>
+                                <label for="effect-type" class="block text-sm font-medium text-gray-700">Jenis Efek</label>
+                                <select id="effect-type" class="mt-1 w-full p-2 border border-gray-300 rounded-md bg-white">
+                                    <option value="racun">☠️ Racun (HP -1/hari)</option>
+                                    <option value="diam">🔇 Diam (Blok Aksi)</option>
+                                    <option value="knock">😵 Knock (HP jadi 10)</option>
+                                </select>
+                            </div>
+                             <div class="flex gap-4">
+                                <button id="apply-effect" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center">
+                                    <i data-lucide="wand-2" class="w-4 h-4 mr-2"></i> Beri Efek
+                                </button>
+                                <button id="remove-effect" class="w-full bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center">
+                                    <i data-lucide="shield-off" class="w-4 h-4 mr-2"></i> Hapus Efek
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="magic-student-list" class="mt-8 border-t pt-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="font-semibold text-lg">Pilih Target Siswa</h3>
+                            <label class="flex items-center space-x-2 text-sm">
+                                <input type="checkbox" id="select-all-students-magic" class="rounded">
+                                <span>Pilih Semua</span>
+                            </label>
+                        </div>
+                        <div id="magic-student-list-container" class="space-y-2 max-h-96 overflow-y-auto pr-2">
+                             <p class="text-center text-gray-400">Memuat data siswa...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </main>
     </div>
 
