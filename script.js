@@ -209,8 +209,10 @@ function setupStudentDashboard(uid) {
 // ... (kode untuk shopNavButton ada di atasnya)
 
 const bountyBoardNavLink = document.getElementById('bounty-board-nav-link');
+const navLinks = document.querySelector('nav .flex'); // Target navigasi
 const profilePage = document.getElementById('student-main-content');
 const bountyBoardPage = document.getElementById('bounty-board-page');
+const guildPage = document.getElementById('guild-page')
 
 if (bountyBoardNavLink) {
     bountyBoardNavLink.addEventListener('click', (e) => {
@@ -227,7 +229,34 @@ if (bountyBoardNavLink) {
         setupBountyBoardPage(uid);
     });
 }
+navLinks.addEventListener('click', (e) => {
+    const targetLink = e.target.closest('a');
+    if (!targetLink || !targetLink.href.includes('#')) return;
 
+    e.preventDefault();
+
+    if (targetLink.id === 'open-shop-button') return; // Abaikan tombol Shop
+
+    // Sembunyikan semua halaman
+    profilePage.classList.add('hidden');
+    bountyBoardPage.classList.add('hidden');
+    guildPage.classList.add('hidden');
+
+    // Reset style semua link
+    navLinks.querySelectorAll('a.nav-link').forEach(link => link.classList.remove('active'));
+
+    const pageId = targetLink.getAttribute('href').substring(1);
+    targetLink.classList.add('active');
+
+    if (pageId === 'bounty-board') {
+        bountyBoardPage.classList.remove('hidden');
+    } else if (pageId === 'guild') {
+        guildPage.classList.remove('hidden');
+        setupGuildPage(uid); // Panggil mantra untuk Guild
+    } else {
+        profilePage.classList.remove('hidden');
+    }
+});
 // Tambahkan juga event listener untuk link profil agar bisa kembali
 const profileNavLink = document.querySelector('a[href="#"]'); // Asumsi link profil href="#"
 if(profileNavLink && profileNavLink.textContent === 'Profil'){
@@ -563,6 +592,92 @@ async function handleUseItem(uid, itemIndex, itemData, closeModalCallback) {
         useButton.disabled = false;
         useButton.textContent = 'Gunakan Item';
     }
+}
+// =======================================================
+//          LOGIKA GUILD & CHAT INEM
+// =======================================================
+async function setupGuildPage(uid) {
+    const memberList = document.getElementById('guild-member-list');
+    const guildNameHeader = document.getElementById('guild-name-header');
+    const chatForm = document.getElementById('inem-chat-form');
+    const chatInput = document.getElementById('inem-chat-input');
+    
+    memberList.innerHTML = '<p class="text-sm text-gray-400">Memuat anggota...</p>';
+
+    const studentSnap = await get(ref(db, `students/${uid}`));
+    if (!studentSnap.exists()) return;
+    const guildName = studentSnap.val().guild || 'Tanpa Guild';
+    guildNameHeader.textContent = `Markas Guild ${guildName}`;
+
+    const studentsQuery = query(ref(db, 'students'), orderByChild('guild'), equalTo(guildName));
+    const guildSnaps = await get(studentsQuery);
+    
+    memberList.innerHTML = '';
+    if (guildSnaps.exists()) {
+        guildSnaps.forEach(childSnap => {
+            const member = childSnap.val();
+            const memberDiv = document.createElement('div');
+            memberDiv.className = 'flex items-center gap-3';
+            memberDiv.innerHTML = `
+                <img src="${member.fotoProfilBase64 || `https://placehold.co/40x40/e2e8f0/3d4852?text=${member.nama.charAt(0)}`}" class="w-10 h-10 rounded-full object-cover">
+                <div><p class="font-semibold text-sm">${member.nama}</p><p class="text-xs text-gray-500">Level ${member.level}</p></div>
+            `;
+            memberList.appendChild(memberDiv);
+        });
+    }
+
+    chatForm.onsubmit = async (e) => {
+        e.preventDefault();
+        const userMessage = chatInput.value.trim();
+        if (!userMessage) return;
+
+        appendChatMessage(userMessage, 'user');
+        chatInput.value = '';
+        const loadingIndicator = appendChatMessage('Inem sedang berpikir...', 'inem', true);
+
+        try {
+            // PENTING: Link "g.co/gemini/share" BUKAN Kunci API.
+            // Dapatkan kunci API asli dari aistudio.google.com/app/apikey
+            const apiKey = "AIzaSyBk_Pmw-RFFwdbMqYVeEYPeT0ioQ0pko3Y"; // <-- Kunci API Anda sudah dimasukkan.
+
+            if (apiKey.includes("GANTI_DENGAN_KUNCI_API")) {
+                console.error("Kunci API Gemini belum diatur di script.js. Silakan dapatkan dari Google AI Studio dan masukkan ke dalam kode.");
+                loadingIndicator.remove();
+                appendChatMessage("Aduh, Beb! Kunci sihirku belum diatur sama admin. Aku nggak bisa jawab sekarang, kasih tau admin ya!", 'inem');
+                return; // Hentikan eksekusi fungsi
+            }
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`;
+            const persona = "Kamu adalah Inem, asisten AI yang ceria, centil, dan jenaka untuk aplikasi gamifikasi sekolah bernama DREAMY. Panggil pengguna 'Beb' atau 'Detektif-ku'. Jawabanmu harus singkat, santai, dan penuh semangat.pencipta mu mengajar mata pelajaran RPL di sekolah smk mardi yuana cikembar";
+            
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ contents: [{ parts: [{ text: `${persona}\n\nPertanyaan: ${userMessage}` }] }] })
+            });
+
+            if (!response.ok) throw new Error("Portal sihir sedang sibuk.");
+
+            const result = await response.json();
+            const inemResponse = result.candidates[0].content.parts[0].text;
+            
+            loadingIndicator.remove();
+            appendChatMessage(inemResponse, 'inem');
+        } catch (error) {
+            loadingIndicator.remove();
+            appendChatMessage("Aduh, Beb! Kayaknya ada gangguan sihir, aku nggak bisa jawab sekarang. Coba lagi nanti, ya!", 'inem');
+        }
+    };
+}
+
+function appendChatMessage(message, sender, isLoading = false) {
+    const chatBox = document.getElementById('inem-chat-box');
+    const msgDiv = document.createElement('div');
+    msgDiv.className = `p-3 rounded-lg text-sm w-fit max-w-[80%] mb-2 ${sender === 'user' ? 'bg-green-100 ml-auto' : 'bg-blue-100'}`;
+    msgDiv.textContent = message.replace(/[*_`]/g, '');
+    if (isLoading) { msgDiv.classList.add('animate-pulse'); }
+    chatBox.appendChild(msgDiv);
+    chatBox.scrollTop = chatBox.scrollHeight;
+    return msgDiv;
 }
 // =======================================================
 //                  LOGIKA BOUNTY BOARD (SISWA)
