@@ -119,6 +119,17 @@ const showToast = (message, isError = false) => {
     }
 };
 
+// --- FUNGSI PEMBANTU BARU: Membuat Ikon Lucide dengan Aman ---
+function createLucideIcons() {
+    try {
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+    } catch (e) {
+        console.warn("Gagal merender ikon Lucide. Ini kemungkinan hanya masalah tampilan minor.", e);
+    }
+}
+
 // --- FUNGSI PEMROSESAN GAMBAR (shared) ---
 function processImageToBase64(file) {
     return new Promise((resolve, reject) => {
@@ -274,11 +285,12 @@ if(profileNavLink && profileNavLink.textContent === 'Profil'){
     onValue(studentRef, (snapshot) => {
         if(!snapshot.exists()) return;
         const studentData = snapshot.val();
+        const maxHp = (studentData.level || 1) * 100;
         document.getElementById('student-name').textContent = studentData.nama;
         document.getElementById('student-class-role').textContent = `${studentData.kelas} | ${studentData.peran} | Guild ${studentData.guild || ''}`;
         document.getElementById('student-avatar').src = studentData.fotoProfilBase64 || `https://placehold.co/128x128/e2e8f0/3d4852?text=${studentData.nama.charAt(0)}`;
-        document.getElementById('hp-value').textContent = `${studentData.hp} / 100`;
-        document.getElementById('hp-bar').style.width = `${studentData.hp}%`;
+        document.getElementById('hp-value').textContent = `${studentData.hp} / ${maxHp}`;
+        document.getElementById('hp-bar').style.width = `${(studentData.hp / maxHp) * 100}%`;
         document.getElementById('level-value').textContent = studentData.level;
         document.getElementById('xp-value').textContent = `${studentData.xp} / 1000`;
         document.getElementById('xp-bar').style.width = `${(studentData.xp / 1000) * 100}%`;
@@ -340,7 +352,7 @@ if(profileNavLink && profileNavLink.textContent === 'Profil'){
         }
         // --- AKHIR MANTRA ---
         setTimeout(() => document.getElementById('student-main-content').classList.remove('opacity-0'), 100);
-        lucide.createIcons();
+        createLucideIcons();
     });
     document.getElementById('bounty-list-container').addEventListener('click', async (e) => {
     const takeButton = e.target.closest('.take-bounty-btn');
@@ -493,7 +505,7 @@ async function openStudentShop(uid) {
         card.innerHTML = `<img src="${item.imageBase64 || 'https://placehold.co/300x200/e2e8f0/3d4852?text=Item'}" class="w-full h-24 object-cover rounded-md mb-2"><h4 class="text-md font-bold">${item.name}</h4><p class="text-xs text-gray-600 flex-grow mb-2">${item.description}</p><div class="flex justify-between items-center mt-2 text-sm"><span class="font-semibold text-yellow-600 flex items-center"><i data-lucide="coins" class="w-4 h-4 mr-1"></i>${item.price}</span><span class="text-gray-500 text-xs">Stok: ${item.stock}</span></div><div class="mt-auto pt-2"><button data-id="${itemId}" class="buy-item-btn w-full p-2 rounded-lg text-white font-bold text-sm ${isBuyable ? 'bg-green-500 hover:bg-green-600' : 'bg-gray-400 cursor-not-allowed'}" ${!isBuyable ? 'disabled' : ''}>${canAfford ? (inStock ? 'Beli' : 'Stok Habis') : 'Koin Kurang'}</button></div>`;
         shopItemList.appendChild(card);
     });
-    lucide.createIcons();
+    createLucideIcons();
 }
 
 // =======================================================
@@ -568,9 +580,10 @@ async function handleUseItem(uid, itemIndex, itemData, closeModalCallback) {
 
         // PENAMBAHAN LOGIKA EFEK DI SINI
         if (itemData.effect === 'HEAL_HP') {
+            const maxHp = (studentData.level || 1) * 100;
             const currentHp = Number(studentData.hp) || 0;
             const healAmount = Number(itemData.effectValue) || 0;
-            updates[`/students/${uid}/hp`] = Math.min(100, currentHp + healAmount);
+            updates[`/students/${uid}/hp`] = Math.min(maxHp, currentHp + healAmount);
         } else if (itemData.effect === 'GAIN_XP') {
             const xpPerLevel = 1000;
             const currentTotalXp = ((studentData.level || 1) - 1) * xpPerLevel + (studentData.xp || 0);
@@ -860,7 +873,7 @@ function setupBountyBoardPage(uid) {
             `;
             bountyListContainer.appendChild(card);
         });
-        lucide.createIcons();
+        createLucideIcons();
     });
 }
 
@@ -1098,11 +1111,13 @@ function setupAdminDashboard() {
             Object.keys(studentsData).forEach(key => {
                 const student = studentsData[key];
                 const studentRow = document.createElement('tr');
+                const maxHp = (student.level || 1) * 100;
+                const hpPercent = (student.hp / maxHp) * 100;
                 studentRow.className = 'bg-white border-b hover:bg-gray-50';
                 const avatar = student.fotoProfilBase64 ? 
                     `<img src="${student.fotoProfilBase64}" alt="${student.nama}" class="w-10 h-10 rounded-full object-cover">` : 
                     `<div class="w-10 h-10 bg-gray-700 text-white flex items-center justify-center rounded-full font-bold">${student.nama.charAt(0)}</div>`;
-                studentRow.innerHTML = `<td class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap flex items-center">${avatar}<div class="ml-4"><div class="font-bold">${student.nama}</div><div class="text-xs text-gray-500">NIS: ${student.nis} | ${student.kelas} | ${student.guild || 'No Guild'}</div></div></td><td class="px-6 py-4 text-center text-lg font-bold">${student.level || 1}</td><td class="px-6 py-4 text-center">${student.xp || 0}</td><td class="px-6 py-4"><div class="w-full bg-gray-200 rounded-full h-4 relative"><div class="bg-red-500 h-4 rounded-full" style="width: ${student.hp || 100}%"></div><span class="absolute inset-0 text-center text-xs font-bold text-white">${student.hp || 100}/100</span></div></td>
+                studentRow.innerHTML = `<td class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap flex items-center">${avatar}<div class="ml-4"><div class="font-bold">${student.nama}</div><div class="text-xs text-gray-500">NIS: ${student.nis} | ${student.kelas} | ${student.guild || 'No Guild'}</div></div></td><td class="px-6 py-4 text-center text-lg font-bold">${student.level || 1}</td><td class="px-6 py-4 text-center">${student.xp || 0}</td><td class="px-6 py-4"><div class="w-full bg-gray-200 rounded-full h-4 relative"><div class="bg-red-500 h-4 rounded-full" style="width: ${hpPercent}%"></div><span class="absolute inset-0 text-center text-xs font-bold text-white">${student.hp || maxHp}/${maxHp}</span></div></td>
                 <td class="px-6 py-4 text-center space-x-1">
                     <button class="battle-init-btn p-2 bg-red-100 text-red-600 hover:bg-red-200 rounded-lg" data-id="${key}" title="Mulai Battle"><i data-lucide="swords" class="w-4 h-4"></i></button>
                     <button class="edit-btn p-2 bg-blue-100 text-blue-600 hover:bg-blue-200 rounded-lg" data-id="${key}" title="Edit Siswa"><i data-lucide="edit" class="w-4 h-4"></i></button>
@@ -1117,7 +1132,7 @@ function setupAdminDashboard() {
         document.getElementById('total-students').textContent = totalStudents;
         document.getElementById('average-level').textContent = totalStudents > 0 ? (totalLevel / totalStudents).toFixed(1) : '0';
         document.getElementById('total-coins').textContent = totalCoins;
-        lucide.createIcons();
+        createLucideIcons();
     });
 
     studentForm.addEventListener('submit', async (e) => {
@@ -1368,7 +1383,7 @@ function setupAdminDashboard() {
                 `;
                 questListContainer.appendChild(card);
             });
-            lucide.createIcons();
+            createLucideIcons();
         });
     }
 
@@ -1481,7 +1496,7 @@ if (addAdminBountyButton && adminBountyModal && adminBountyForm && adminBountyLi
                 `;
                 adminBountyListContainer.appendChild(card);
             });
-            lucide.createIcons();
+            createLucideIcons();
         });
 
         adminBountyListContainer.addEventListener('click', async (e) => {
@@ -1572,7 +1587,8 @@ if (addAdminBountyButton && adminBountyModal && adminBountyForm && adminBountyLi
                         let newValue = action.operation === 'add' ? currentValue + value : currentValue - value;
 
                         if (stat === 'hp') {
-                            newValue = Math.max(0, Math.min(100, newValue)); // Batasi HP 0-100
+                            const maxHp = (studentData.level || 1) * 100;
+                            newValue = Math.max(0, Math.min(maxHp, newValue)); // Batasi HP sesuai level
                         } else {
                             newValue = Math.max(0, newValue); // Stat lain tidak boleh minus
                         }
@@ -1750,7 +1766,7 @@ if (addAdminBountyButton && adminBountyModal && adminBountyForm && adminBountyLi
                 `;
                 shopItemList.appendChild(card);
             });
-            lucide.createIcons();
+            createLucideIcons();
         });
     }
 
@@ -1841,6 +1857,10 @@ if (addAdminBountyButton && adminBountyModal && adminBountyForm && adminBountyLi
         let student = { id: studentId, ...studentSnap.val() };
         let monster = { id: monsterId, ...monsterSnap.val() };
         
+        // --- DEBUGGING: Cek data siswa sebelum battle dimulai ---
+        console.log("Memulai SOLO BATTLE. Data siswa:", JSON.parse(JSON.stringify(student)));
+        // --- END DEBUGGING ---
+
         monster.currentHp = monster.monsterHp;
         monster.maxHp = monster.monsterMaxHp || monster.monsterHp;
         student.currentHp = student.hp;
@@ -1982,6 +2002,10 @@ startButton.onclick = async () => {
     monster.monsterHp *= party.length;
     monster.monsterMaxHp = monster.monsterHp;
 
+    // --- DEBUGGING: Cek data party sebelum battle dimulai ---
+    console.log("Memulai PARTY BATTLE. Data party:", JSON.parse(JSON.stringify(party)));
+    // --- END DEBUGGING ---
+
     closePartyModal();
     setupBattleUI(party, monster);
 };
@@ -1990,13 +2014,20 @@ startButton.onclick = async () => {
     
     // FUNGSI INTI UNTUK MENGATUR BATTLE (SOLO & PARTY)
     async function setupBattleUI(party, monster) {
-        
+        // --- DEBUGGING: Cek data yang diterima oleh fungsi battle ---
+        console.log("setupBattleUI menerima party:", JSON.parse(JSON.stringify(party)));
+        // --- END DEBUGGING ---
+
+        const sleep = ms => new Promise(res => setTimeout(res, ms));
         // Inisialisasi state pertarungan
         party.forEach(p => {
             p.currentHp = p.hp;
-            p.maxHp = 100;
+            p.maxHp = (p.level || 1) * 100;
+            // Pastikan statusEffects adalah objek untuk mencegah error
+            if (!p.statusEffects) p.statusEffects = {};
         });
         monster.currentHp = monster.monsterHp;
+        monster.maxHp = monster.monsterMaxHp || monster.monsterHp;
 
         let currentTurnIndex = 0;
         let currentQuestionIndex = 0;
@@ -2005,7 +2036,7 @@ startButton.onclick = async () => {
         // Elemen UI
         const battleModal = document.getElementById('battle-modal');
         const battleLog = document.getElementById('battle-log');
-        const studentInfoDiv = document.getElementById('battle-student-info');
+        const partyInfoDiv = document.getElementById('battle-student-info'); // Ganti nama variabel agar lebih jelas
         const monsterInfoDiv = document.getElementById('battle-monster-info');
         const questionText = document.getElementById('battle-question-text');
         const turnIndicator = document.getElementById('turn-indicator');
@@ -2013,23 +2044,34 @@ startButton.onclick = async () => {
         const incorrectButton = document.getElementById('answer-incorrect-button');
         const closeBattleButton = document.getElementById('close-battle-modal-button');
 
-        const addLog = (text) => {
-            battleLog.innerHTML += `> ${text}\n`;
+        const addLog = (text, type = 'normal') => {
+            const colorClass = type === 'damage' ? 'text-red-400' : type === 'heal' ? 'text-green-400' : 'text-gray-300';
+            battleLog.innerHTML += `<span class="${colorClass}">> ${text}</span>\n`;
             battleLog.scrollTop = battleLog.scrollHeight;
         };
 
         const updateUI = () => {
             // Update Info Party
-            studentInfoDiv.innerHTML = '';
+            partyInfoDiv.innerHTML = '';
             party.forEach(p => {
                 const hpPercent = Math.max(0, (p.currentHp / p.maxHp) * 100);
                 const isTurn = party[currentTurnIndex].id === p.id;
-                const turnClass = isTurn ? 'border-blue-500 border-4' : 'border-gray-200 border-2';
-                studentInfoDiv.innerHTML += `
-                    <div class="flex items-center gap-3 p-2 rounded-lg ${turnClass}">
+                const turnClass = isTurn
+                    ? 'bg-white-100 border-blue-500' // Gaya giliran aktif (krem lebih gelap)
+                    : 'bg-white-50 border-gray-300'; // Gaya giliran tidak aktif (krem muda)
+                const statusIcons = `
+                    <div class="absolute top-0 right-0 flex gap-1 p-1">
+                        ${p.statusEffects.racun ? '<i data-lucide="skull" class="w-4 h-4 text-red-500 bg-black bg-opacity-5 rounded-full p-0.5" title="Racun"></i>' : ''}
+                        ${p.statusEffects.knock ? '<i data-lucide="dizzy" class="w-4 h-4 text-yellow-400 bg-black bg-opacity-5 rounded-full p-0.5" title="Pusing"></i>' : ''}
+                        ${p.statusEffects.diam ? '<i data-lucide="mic-off" class="w-4 h-4 text-gray-400 bg-black bg-opacity-5 rounded-full p-0.5" title="Diam"></i>' : ''}
+                    </div>
+                `;
+                partyInfoDiv.innerHTML += `
+                    <div class="flex items-center gap-3 p-2 rounded-lg border ${turnClass} relative transition-all duration-300">
+                        ${statusIcons}
                         <img src="${p.fotoProfilBase64 || `https://placehold.co/64x64/e2e8f0/3d4852?text=${p.nama.charAt(0)}`}" class="w-12 h-12 rounded-full object-cover">
                         <div class="flex-grow">
-                            <p class="font-bold text-sm">${p.nama}</p>
+                            <p class="font-bold text-sm text-gray-800">${p.nama}</p>
                             <div class="w-full bg-gray-200 rounded-full h-4 relative mt-1">
                                 <div class="bg-red-500 h-4 rounded-full" style="width: ${hpPercent}%"></div>
                                 <span class="absolute inset-0 text-center text-xs font-bold text-white">${p.currentHp}/${p.maxHp}</span>
@@ -2038,11 +2080,11 @@ startButton.onclick = async () => {
                     </div>
                 `;
             });
+            createLucideIcons();
             
             // Update Info Monster
             const monsterHpPercent = Math.max(0, (monster.currentHp / monster.maxHp) * 100);
             monsterInfoDiv.innerHTML = `
-                <h4 class="text-lg font-bold">MONSTER</h4>
                 <h4 class="text-xl font-bold">${monster.monsterName}</h4>
                 <img src="${monster.monsterImageBase64 || 'https://placehold.co/128x128/a0aec0/ffffff?text=M'}" class="w-32 h-32 object-contain mx-auto my-2">
                 <div class="w-full bg-gray-200 rounded-full h-6 relative"><div class="bg-green-500 h-6 rounded-full" style="width: ${monsterHpPercent}%"></div><span class="absolute inset-0 text-center font-bold text-white leading-6">${monster.currentHp} / ${monster.maxHp}</span></div>`;
@@ -2052,94 +2094,121 @@ startButton.onclick = async () => {
         };
         
         const loadQuestion = () => {
+            turnIndicator.textContent = `Giliran: ${party[currentTurnIndex].nama}`;
             correctButton.disabled = false;
             incorrectButton.disabled = false;
             if (questions.length > 0) {
                 questionText.textContent = questions[currentQuestionIndex % questions.length].question;
             } else {
-                questionText.textContent = "Tidak ada pertanyaan. Monster akan menyerang jika jawaban salah!";
+                questionText.textContent = "Jawab dengan benar untuk menyerang!";
             }
         };
 
         const endBattle = async (isVictory) => {
             correctButton.disabled = true;
             incorrectButton.disabled = true;
-            
+            turnIndicator.textContent = "Pertarungan Selesai!";
             const updates = {};
             if (isVictory) {
-                addLog(`🎉 ${monster.monsterName} telah dikalahkan! Guild Menang!`);
+                addLog(`🎉 ${monster.monsterName} telah dikalahkan! Kalian Menang!`, 'heal');
                 questionText.textContent = "SELAMAT! KALIAN MENANG!";
                 
                 const xpReward = 50;
                 const coinReward = Math.ceil((monster.rewardCoin || 0) / party.length);
 
                 party.forEach(p => {
-                     if (p.currentHp > 0) { // Hanya yang selamat dapat hadiah
+                     if (p.currentHp > 0) {
                         const currentTotalXp = ((p.level || 1) - 1) * 1000 + (p.xp || 0);
                         const newTotalXp = currentTotalXp + xpReward;
                         updates[`/students/${p.id}/xp`] = newTotalXp % 1000;
                         updates[`/students/${p.id}/level`] = Math.floor(newTotalXp / 1000) + 1;
                         updates[`/students/${p.id}/coin`] = (p.coin || 0) + coinReward;
                      }
-                     updates[`/students/${p.id}/hp`] = p.currentHp; // Update HP terakhir
+                     updates[`/students/${p.id}/hp`] = p.currentHp;
+                     updates[`/students/${p.id}/statusEffects`] = null; // Hapus semua efek status
                 });
                 
-                addLog(`Setiap anggota yang selamat mendapat ${xpReward} XP dan ${coinReward} Koin.`);
+                addLog(`Setiap anggota yang selamat mendapat ${xpReward} XP dan ${coinReward} Koin.`, 'heal');
                 audioPlayer.success();
 
             } else {
-                addLog(`☠️ Semua anggota party telah dikalahkan!`);
+                addLog(`☠️ Semua anggota party telah dikalahkan!`, 'damage');
                 questionText.textContent = "YAH, KALIAN KALAH...";
                 party.forEach(p => {
-                    updates[`/students/${p.id}/hp`] = p.currentHp; // Simpan HP terakhir
+                    updates[`/students/${p.id}/hp`] = p.currentHp;
+                    updates[`/students/${p.id}/statusEffects`] = null; // Hapus semua efek status
                 });
                 audioPlayer.error();
             }
 
             if (Object.keys(updates).length > 0) {
                 await update(ref(db), updates);
-                addLog("Data semua siswa telah diperbarui.");
+                addLog("Data siswa telah diperbarui.");
             }
         };
 
-        const handleAnswer = (isCorrect) => {
-            correctButton.disabled = true;
-            incorrectButton.disabled = true;
-            
-            const currentPlayer = party[currentTurnIndex];
-
-            if (isCorrect) {
-                const studentDamage = 25 + Math.floor(Math.random() * 10); // Contoh damage
-                monster.currentHp = Math.max(0, monster.currentHp - studentDamage);
-                addLog(`Jawaban BENAR! ${currentPlayer.nama} menyerang, ${studentDamage} damage.`);
-                audioPlayer.xpGain();
-                updateUI();
-                if (monster.currentHp <= 0) {
-                    endBattle(true);
-                    return;
-                }
-            } else {
-                const monsterDamage = 15 + Math.floor(Math.random() * 10); // Contoh damage
-                currentPlayer.currentHp = Math.max(0, currentPlayer.currentHp - monsterDamage);
-                addLog(`Jawaban SALAH! ${monster.monsterName} menyerang ${currentPlayer.nama}, ${monsterDamage} damage.`);
-                audioPlayer.hpLoss();
-                updateUI();
-
-                const isPartyDefeated = party.every(p => p.currentHp <= 0);
-                if (isPartyDefeated) {
-                    endBattle(false);
-                    return;
-                }
-            }
-            
-            // Pindah ke giliran berikutnya yang masih hidup
+        const nextTurn = () => {
             do {
                 currentTurnIndex = (currentTurnIndex + 1) % party.length;
             } while (party[currentTurnIndex].currentHp <= 0);
-
             currentQuestionIndex++;
-            setTimeout(loadQuestion, 1200); // Jeda sebelum pertanyaan berikutnya
             updateUI();
+            loadQuestion();
+        };
+
+        const handleAnswer = async (isCorrect) => {
+            correctButton.disabled = true;
+            incorrectButton.disabled = true;
+            const currentPlayer = party[currentTurnIndex];
+
+            // --- DEBUGGING: Cek status efek pemain saat giliran mereka ---
+            console.log(`Giliran ${currentPlayer.nama}. Status Efek:`, JSON.parse(JSON.stringify(currentPlayer.statusEffects)));
+            // --- END DEBUGGING ---
+
+            // --- MANTRA EFEK STATUS ---
+            if (currentPlayer.statusEffects.knock) {
+                addLog(`😵 ${currentPlayer.nama} pusing dan kehilangan giliran!`, 'damage');
+                await sleep(1200);
+                nextTurn();
+                return;
+            }
+            if (currentPlayer.statusEffects.racun) {
+                const poisonDamage = 5;
+                currentPlayer.currentHp = Math.max(0, currentPlayer.currentHp - poisonDamage);
+                addLog(`🔥 ${currentPlayer.nama} terkena racun, ${poisonDamage} damage.`, 'damage');
+                audioPlayer.hpLoss();
+                updateUI();
+                await sleep(1200);
+                if (currentPlayer.currentHp <= 0) {
+                    addLog(`☠️ ${currentPlayer.nama} tumbang karena racun!`, 'damage');
+                    if (party.every(p => p.currentHp <= 0)) { endBattle(false); return; }
+                    nextTurn();
+                    return;
+                }
+            }
+
+            if (isCorrect) {
+                let studentDamage = 25 + Math.floor(Math.random() * 10);
+                if (currentPlayer.statusEffects.diam) {
+                    studentDamage = Math.floor(studentDamage / 2);
+                    addLog(`🤫 ${currentPlayer.nama} terkena efek diam, serangan melemah!`);
+                }
+                monster.currentHp = Math.max(0, monster.currentHp - studentDamage);
+                addLog(`Jawaban BENAR! ${currentPlayer.nama} menyerang, ${studentDamage} damage.`, 'heal');
+                audioPlayer.xpGain();
+                updateUI();
+                if (monster.currentHp <= 0) { endBattle(true); return; }
+            } else {
+                const monsterDamage = 15 + Math.floor(Math.random() * 10);
+                currentPlayer.currentHp = Math.max(0, currentPlayer.currentHp - monsterDamage);
+                addLog(`Jawaban SALAH! ${monster.monsterName} menyerang ${currentPlayer.nama}, ${monsterDamage} damage.`, 'damage');
+                audioPlayer.hpLoss();
+                updateUI();
+                if (party.every(p => p.currentHp <= 0)) { endBattle(false); return; }
+            }
+            
+            await sleep(1200);
+            nextTurn();
         };
 
         battleLog.innerHTML = '';
@@ -2383,8 +2452,8 @@ startButton.onclick = async () => {
         printWindow.close();
     }
 
-    lucide.createIcons();
+    createLucideIcons();
 }
 
 // Panggil lucide.createIcons() secara global sekali untuk halaman login & student
-lucide.createIcons();
+createLucideIcons();
