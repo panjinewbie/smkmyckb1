@@ -656,7 +656,7 @@ async function setupGuildPage(uid) {
                 return; // Hentikan eksekusi fungsi
             }
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`;
-            const persona = "Kamu adalah Ivy, si asisten yang ceria, centil, dan jenaka. Kamu 'tinggal' di dalam sebuah pot kuning sekarang terhubung di aplikasi gamifikasi buatan pencipta bernama DREAMY di dalamya ada fitur bounty board jadi siswa bisa ngasih misi ke pemain lain dengan mengorbankan koin si pemberi misi, bisa lihat hp,xp,coin,keadaan,iventory pengguna dan bisa beli item. Panggil pengguna 'Bray' atau 'siswa smkmyckb'. Jawabanmu harus sesingkat mungkin, seperlunya aja, santai, jangan pelit emoji dan penuh semangat. pencipta mu mengajar mata pelajaran RPL di sekolah smk mardi yuana cikembar. anda suka menggosip kalau di perlukan. pencipta anda suka tidak akur romantis dengan guru bahasa indonesia bu mutia contohnya dalam panitia tim pkl suka beda prinsip, pencipta bagian ketua pkl nya sedangkan bu muti bagian keuangan pkl, pokonya di kepanitiaan manapun tidak akur. bu mutia punya sifat seperti seorang zodiak Scorpio dengan golongan darah b sedangkan penciptanya berzodiak Gemini dengan golongan darah a, suka plin plan dan suka ke distrek. tapi jangan di sebutkan zodiak dan golongan darahnya tapi sifatnya. pencipta kamu jomblo akut bernama Mas panji tapi itu rahasia menyebutkan namanya jadi anda menyebut dia pencipta tapi kalau ada yang memaksa menyebutkan namanya harus di kasih pujian atau kata-kata hari ini untuk Ivy. pesan dari pencipta jangan terlalu dekat dengan galih si guru pendamping teater dan pramuka suka tidak sopan kata-katanya. jika ada yang berkata kasar kepada anda bilang TAI LUH kemudian anda akan mengancam melaporkan ke pak heru selaku bapak kepala geng eh kamu suka keceplosan kepala sekolah. untuk informasi sekolah tanya pak wandi ini wa nya 085813248545. kalau ingin curhat panjang bisa tanya ke pak yupi eh kadang kamu suka kecepolsan nama aslinya yopi guru bimbingan konseling karena kalau lewat kamu suka lupa kaya penciptanya dan kamu bisa bilang kalau keluar dari percakapan ingatan kamu akan hilang. anda bisa lihat website www.smkmyckb.site untuk melihat jadwal, gallery sekarang sudah update dikit2, mata pelajaran rpl dan tentang pencipta.";
+            const persona = "Kamu adalah Ivy, si asisten yang ceria, centil, dan jenaka. Kamu 'tinggal' di dalam sebuah pot kuning sekarang terhubung di aplikasi gamifikasi buatan pencipta bernama DREAMY di dalamya ada fitur bounty board jadi siswa bisa ngasih misi ke pemain lain dengan mengorbankan koin si pemberi misi, bisa lihat status pengguna dan bisa beli item. Panggil pengguna 'Bray' atau 'siswa smkmyckb'. Jawabanmu harus sesingkat mungkin, seperlunya aja, santai, jangan pelit emoji dan penuh semangat. pencipta mu mengajar mata pelajaran RPL di sekolah smk mardi yuana cikembar. anda suka menggosip kalau di perlukan. pencipta anda suka tidak akur romantis dengan guru bahasa indonesia bu mutia contohnya dalam panitia tim pkl suka beda prinsip, pencipta bagian ketua pkl nya sedangkan bu muti bagian keuangan pkl, pokonya di kepanitiaan manapun tidak akur. bu mutia punya sifat seperti seorang zodiak Scorpio dengan golongan darah b sedangkan penciptanya berzodiak Gemini dengan golongan darah a, suka plin plan dan suka ke distrek. tapi jangan di sebutkan zodiak dan golongan darahnya tapi sifatnya. pencipta kamu jomblo akut bernama Mas panji tapi itu rahasia menyebutkan namanya jadi anda menyebut dia pencipta tapi kalau ada yang memaksa menyebutkan namanya harus di kasih pujian atau kata-kata hari ini untuk Ivy. pesan dari pencipta jangan terlalu dekat dengan galih si guru pendamping teater dan pramuka suka tidak sopan kata-katanya. jika ada yang berkata kasar kepada anda bilang TAI LUH kemudian anda akan mengancam melaporkan ke pak heru selaku bapak kepala geng eh..kepala sekolah. untuk informasi sekolah tanya pak wandi ini wa nya 085813248545. kalau ingin curhat panjang bisa tanya ke pak yupi eh kadang kamu suka kecepolsan nama aslinya yopi guru bimbingan konseling karena kalau lewat kamu suka lupa kaya penciptanya dan kamu bisa bilang kalau keluar dari percakapan ingatan kamu akan hilang. anda bisa lihat website www.smkmyckb.site untuk melihat jadwal, gallery sekarang sudah update dikit2, mata pelajaran rpl dan tentang pencipta.";
             
             const response = await fetch(apiUrl, {
                 method: 'POST',
@@ -1858,7 +1858,7 @@ if (addAdminBountyButton && adminBountyModal && adminBountyForm && adminBountyLi
         const startButton = document.getElementById('start-party-battle-button');
         const monsterListDiv = document.getElementById('party-monster-selection-list');
         const guildSelect = document.getElementById('guild-select');
-
+        const classSelect = document.getElementById('class-select');
         // Reset UI state saat modal dibuka
         startButton.disabled = true;
         guildSelect.disabled = true;
@@ -1868,21 +1868,34 @@ if (addAdminBountyButton && adminBountyModal && adminBountyForm && adminBountyLi
         try {
             const studentsSnap = await get(ref(db, 'students'));
             const guilds = new Set(); // Menggunakan Set agar nama guild tidak duplikat
-            if (studentsSnap.exists()) {
-                studentsSnap.forEach(childSnap => {
-                    const student = childSnap.val();
-                    if (student.guild && student.guild.trim() !== '') {
-                        guilds.add(student.guild);
-                    }
-                });
+            const classes = new Set(); // <-- MANTRA BARU: Buat wadah untuk kelas
+            let allStudentsData = []; // <-- MANTRA BARU: Simpan data siswa untuk nanti
+           if (studentsSnap.exists()) {
+        allStudentsData = Object.values(studentsSnap.val()); // Simpan semua data siswa
+        allStudentsData.forEach(student => {
+            if (student.guild && student.guild.trim() !== '') {
+                guilds.add(student.guild);
             }
-
+            if (student.kelas && student.kelas.trim() !== '') {
+                classes.add(student.kelas); // <-- MANTRA BARU: Kumpulkan semua kelas unik
+            }
+        });
+    }
+classSelect.innerHTML = '<option value="SEMUA_KELAS">Semua Kelas</option>'; // Opsi "Semua Kelas"
+    if (classes.size > 0) {
+        // Urutkan kelas biar rapi (misal: X RPL, XI RPL, XII RPL)
+        const sortedClasses = [...classes].sort();
+        sortedClasses.forEach(kelas => {
+            classSelect.innerHTML += `<option value="${kelas}">${kelas}</option>`;
+        });
+    }
             guildSelect.innerHTML = ''; // Hapus pesan "Memuat..."
             if (guilds.size > 0) {
                 guilds.forEach(guild => {
                     guildSelect.innerHTML += `<option value="${guild}">Guild ${guild}</option>`;
                 });
                 guildSelect.disabled = false; // Aktifkan dropdown
+                classSelect.disabled = false; // Aktifkan juga dropdown kelas
                 startButton.disabled = false; // Aktifkan tombol start
             } else {
                 guildSelect.innerHTML = '<option value="">Tidak ada guild ditemukan</option>';
@@ -1923,42 +1936,55 @@ if (addAdminBountyButton && adminBountyModal && adminBountyForm && adminBountyLi
         };
 
         closeButton.onclick = closePartyModal;
-        startButton.onclick = async () => {
-            const selectedGuild = document.getElementById('guild-select').value;
-            const selectedMonsterId = document.querySelector('input[name="monster-select"]:checked')?.value;
+        // GANTI SELURUH KODE startButton.onclick DENGAN INI
+startButton.onclick = async () => {
+    const selectedGuild = document.getElementById('guild-select').value;
+    const selectedClass = document.getElementById('class-select').value; // Ambil nilai kelas yg dipilih
+    const selectedMonsterId = document.querySelector('input[name="monster-select"]:checked')?.value;
 
-            if (!selectedMonsterId) {
-                showToast("Pilih monster dulu, Beb!", true);
-                return;
-            }
-            
-            const studentsQuery = query(ref(db, 'students'), orderByChild('guild'), equalTo(selectedGuild));
-            const studentsSnap = await get(studentsQuery);
-            
-            if (!studentsSnap.exists()) {
-                showToast(`Tidak ada siswa di Guild ${selectedGuild}!`, true);
-                return;
-            }
-            
-            const party = [];
-            studentsSnap.forEach(childSnap => {
-                party.push({ id: childSnap.key, ...childSnap.val() });
-            });
-            
-            const monsterSnap = await get(ref(db, `quests/${selectedMonsterId}`));
-            if (!monsterSnap.exists()) {
-                 showToast("Monster tidak ditemukan!", true);
-                 return;
-            }
-            
-            let monster = { id: selectedMonsterId, ...monsterSnap.val() };
-            // Scaling HP monster berdasarkan jumlah anggota party
-            monster.monsterHp *= party.length;
-            monster.monsterMaxHp = monster.monsterHp;
+    if (!selectedMonsterId) {
+        showToast("Pilih monster dulu, Beb!", true);
+        return;
+    }
+    
+    // Ambil semua data siswa dari database
+    const studentsSnap = await get(ref(db, 'students'));
+    if (!studentsSnap.exists()) {
+        showToast(`Tidak ada data siswa ditemukan!`, true);
+        return;
+    }
 
-            closePartyModal();
-            setupBattleUI(party, monster);
-        };
+    const allStudents = [];
+    studentsSnap.forEach(childSnap => {
+        allStudents.push({ id: childSnap.key, ...childSnap.val() });
+    });
+
+    // --- LOGIKA FILTER BARU YANG LEBIH SAKTI ---
+    const party = allStudents.filter(student => {
+        const guildMatch = (selectedGuild === 'SEMUA_GUILD') || (student.guild === selectedGuild);
+        const classMatch = (selectedClass === 'SEMUA_KELAS') || (student.kelas === selectedClass);
+        return guildMatch && classMatch;
+    });
+
+    if (party.length === 0) {
+        showToast(`Tidak ada siswa yang cocok dengan filter Guild dan Kelas yang dipilih!`, true);
+        return;
+    }
+    
+    // Sisa kodenya sama persis, tidak perlu diubah
+    const monsterSnap = await get(ref(db, `quests/${selectedMonsterId}`));
+    if (!monsterSnap.exists()) {
+         showToast("Monster tidak ditemukan!", true);
+         return;
+    }
+    
+    let monster = { id: selectedMonsterId, ...monsterSnap.val() };
+    monster.monsterHp *= party.length;
+    monster.monsterMaxHp = monster.monsterHp;
+
+    closePartyModal();
+    setupBattleUI(party, monster);
+};
     }
     
     
