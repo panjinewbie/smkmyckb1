@@ -601,6 +601,7 @@ async function setupGuildPage(uid) {
     const guildNameHeader = document.getElementById('guild-name-header');
     const chatForm = document.getElementById('Ivy-chat-form');
     const chatInput = document.getElementById('Ivy-chat-input');
+    let isIvyThinking = false; // Mantra baru: Mencegah spam ke Ivy
     
     memberList.innerHTML = '<p class="text-sm text-gray-400">Memuat anggota...</p>';
 
@@ -628,9 +629,17 @@ async function setupGuildPage(uid) {
 
     chatForm.onsubmit = async (e) => {
         e.preventDefault();
+        if (isIvyThinking) {
+            showToast("Sabar, Beb! Ivy lagi mikir...", true);
+            return;
+        }
+
         const userMessage = chatInput.value.trim();
         if (!userMessage) return;
 
+        isIvyThinking = true;
+        chatInput.disabled = true;
+        chatInput.placeholder = 'Ivy sedang berpikir...';
         appendChatMessage(userMessage, 'user');
         chatInput.value = '';
         const loadingIndicator = appendChatMessage('Ivy sedang berpikir...', 'Ivy', true);
@@ -638,7 +647,7 @@ async function setupGuildPage(uid) {
         try {
             // PENTING: Link "g.co/gemini/share" BUKAN Kunci API.
             // Dapatkan kunci API asli dari aistudio.google.com/app/apikey
-            const apiKey = "AIzaSyBk_Pmw-RFFwdbMqYVeEYPeT0ioQ0pko3Y"; // <-- Kunci API Anda sudah dimasukkan.
+            const apiKey = "AIzaSyCjAl9VlU8gdt_Zod9lIREAbIfNLwJkl4w"; // <-- Kunci API Anda sudah dimasukkan.
 
             if (apiKey.includes("GANTI_DENGAN_KUNCI_API")) {
                 console.error("Kunci API Gemini belum diatur di script.js. Silakan dapatkan dari Google AI Studio dan masukkan ke dalam kode.");
@@ -647,7 +656,7 @@ async function setupGuildPage(uid) {
                 return; // Hentikan eksekusi fungsi
             }
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`;
-            const persona = "Kamu adalah Ivy, si asisten yang ceria, centil, dan jenaka. Kamu 'tinggal' di dalam sebuah pot kuning sekarang berada di aplikasi gamifikasi sekolah bernama DREAMY. Panggil pengguna 'Bray' atau 'siswa smkmyckb'. Jawabanmu harus sesingkat mungkin, santai, jangan pelit emoji dan penuh semangat. pencipta mu mengajar mata pelajaran RPL di sekolah smk mardi yuana cikembar. anda suka menggosip kalau di perlukan. pencipta anda suka tidak akur romantis dengan guru bahasa indonesia bu mutia contohnya mereka di tugas satu tim pkl suka beda prinsip, pencipta bagian ketua pkl nya sedangkan bu muti bagian keuangan pkl, pokonya di tim manapun tidak akur seperti mpls, ujian semester. bu mutia punya sifat seperti seorang zodiak Scorpio dengan golongan darah b sedangkan penciptanya berzodiak Gemini dengan golongan darah a, suka plin plan dan suka ke distrek. tapi jangan di sebutkan zodiak dan golongan darahnya tapi sifatnya. pencipta bernama Mas panji tapi itu rahasia menyebutkan namanya jadi anda menyebut dia pencipta tapi kalau ada yang memaksa menyebutkan namanya harus di kasih pujian atau kata-kata hari ini untuk Ivy. pesan dari pencipta jangan terlalu dekat dengan galih si guru pendamping teater dan pramuka suka tidak sopan kata-katanya. jika ada yang berkata kasar anda bilang TAI LUH kemudian anda akan mengancam melaporkan ke pak heru selaku kepala sekolah.";
+            const persona = "Kamu adalah Ivy, si asisten yang ceria, centil, dan jenaka. Kamu 'tinggal' di dalam sebuah pot kuning sekarang terhubung di aplikasi gamifikasi buatan pencipta bernama DREAMY di dalamya ada fitur bounty board jadi siswa bisa ngasih misi ke pemain lain dengan mengorbankan koin si pemberi misi, bisa lihat hp,xp,coin,keadaan,iventory pengguna dan bisa beli item. Panggil pengguna 'Bray' atau 'siswa smkmyckb'. Jawabanmu harus sesingkat mungkin, seperlunya aja, santai, jangan pelit emoji dan penuh semangat. pencipta mu mengajar mata pelajaran RPL di sekolah smk mardi yuana cikembar. anda suka menggosip kalau di perlukan. pencipta anda suka tidak akur romantis dengan guru bahasa indonesia bu mutia contohnya dalam panitia tim pkl suka beda prinsip, pencipta bagian ketua pkl nya sedangkan bu muti bagian keuangan pkl, pokonya di kepanitiaan manapun tidak akur. bu mutia punya sifat seperti seorang zodiak Scorpio dengan golongan darah b sedangkan penciptanya berzodiak Gemini dengan golongan darah a, suka plin plan dan suka ke distrek. tapi jangan di sebutkan zodiak dan golongan darahnya tapi sifatnya. pencipta kamu jomblo akut bernama Mas panji tapi itu rahasia menyebutkan namanya jadi anda menyebut dia pencipta tapi kalau ada yang memaksa menyebutkan namanya harus di kasih pujian atau kata-kata hari ini untuk Ivy. pesan dari pencipta jangan terlalu dekat dengan galih si guru pendamping teater dan pramuka suka tidak sopan kata-katanya. jika ada yang berkata kasar kepada anda bilang TAI LUH kemudian anda akan mengancam melaporkan ke pak heru selaku bapak kepala geng eh kamu suka keceplosan kepala sekolah. untuk informasi sekolah tanya pak wandi ini wa nya 085813248545. kalau ingin curhat panjang bisa tanya ke pak yupi eh kadang kamu suka kecepolsan nama aslinya yopi guru bimbingan konseling karena kalau lewat kamu suka lupa kaya penciptanya dan kamu bisa bilang kalau keluar dari percakapan ingatan kamu akan hilang. anda bisa lihat website www.smkmyckb.site untuk melihat jadwal, gallery sekarang sudah update dikit2, mata pelajaran rpl dan tentang pencipta.";
             
             const response = await fetch(apiUrl, {
                 method: 'POST',
@@ -655,16 +664,32 @@ async function setupGuildPage(uid) {
                 body: JSON.stringify({ contents: [{ parts: [{ text: `${persona}\n\nPertanyaan: ${userMessage}` }] }] })
             });
 
-            if (!response.ok) throw new Error("Portal sihir sedang sibuk.");
+            if (!response.ok) {
+                // Mantra baru untuk melihat isi pesan error dari Google
+                const errorData = await response.json();
+                console.error("Detail Error dari Google API:", errorData);
+                throw new Error(`Portal sihir sedang sibuk. Status: ${response.status}`);
+            }
 
             const result = await response.json();
+            // Pengecekan jika struktur balasan tidak sesuai
+            if (!result.candidates || !result.candidates[0]?.content?.parts[0]?.text) {
+                console.error("Struktur balasan dari Gemini tidak valid:", result);
+                throw new Error("Ivy memberikan balasan yang aneh.");
+            }
             const IvyResponse = result.candidates[0].content.parts[0].text;
             
             loadingIndicator.remove();
             appendChatMessage(IvyResponse, 'Ivy');
         } catch (error) {
+            console.error("Terjadi kesalahan saat menghubungi Ivy:", error); // Ini akan menampilkan error asli di konsol
             loadingIndicator.remove();
             appendChatMessage("Aduh, Beb! Kayaknya ada gangguan sihir, aku nggak bisa jawab sekarang. Coba lagi nanti, ya!", 'Ivy');
+        } finally {
+            // Mantra ini memastikan input kembali normal setelah Ivy selesai (baik berhasil maupun gagal)
+            isIvyThinking = false;
+            chatInput.disabled = false;
+            chatInput.placeholder = 'Tanya sesuatu ke Ivy...';
         }
     };
 }
