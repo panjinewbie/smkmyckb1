@@ -1105,19 +1105,46 @@ function setupAdminDashboard() {
         studentModal.classList.add('opacity-0');
         setTimeout(() => studentModal.classList.add('hidden'), 300);
     };
+
+    // --- PERBAIKAN: Logika QR Scanner yang lebih aman dan andal ---
     const openQrModal = () => {
         audioPlayer.openModal();
+        // Reset pesan hasil scan setiap kali modal dibuka
+        const scanResultElement = document.getElementById('scan-result');
+        if(scanResultElement) scanResultElement.textContent = 'Arahkan kamera ke Kode QR Siswa';
+
         qrScannerModal.classList.remove('hidden');
-        setTimeout(() => qrScannerModal.classList.remove('opacity-0'), 10);
-        startQrScanner();
+        setTimeout(() => {
+            qrScannerModal.classList.remove('opacity-0');
+            startQrScanner(); // Mulai scanner setelah modal terlihat
+        }, 50);
     };
-    const closeQrModal = () => {
+
+    // Parameter `fromScanSuccess` untuk menandakan modal ditutup oleh scanner, bukan manual
+    const closeQrModal = (fromScanSuccess = false) => {
         audioPlayer.closeModal();
         qrScannerModal.classList.add('opacity-0');
-        if (html5QrCode && html5QrCode.isScanning) {
-            html5QrCode.stop().catch(err => console.error("Gagal stop scanner.", err));
+
+        // Hanya hentikan scanner jika ditutup manual (bukan karena scan berhasil)
+        // Ini mencegah error karena mencoba menghentikan scanner yang sudah berhenti.
+        if (!fromScanSuccess && html5QrCode && html5QrCode.isScanning) {
+            html5QrCode.stop()
+                .then(() => console.log("QR Scanner dihentikan secara manual."))
+                .catch(err => console.error("Gagal stop scanner saat tutup manual.", err));
         }
-        setTimeout(() => qrScannerModal.classList.add('hidden'), 300);
+
+        setTimeout(() => {
+            qrScannerModal.classList.add('hidden');
+            // Bersihkan elemen video agar tidak ada sisa stream kamera
+            const qrReaderElement = document.getElementById('qr-reader');
+            if (qrReaderElement) {
+                qrReaderElement.innerHTML = "";
+            }
+            // Reset instance scanner
+            if (html5QrCode) {
+                html5QrCode = null;
+            }
+        }, 300);
     };
 
     // --- EVENT LISTENER MODAL & NAVIGASI ---
@@ -2415,21 +2442,41 @@ startButton.onclick = async () => {
     });
     
     // --- LOGIKA QR CODE SCANNER ---
+    // Event listener untuk tombol utama "Scan QR"
     document.getElementById('scan-qr-button').addEventListener('click', openQrModal);
-    document.getElementById('close-qr-modal-button').addEventListener('click', closeQrModal);
+    // PERBAIKAN: Menggunakan ID yang benar dari HTML (`close-qr-scanner-modal-button`)
+    document.getElementById('close-qr-scanner-modal-button').addEventListener('click', () => closeQrModal(false));
     
-    function startQrScanner() {
-        const qrResultElem = document.getElementById('qr-scan-result');
+    // PERBAIKAN: Fungsi start scanner yang lebih andal
+    const startQrScanner = () => {
+        const scanResultElement = document.getElementById('scan-result');
+        if (!document.getElementById('qr-reader')) {
+            console.error("Elemen #qr-reader tidak ditemukan.");
+            return;
+        }
+
         html5QrCode = new Html5Qrcode("qr-reader");
-        html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 250 } },
-            (decodedText, decodedResult) => {
-                qrResultElem.textContent = `NIS terdeteksi: ${decodedText}. Mencari...`;
-                html5QrCode.stop();
-                closeQrModal();
-                findStudentByNisAndMarkPresent(decodedText);
-            })
-            .catch(err => qrResultElem.textContent = "Gagal memulai kamera.");
-    }
+
+        const onScanSuccess = (decodedText, decodedResult) => {
+            // Pastikan hanya memproses sekali saja
+            if (html5QrCode && html5QrCode.isScanning) {
+                html5QrCode.stop()
+                    .then(() => {
+                        scanResultElement.textContent = `NIS terdeteksi: ${decodedText}. Memproses...`;
+                        audioPlayer.success();
+                        findStudentByNisAndMarkPresent(decodedText);
+                        // Tutup modal setelah jeda singkat agar pesan terlihat
+                        setTimeout(() => closeQrModal(true), 1500);
+                    })
+                    .catch(err => console.error("Gagal menghentikan scanner setelah scan berhasil.", err));
+            }
+        };
+
+        html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 250 } }, onScanSuccess)
+            .catch(err => {
+                scanResultElement.textContent = "Gagal memulai kamera. Beri izin akses kamera.";
+            });
+    };
     
     async function findStudentByNisAndMarkPresent(nis) {
         const snapshot = await get(query(ref(db, 'students'), orderByChild('nis'), equalTo(nis)));
