@@ -90,7 +90,11 @@ onAuthStateChanged(auth, async (user) => {
             if (isLoginPage || isAdminPage) {
                 window.location.href = 'student.html'; // Paksa ke dasbor siswa
             } else if (isStudentPage) {
-                setupStudentDashboard(user.uid); // Jalankan fungsi siswa
+                // --- MANTRA BARU: Cek efek status sebelum menampilkan dasbor ---
+                const isMuted = await checkAndApplyStatusEffects(user.uid);
+                if (!isMuted) {
+                    setupStudentDashboard(user.uid); // Jalankan fungsi siswa jika tidak dibisukan
+                }
             }
         }
     } else {
@@ -119,6 +123,63 @@ const showToast = (message, isError = false) => {
     }
 };
 
+// --- FUNGSI BARU: Logika Inti untuk Efek Status ---
+async function checkAndApplyStatusEffects(uid) {
+    const studentRef = ref(db, `students/${uid}`);
+    const studentSnap = await get(studentRef);
+    if (!studentSnap.exists()) return false;
+
+    const studentData = studentSnap.val();
+    const statusEffects = studentData.statusEffects || {};
+    const updates = {};
+    const now = Date.now();
+    let hasActiveEffects = false;
+    let isMuted = false;
+
+    for (const effectKey in statusEffects) {
+        const effect = statusEffects[effectKey];
+        if (!effect || !effect.expires) continue;
+
+        // 1. Hapus efek yang sudah kedaluwarsa
+        if (now > effect.expires) {
+            updates[`/students/${uid}/statusEffects/${effectKey}`] = null;
+            if (effectKey === 'racun') {
+                updates[`/students/${uid}/lastPoisonCheck`] = null; // Hapus juga jejak racun
+            }
+            continue; // Lanjut ke efek berikutnya
+        }
+
+        hasActiveEffects = true;
+
+        // 2. Terapkan konsekuensi efek aktif
+        if (effectKey === 'diam') {
+            isMuted = true;
+            alert('Akunmu terkena sihir Diam! Kamu tidak bisa masuk untuk sementara waktu sampai efeknya hilang.');
+            await signOut(auth);
+            break; // Hentikan loop jika di-logout
+        }
+
+        if (effectKey === 'racun') {
+            const lastCheck = studentData.lastPoisonCheck || now;
+            const hoursPassed = (now - lastCheck) / (1000 * 60 * 60);
+            const damagePerHour = 1; // Mengurangi 1 HP setiap jam
+            const totalDamage = Math.floor(hoursPassed * damagePerHour);
+
+            if (totalDamage > 0) {
+                updates[`/students/${uid}/hp`] = Math.max(0, studentData.hp - totalDamage);
+                updates[`/students/${uid}/lastPoisonCheck`] = now;
+                console.log(`Siswa ${studentData.nama} kehilangan ${totalDamage} HP karena racun.`);
+            }
+        }
+    }
+
+    if (Object.keys(updates).length > 0) {
+        await update(ref(db), updates);
+        if (hasActiveEffects) showToast("Efek status aktif diterapkan...", false);
+    }
+
+    return isMuted;
+}
 // --- FUNGSI PEMBANTU BARU: Membuat Ikon Lucide dengan Aman ---
 function createLucideIcons() {
     try {
@@ -336,10 +397,13 @@ if(profileNavLink && profileNavLink.textContent === 'Profil'){
             };
 
             for (const effectKey in studentData.statusEffects) {
-                if (studentData.statusEffects[effectKey] === true && effectMap[effectKey]) {
+                const effectData = studentData.statusEffects[effectKey];
+                if (effectData && effectMap[effectKey]) {
                     const effectInfo = effectMap[effectKey];
+                    const expiryDate = new Date(effectData.expires).toLocaleString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
                     const effectDiv = document.createElement('div');
                     effectDiv.className = `flex flex-col items-center text-center p-3 bg-${effectInfo.color}-50 rounded-lg border border-${effectInfo.color}-200`;
+                    effectDiv.title = `Berakhir pada: ${expiryDate}`;
                     effectDiv.innerHTML = `
                         <i data-lucide="${effectInfo.icon}" class="w-6 h-6 text-${effectInfo.color}-500 mb-1"></i>
                         <span class="text-xs text-gray-700 font-medium">${effectInfo.text}</span>
@@ -1609,9 +1673,17 @@ if (addAdminBountyButton && adminBountyModal && adminBountyForm && adminBountyLi
                     } else if (action.type === 'effect') {
                         const effect = document.getElementById('effect-type').value;
                         
+                        // Efek akan berlaku selama 3 hari dari sekarang
+                        const durationInDays = 3;
+                        const expiryTimestamp = Date.now() + (durationInDays * 24 * 60 * 60 * 1000);
+
                         if (action.operation === 'add') {
-                            updates[`/students/${uid}/statusEffects/${effect}`] = true;
-                             successMessage = `Memberikan efek ${effect} ke ${uids.length} siswa.`;
+                            updates[`/students/${uid}/statusEffects/${effect}`] = { expires: expiryTimestamp };
+                            // Logika khusus saat memberikan efek racun, simpan waktu pengecekan awal
+                            if (effect === 'racun') {
+                                updates[`/students/${uid}/lastPoisonCheck`] = Date.now();
+                            }
+                            successMessage = `Memberikan efek ${effect} ke ${uids.length} siswa (durasi ${durationInDays} hari).`;
                         } else {
                             updates[`/students/${uid}/statusEffects/${effect}`] = null; // Hapus efek
                             successMessage = `Menghapus efek ${effect} dari ${uids.length} siswa.`;
