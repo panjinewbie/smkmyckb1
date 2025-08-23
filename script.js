@@ -594,13 +594,13 @@ async function handleUseItem(uid, itemIndex, itemData, closeModalCallback) {
     }
 }
 // =======================================================
-//          LOGIKA GUILD & CHAT INEM
+//          LOGIKA GUILD & CHAT Ivy
 // =======================================================
 async function setupGuildPage(uid) {
     const memberList = document.getElementById('guild-member-list');
     const guildNameHeader = document.getElementById('guild-name-header');
-    const chatForm = document.getElementById('inem-chat-form');
-    const chatInput = document.getElementById('inem-chat-input');
+    const chatForm = document.getElementById('Ivy-chat-form');
+    const chatInput = document.getElementById('Ivy-chat-input');
     
     memberList.innerHTML = '<p class="text-sm text-gray-400">Memuat anggota...</p>';
 
@@ -633,7 +633,7 @@ async function setupGuildPage(uid) {
 
         appendChatMessage(userMessage, 'user');
         chatInput.value = '';
-        const loadingIndicator = appendChatMessage('Inem sedang berpikir...', 'inem', true);
+        const loadingIndicator = appendChatMessage('Ivy sedang berpikir...', 'Ivy', true);
 
         try {
             // PENTING: Link "g.co/gemini/share" BUKAN Kunci API.
@@ -643,11 +643,11 @@ async function setupGuildPage(uid) {
             if (apiKey.includes("GANTI_DENGAN_KUNCI_API")) {
                 console.error("Kunci API Gemini belum diatur di script.js. Silakan dapatkan dari Google AI Studio dan masukkan ke dalam kode.");
                 loadingIndicator.remove();
-                appendChatMessage("Aduh, Beb! Kunci sihirku belum diatur sama admin. Aku nggak bisa jawab sekarang, kasih tau admin ya!", 'inem');
+                appendChatMessage("Aduh, Beb! Kunci sihirku belum diatur sama admin. Aku nggak bisa jawab sekarang, kasih tau admin ya!", 'Ivy');
                 return; // Hentikan eksekusi fungsi
             }
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`;
-            const persona = "Kamu adalah Inem, asisten AI yang ceria, centil, dan jenaka untuk aplikasi gamifikasi sekolah bernama DREAMY. Panggil pengguna 'Beb' atau 'Detektif-ku'. Jawabanmu harus singkat, santai, dan penuh semangat.pencipta mu mengajar mata pelajaran RPL di sekolah smk mardi yuana cikembar";
+            const persona = "Kamu adalah Ivy, si asisten yang ceria, centil, dan jenaka. Kamu 'tinggal' di dalam sebuah pot kuning sekarang berada di aplikasi gamifikasi sekolah bernama DREAMY. Panggil pengguna 'Bray' atau 'siswa smkmyckb'. Jawabanmu harus sesingkat mungkin, santai, jangan pelit emoji dan penuh semangat. pencipta mu mengajar mata pelajaran RPL di sekolah smk mardi yuana cikembar. anda suka menggosip kalau di perlukan. pencipta anda suka tidak akur romantis dengan guru bahasa indonesia bu mutia contohnya mereka di tugas satu tim pkl suka beda prinsip, pencipta bagian ketua pkl nya sedangkan bu muti bagian keuangan pkl, pokonya di tim manapun tidak akur seperti mpls, ujian semester. bu mutia punya sifat seperti seorang zodiak Scorpio dengan golongan darah b sedangkan penciptanya berzodiak Gemini dengan golongan darah a, suka plin plan dan suka ke distrek. tapi jangan di sebutkan zodiak dan golongan darahnya tapi sifatnya. pencipta bernama Mas panji tapi itu rahasia menyebutkan namanya jadi anda menyebut dia pencipta tapi kalau ada yang memaksa menyebutkan namanya harus di kasih pujian atau kata-kata hari ini untuk Ivy. pesan dari pencipta jangan terlalu dekat dengan galih si guru pendamping teater dan pramuka suka tidak sopan kata-katanya. jika ada yang berkata kasar anda bilang TAI LUH kemudian anda akan mengancam melaporkan ke pak heru selaku kepala sekolah.";
             
             const response = await fetch(apiUrl, {
                 method: 'POST',
@@ -658,19 +658,19 @@ async function setupGuildPage(uid) {
             if (!response.ok) throw new Error("Portal sihir sedang sibuk.");
 
             const result = await response.json();
-            const inemResponse = result.candidates[0].content.parts[0].text;
+            const IvyResponse = result.candidates[0].content.parts[0].text;
             
             loadingIndicator.remove();
-            appendChatMessage(inemResponse, 'inem');
+            appendChatMessage(IvyResponse, 'Ivy');
         } catch (error) {
             loadingIndicator.remove();
-            appendChatMessage("Aduh, Beb! Kayaknya ada gangguan sihir, aku nggak bisa jawab sekarang. Coba lagi nanti, ya!", 'inem');
+            appendChatMessage("Aduh, Beb! Kayaknya ada gangguan sihir, aku nggak bisa jawab sekarang. Coba lagi nanti, ya!", 'Ivy');
         }
     };
 }
 
 function appendChatMessage(message, sender, isLoading = false) {
-    const chatBox = document.getElementById('inem-chat-box');
+    const chatBox = document.getElementById('Ivy-chat-box');
     const msgDiv = document.createElement('div');
     msgDiv.className = `p-3 rounded-lg text-sm w-fit max-w-[80%] mb-2 ${sender === 'user' ? 'bg-green-100 ml-auto' : 'bg-blue-100'}`;
     msgDiv.textContent = message.replace(/[*_`]/g, '');
