@@ -4,7 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DREAMY - Dasbor Admin</title>
-    
+    <style>
+        /* Anda bisa menata ukuran pemindai di sini */
+        #qr-reader {
+            width: 100%;
+            max-width: 400px; /* Batasi lebar maksimum agar tidak terlalu besar di layar lebar */
+            border: 2px dashed #9ca3af; /* Garis putus-putus agar terlihat seperti area scan */
+            border-radius: 8px;
+            overflow: hidden; /* Sembunyikan bagian video yang mungkin keluar dari border */
+        }
+        /* Memberi sedikit ruang di tengah untuk hasil scan */
+        #scan-result {
+            margin-top: 20px;
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+    </style>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,6 +28,7 @@
     <script src="https://unpkg.com/html5-qrcode/html5-qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
     <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="data:;base64,iVBORw0KGgo=">
 </head>
 <body class="min-h-screen">
 
@@ -399,7 +415,17 @@
     </div>
 
     <div id="qr-scanner-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-30 hidden modal-overlay opacity-0">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-lg m-4 modal-content transform scale-95">
+            <div class="p-4 border-b flex justify-between items-center">
+                <h3 class="text-lg font-semibold">Pindai Kode QR Siswa</h3>
+                <button id="close-qr-scanner-modal-button" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+            </div>
+            <div class="p-6 flex flex-col items-center">
+                <div id="qr-reader"></div>
+                <div id="scan-result" class="text-center mt-4 font-semibold text-gray-600"></div>
+            </div>
         </div>
+    </div>
     <div id="toast-notification" class="fixed bottom-5 right-5 bg-green-500 text-white py-2 px-4 rounded-lg shadow-lg hidden transition-opacity duration-300"></div>
     <script type="module" src="script.js"></script>
         
