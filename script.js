@@ -256,33 +256,92 @@ if(loginForm) {
             const email = document.getElementById('login-email').value;
             const password = document.getElementById('login-password').value;
             const userCredential = await signInWithEmailAndPassword(auth, email, password);
-            
-            // --- MANTRA BARU: Kirim Notifikasi Login ke Admin ---
+
+            // Panggil fungsi bonus login HARIAN (ini yang baru kita tambahkan)
+            await handleDailyLogin(userCredential.user.uid);
+
+            // Kirim Notifikasi Login ke Admin (ini yang sudah ada sebelumnya)
             const roleRef = ref(db, `roles/${userCredential.user.uid}`);
             const roleSnap = await get(roleRef);
+
             // Hanya kirim notifikasi jika yang login adalah siswa
             if (roleSnap.exists() && !roleSnap.val().isAdmin) {
                 const studentSnap = await get(ref(db, `students/${userCredential.user.uid}`));
                 if (studentSnap.exists()) {
                     const studentName = studentSnap.val().nama;
-                    // Panggil fungsi notifikasi global
                     addNotification(`Siswa <strong>${studentName}</strong> baru saja login.`, 'login', { studentId: userCredential.user.uid });
                 }
             }
-            // --- AKHIR MANTRA ---
 
         } catch (error) {
             loginNotification.textContent = 'Email atau password salah!';
             loginNotification.classList.remove('hidden');
             loginNotification.classList.add('bg-red-500');
-            audioPlayer.error(); // Suara error saat login gagal
+            audioPlayer.error();
             loginButton.disabled = false;
             loginButton.textContent = 'Masuk Dunia DREAMY';
         }
     });
 }
 
+// =======================================================
+//          LOGIKA BONUS LOGIN HARIAN
+// =======================================================
+async function handleDailyLogin(uid) {
+    const today = getLocalDateString(new Date());
+    const studentRef = ref(db, `students/${uid}`);
+    const studentSnap = await get(studentRef);
 
+    if (!studentSnap.exists()) return; // Kalo data siswa gak ada, ya udah
+
+    const studentData = studentSnap.val();
+    const lastLogin = studentData.lastLoginDate || null;
+    let streak = studentData.loginStreak || 0;
+
+    // Kalo hari ini belum login...
+    if (lastLogin !== today) {
+        const yesterday = getLocalDateString(new Date(Date.now() - 86400000));
+
+        // Cek apakah kemarin login? Kalo iya, streak nambah!
+        if (lastLogin === yesterday) {
+            streak++;
+        } else {
+            // Kalo bolos, ya reset lagi dari 1
+            streak = 1;
+        }
+
+        let bonusCoin = 5;
+        let bonusXp = 5;
+        let toastMessage = `Selamat Datang Kembali! Kamu dapat +${bonusCoin} Koin dan +${bonusXp} XP.`;
+
+        // Kalau streak mencapai 7 hari, kasih bonus GEDE!
+        if (streak >= 7) {
+            bonusCoin += 50; // Bonus tambahan
+            bonusXp += 50;   // Bonus tambahan
+            toastMessage = `🔥 WOW! Login 7 hari beruntun! Kamu dapat bonus besar: +${bonusCoin} Koin dan +${bonusXp} XP!`;
+            streak = 0; // Reset streak biar mulai dari awal lagi besok
+            audioPlayer.success(); // Suara spesial buat bonus gede
+        }
+
+        // Siapin data baru buat di-update ke database
+        const updates = {};
+        const currentCoin = studentData.coin || 0;
+        const currentXp = studentData.xp || 0;
+        const xpPerLevel = 1000;
+        const currentLevel = studentData.level || 1;
+
+        const newTotalXp = (currentLevel - 1) * xpPerLevel + currentXp + bonusXp;
+
+        updates[`/students/${uid}/coin`] = currentCoin + bonusCoin;
+        updates[`/students/${uid}/xp`] = newTotalXp % xpPerLevel;
+        updates[`/students/${uid}/level`] = Math.floor(newTotalXp / xpPerLevel) + 1;
+        updates[`/students/${uid}/lastLoginDate`] = today;
+        updates[`/students/${uid}/loginStreak`] = streak;
+
+        await update(ref(db), updates);
+        showToast(toastMessage); // Tampilkan notifikasi hadiahnya
+    }
+}
 // =======================================================
 //                  LOGIKA DASBOR SISWA
 // =======================================================
@@ -384,6 +443,7 @@ if(profileNavLink && profileNavLink.textContent === 'Profil'){
         document.getElementById('xp-value').textContent = `${studentData.xp} / 1000`;
         document.getElementById('xp-bar').style.width = `${(studentData.xp / 1000) * 100}%`;
         document.getElementById('coin-value').textContent = studentData.coin;
+        document.getElementById('login-streak-value').textContent = `${studentData.loginStreak || 0} Hari`;
         
         const inventorySlots = document.getElementById('inventory-slots');
         inventorySlots.innerHTML = '';
