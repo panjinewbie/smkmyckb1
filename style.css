@@ -6,3 +6,23 @@ button:disabled { opacity: 0.7; cursor: not-allowed; }
 .hp-bar, .xp-bar { transition: width 0.5s ease-in-out; }
 .image-preview { max-width: 150px; max-height: 150px; object-fit: cover; }
 #qr-reader { border: 2px dashed #3b82f6; border-radius: 8px; }
+/* --- MANTRA BARU UNTUK BACKGROUND LOGIN --- */
+.login-bg {
+    background-image: url('asset/gambar/background-login.jpg.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+/* --- MANTRA BARU UNTUK BACKGROUND ADMIN --- */
+.admin-bg {
+    background-image: url('asset/gambar/background-login.jpg.png');
+    background-size: cover;
+    background-position: center center;
+    background-attachment: fixed; /* Biar background-nya diem pas di-scroll */
+}
+
+/* Bikin kartu-kartu konten jadi sedikit transparan biar nyatu sama background */
+#admin-dashboard-page .bg-white {
+    background-color: rgba(255, 255, 255, 0.9); /* Sedikit tembus pandang */
+    backdrop-filter: blur(2px); /* Efek blur di belakang kartu (opsional, tapi keren!) */
+}
