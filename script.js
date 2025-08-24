@@ -457,6 +457,8 @@ if(profileNavLink && profileNavLink.textContent === 'Profil'){
 // =======================================================
 //                  LOGIKA TOKO SISWA
 // =======================================================
+// GANTIKAN FUNGSI openStudentShop YANG LAMA DENGAN YANG INI DI script.js
+
 async function openStudentShop(uid) {
     const shopModal = document.getElementById('student-shop-modal');
     const shopItemList = document.getElementById('student-shop-item-list');
@@ -470,6 +472,43 @@ async function openStudentShop(uid) {
     }
 
     let buyHandler; // Dideklarasikan di sini agar bisa dihapus nanti
+
+    // Fungsi untuk memuat ulang item di toko
+    const reloadShopItems = async () => {
+        shopItemList.innerHTML = '<p class="text-center text-gray-400 col-span-full">Memuat ulang item...</p>';
+        
+        const [studentSnap, itemsSnap] = await Promise.all([
+            get(ref(db, `students/${uid}`)),
+            get(ref(db, 'shopItems'))
+        ]);
+
+        if (!studentSnap.exists()) {
+            showToast("Data siswa tidak ditemukan!", true);
+            closeShop();
+            return;
+        }
+
+        const studentData = studentSnap.val();
+        studentCoinDisplay.textContent = studentData.coin || 0;
+
+        shopItemList.innerHTML = '';
+        if (!itemsSnap.exists() || Object.keys(itemsSnap.val()).length === 0) {
+            shopItemList.innerHTML = '<p class="text-center text-gray-400 col-span-full">Toko masih kosong.</p>';
+            return;
+        }
+
+        const itemsData = itemsSnap.val();
+        Object.entries(itemsData).forEach(([itemId, item]) => {
+            const canAfford = (studentData.coin || 0) >= item.price;
+            const inStock = (item.stock || 0) > 0;
+            const isBuyable = canAfford && inStock;
+            const card = document.createElement('div');
+            card.className = 'bg-white p-3 rounded-lg shadow flex flex-col';
+            card.innerHTML = `<img src="${item.imageBase64 || 'https://placehold.co/300x200/e2e8f0/3d4852?text=Item'}" class="w-full h-24 object-cover rounded-md mb-2"><h4 class="text-md font-bold">${item.name}</h4><p class="text-xs text-gray-600 flex-grow mb-2">${item.description}</p><div class="flex justify-between items-center mt-2 text-sm"><span class="font-semibold text-yellow-600 flex items-center"><i data-lucide="coins" class="w-4 h-4 mr-1"></i>${item.price}</span><span class="text-gray-500 text-xs">Stok: ${item.stock}</span></div><div class="mt-auto pt-2"><button data-id="${itemId}" class="buy-item-btn w-full p-2 rounded-lg text-white font-bold text-sm ${isBuyable ? 'bg-green-500 hover:bg-green-600' : 'bg-gray-400 cursor-not-allowed'}" ${!isBuyable ? 'disabled' : ''}>${canAfford ? (inStock ? 'Beli' : 'Stok Habis') : 'Koin Kurang'}</button></div>`;
+            shopItemList.appendChild(card);
+        });
+        createLucideIcons();
+    };
 
     const closeShop = () => {
         audioPlayer.closeModal();
@@ -487,7 +526,7 @@ async function openStudentShop(uid) {
         if (!button) return;
 
         button.disabled = true;
-        button.textContent = 'Memproses...';
+        button.innerHTML = '<span class="animate-spin">..</span>'; // Animasi loading
 
         const itemId = button.dataset.id;
 
@@ -507,10 +546,10 @@ async function openStudentShop(uid) {
             if ((itemData.stock || 0) <= 0) throw new Error("Stok item habis!");
 
             const inventory = studentData.inventory || [];
-            const inventorySize = 2 + ((studentData.level - 1) * 1);
+            const inventorySize = 2 + ((studentData.level || 1) * 1);
             let emptySlotIndex = -1;
             for (let i = 0; i < inventorySize; i++) {
-                if (!inventory[i]) { // Mencari slot kosong (null atau undefined)
+                if (!inventory[i]) {
                     emptySlotIndex = i;
                     break;
                 }
@@ -530,16 +569,21 @@ async function openStudentShop(uid) {
             
             showToast(`Berhasil membeli ${itemData.name}!`);
             audioPlayer.success();
-            closeShop();
+            // Muat ulang item toko untuk update tampilan (stok, tombol beli, dll)
+            await reloadShopItems(); 
 
         } catch (error) {
             showToast(error.message, true);
             audioPlayer.error();
-            // Menutup modal saat error agar pengguna melihat data terbaru saat membuka kembali
-            closeShop();
+            // Jika error, aktifkan kembali tombolnya setelah jeda singkat
+            setTimeout(() => {
+               button.disabled = false;
+               button.innerHTML = 'Beli';
+            }, 1000);
         }
     };
 
+    // --- ALUR UTAMA ---
     shopItemList.addEventListener('click', buyHandler);
     closeButton.onclick = closeShop;
 
@@ -547,30 +591,10 @@ async function openStudentShop(uid) {
     shopModal.classList.remove('hidden');
     setTimeout(() => shopModal.classList.remove('opacity-0'), 10);
 
-    shopItemList.innerHTML = '<p class="text-center text-gray-400 col-span-full">Memuat item...</p>';
-
-    const [studentSnap, itemsSnap] = await Promise.all([get(ref(db, `students/${uid}`)), get(ref(db, 'shopItems'))]);
-
-    if (!studentSnap.exists()) { showToast("Data siswa tidak ditemukan!", true); closeShop(); return; }
-
-    const studentData = studentSnap.val();
-    studentCoinDisplay.textContent = studentData.coin || 0;
-
-    shopItemList.innerHTML = '';
-    if (!itemsSnap.exists() || Object.keys(itemsSnap.val()).length === 0) { shopItemList.innerHTML = '<p class="text-center text-gray-400 col-span-full">Toko masih kosong.</p>'; return; }
-
-    const itemsData = itemsSnap.val();
-    Object.entries(itemsData).forEach(([itemId, item]) => {
-        const canAfford = (studentData.coin || 0) >= item.price;
-        const inStock = (item.stock || 0) > 0;
-        const isBuyable = canAfford && inStock;
-        const card = document.createElement('div');
-        card.className = 'bg-white p-3 rounded-lg shadow flex flex-col';
-        card.innerHTML = `<img src="${item.imageBase64 || 'https://placehold.co/300x200/e2e8f0/3d4852?text=Item'}" class="w-full h-24 object-cover rounded-md mb-2"><h4 class="text-md font-bold">${item.name}</h4><p class="text-xs text-gray-600 flex-grow mb-2">${item.description}</p><div class="flex justify-between items-center mt-2 text-sm"><span class="font-semibold text-yellow-600 flex items-center"><i data-lucide="coins" class="w-4 h-4 mr-1"></i>${item.price}</span><span class="text-gray-500 text-xs">Stok: ${item.stock}</span></div><div class="mt-auto pt-2"><button data-id="${itemId}" class="buy-item-btn w-full p-2 rounded-lg text-white font-bold text-sm ${isBuyable ? 'bg-green-500 hover:bg-green-600' : 'bg-gray-400 cursor-not-allowed'}" ${!isBuyable ? 'disabled' : ''}>${canAfford ? (inStock ? 'Beli' : 'Stok Habis') : 'Koin Kurang'}</button></div>`;
-        shopItemList.appendChild(card);
-    });
-    createLucideIcons();
+    // Langsung panggil fungsi untuk memuat item saat modal pertama kali dibuka
+    await reloadShopItems();
 }
+    
 
 // =======================================================
 //                  LOGIKA PENGGUNAAN ITEM
