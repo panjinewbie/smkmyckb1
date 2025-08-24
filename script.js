@@ -307,6 +307,7 @@ const bountyBoardNavLink = document.getElementById('bounty-board-nav-link');
 const navLinks = document.querySelector('nav .flex'); // Target navigasi
 const profilePage = document.getElementById('student-main-content');
 const bountyBoardPage = document.getElementById('bounty-board-page');
+ const shopPage = document.getElementById('shop-page'); // Halaman baru
 const guildPage = document.getElementById('guild-page')
 
 if (bountyBoardNavLink) {
@@ -335,6 +336,7 @@ navLinks.addEventListener('click', (e) => {
     // Sembunyikan semua halaman
     profilePage.classList.add('hidden');
     bountyBoardPage.classList.add('hidden');
+    shopPage.classList.add('hidden');
     guildPage.classList.add('hidden');
 
     // Reset style semua link
@@ -345,6 +347,9 @@ navLinks.addEventListener('click', (e) => {
 
     if (pageId === 'bounty-board') {
         bountyBoardPage.classList.remove('hidden');
+        } else if (pageId === 'shop') {
+            shopPage.classList.remove('hidden');
+            setupStudentShopPage(uid); 
     } else if (pageId === 'guild') {
         guildPage.classList.remove('hidden');
         setupGuildPage(uid); // Panggil mantra untuk Guild
@@ -480,38 +485,81 @@ if(profileNavLink && profileNavLink.textContent === 'Profil'){
 // =======================================================
 //                  LOGIKA TOKO SISWA
 // =======================================================
-async function openStudentShop(uid) {
-    const shopModal = document.getElementById('student-shop-modal');
+async function setupStudentShopPage(uid) {
     const shopItemList = document.getElementById('student-shop-item-list');
     const studentCoinDisplay = document.getElementById('student-shop-coin-display');
-    const closeButton = document.getElementById('close-student-shop-modal-button');
 
-    if (!shopModal || !shopItemList || !studentCoinDisplay || !closeButton) {
-        console.error("Elemen UI Toko Siswa tidak ditemukan! Pastikan ID elemen di student.html sudah benar.");
-        showToast("Gagal membuka toko.", true);
+    if (!shopItemList || !studentCoinDisplay) {
+        console.error("Elemen UI Toko Siswa tidak ditemukan!");
         return;
     }
 
-    let buyHandler; // Dideklarasikan di sini agar bisa dihapus nanti
+    // --- MANTRA BARU 1: Fungsi khusus untuk memuat dan menampilkan item ---
+    const renderShopItems = async () => {
+        // Tampilkan pesan loading setiap kali fungsi ini dipanggil
+        shopItemList.innerHTML = '<p class="text-center text-gray-400 col-span-full">Memuat item...</p>';
 
-    const closeShop = () => {
-        audioPlayer.closeModal();
-        shopModal.classList.add('opacity-0');
-        setTimeout(() => {
-            shopModal.classList.add('hidden');
-            if (buyHandler) {
-                shopItemList.removeEventListener('click', buyHandler); // Membersihkan event listener
+        try {
+            // Kita tetap pakai mantra get() seperti di kodemu, tapi sekarang di dalam fungsi khusus
+            const [studentSnap, itemsSnap] = await Promise.all([
+                get(ref(db, `students/${uid}`)),
+                get(ref(db, 'shopItems'))
+            ]);
+
+            if (!studentSnap.exists()) {
+                throw new Error("Data siswa tidak ditemukan!");
             }
-        }, 300);
+
+            const studentData = studentSnap.val();
+            studentCoinDisplay.textContent = studentData.coin || 0;
+
+            // Kosongkan pesan loading sebelum menampilkan item
+            shopItemList.innerHTML = '';
+
+            if (!itemsSnap.exists() || Object.keys(itemsSnap.val()).length === 0) {
+                shopItemList.innerHTML = '<p class="text-center text-gray-400 col-span-full">Toko masih kosong.</p>';
+                return;
+            }
+
+            const itemsData = itemsSnap.val();
+            Object.entries(itemsData).forEach(([itemId, item]) => {
+                const canAfford = (studentData.coin || 0) >= item.price;
+                const inStock = (item.stock || 0) > 0;
+                const isBuyable = canAfford && inStock;
+                const card = document.createElement('div');
+                card.className = 'bg-white p-3 rounded-lg shadow flex flex-col border hover:shadow-lg transition-shadow';
+                card.innerHTML = `
+                    <img src="${item.imageBase64 || 'https://placehold.co/300x200/e2e8f0/3d4852?text=Item'}" class="w-full h-24 object-cover rounded-md mb-2">
+                    <h4 class="text-md font-bold">${item.name}</h4>
+                    <p class="text-xs text-gray-600 flex-grow mb-2">${item.description}</p>
+                    <div class="flex justify-between items-center mt-2 text-sm">
+                        <span class="font-semibold text-yellow-600 flex items-center"><i data-lucide="coins" class="w-4 h-4 mr-1"></i>${item.price}</span>
+                        <span class="text-gray-500 text-xs">Stok: ${item.stock}</span>
+                    </div>
+                    <div class="mt-auto pt-2">
+                        <button data-id="${itemId}" class="buy-item-btn w-full p-2 rounded-lg text-white font-bold text-sm ${isBuyable ? 'bg-green-500 hover:bg-green-600' : 'bg-gray-400 cursor-not-allowed'}" ${!isBuyable ? 'disabled' : ''}>
+                            ${canAfford ? (inStock ? 'Beli' : 'Stok Habis') : 'Koin Kurang'}
+                        </button>
+                    </div>`;
+                shopItemList.appendChild(card);
+            });
+            createLucideIcons();
+        } catch (error) {
+            // Jika ada error saat memuat, tampilkan pesan kesalahan
+            console.error("Gagal merender toko:", error);
+            showToast(error.message, true);
+            shopItemList.innerHTML = '<p class="text-center text-red-500 col-span-full">Oops! Gagal memuat item toko.</p>';
+        }
     };
 
-    buyHandler = async (e) => {
+    // --- MANTRA BARU 2: Fungsi untuk menghandle pembelian ---
+    const buyHandler = async (e) => {
         const button = e.target.closest('.buy-item-btn');
         if (!button) return;
 
+        const originalButtonText = button.textContent;
         button.disabled = true;
         button.textContent = 'Memproses...';
-
         const itemId = button.dataset.id;
 
         try {
@@ -533,7 +581,7 @@ async function openStudentShop(uid) {
             const inventorySize = 2 + ((studentData.level - 1) * 1);
             let emptySlotIndex = -1;
             for (let i = 0; i < inventorySize; i++) {
-                if (!inventory[i]) { // Mencari slot kosong (null atau undefined)
+                if (!inventory[i]) {
                     emptySlotIndex = i;
                     break;
                 }
@@ -551,55 +599,33 @@ async function openStudentShop(uid) {
             
             await update(ref(db), updates);
             
-            // --- MANTRA BARU: Kirim Notifikasi Transaksi ke Admin ---
             addNotification(
-                `<strong>${studentData.nama}</strong> membeli <strong>${itemData.name}</strong> seharga ${itemData.price} koin.`, 
+                `<strong>${studentData.nama}</strong> membeli <strong>${itemData.name}</strong>.`, 
                 'transaction', 
                 { studentId: uid, itemId: itemId }
             );
-            // --- AKHIR MANTRA ---
+            
             showToast(`Berhasil membeli ${itemData.name}!`);
             audioPlayer.success();
-            closeShop();
+            // PENTING: Kita tidak panggil renderShopItems() di sini karena onValue sudah tidak dipakai
+            // Transaksi akan otomatis me-refresh karena kita panggil renderShopItems() di akhir
 
         } catch (error) {
             showToast(error.message, true);
             audioPlayer.error();
-            // Menutup modal saat error agar pengguna melihat data terbaru saat membuka kembali
-            closeShop();
+            // Kembalikan teks tombol jika gagal
+            button.disabled = false;
+            button.textContent = originalButtonText;
         }
+        // --- MANTRA BARU 3: Panggil ulang fungsi render setelah transaksi selesai (baik berhasil maupun gagal) ---
+        // Ini akan memastikan UI selalu menampilkan data terbaru dari database.
+        await renderShopItems();
     };
 
-    shopItemList.addEventListener('click', buyHandler);
-    closeButton.onclick = closeShop;
-
-    audioPlayer.openModal();
-    shopModal.classList.remove('hidden');
-    setTimeout(() => shopModal.classList.remove('opacity-0'), 10);
-
-    shopItemList.innerHTML = '<p class="text-center text-gray-400 col-span-full">Memuat item...</p>';
-
-    const [studentSnap, itemsSnap] = await Promise.all([get(ref(db, `students/${uid}`)), get(ref(db, 'shopItems'))]);
-
-    if (!studentSnap.exists()) { showToast("Data siswa tidak ditemukan!", true); closeShop(); return; }
-
-    const studentData = studentSnap.val();
-    studentCoinDisplay.textContent = studentData.coin || 0;
-
-    shopItemList.innerHTML = '';
-    if (!itemsSnap.exists() || Object.keys(itemsSnap.val()).length === 0) { shopItemList.innerHTML = '<p class="text-center text-gray-400 col-span-full">Toko masih kosong.</p>'; return; }
-
-    const itemsData = itemsSnap.val();
-    Object.entries(itemsData).forEach(([itemId, item]) => {
-        const canAfford = (studentData.coin || 0) >= item.price;
-        const inStock = (item.stock || 0) > 0;
-        const isBuyable = canAfford && inStock;
-        const card = document.createElement('div');
-        card.className = 'bg-white p-3 rounded-lg shadow flex flex-col';
-        card.innerHTML = `<img src="${item.imageBase64 || 'https://placehold.co/300x200/e2e8f0/3d4852?text=Item'}" class="w-full h-24 object-cover rounded-md mb-2"><h4 class="text-md font-bold">${item.name}</h4><p class="text-xs text-gray-600 flex-grow mb-2">${item.description}</p><div class="flex justify-between items-center mt-2 text-sm"><span class="font-semibold text-yellow-600 flex items-center"><i data-lucide="coins" class="w-4 h-4 mr-1"></i>${item.price}</span><span class="text-gray-500 text-xs">Stok: ${item.stock}</span></div><div class="mt-auto pt-2"><button data-id="${itemId}" class="buy-item-btn w-full p-2 rounded-lg text-white font-bold text-sm ${isBuyable ? 'bg-green-500 hover:bg-green-600' : 'bg-gray-400 cursor-not-allowed'}" ${!isBuyable ? 'disabled' : ''}>${canAfford ? (inStock ? 'Beli' : 'Stok Habis') : 'Koin Kurang'}</button></div>`;
-        shopItemList.appendChild(card);
-    });
-    createLucideIcons();
+    // --- MANTRA BARU 4: Atur Event Listener dan Panggil Render Awal ---
+    shopItemList.removeEventListener('click', buyHandler); // Hapus listener lama
+    shopItemList.addEventListener('click', buyHandler);   // Pasang listener baru
+    renderShopItems(); // Panggil fungsi render untuk pertama kali saat halaman toko dibuka
 }
 
 // =======================================================
