@@ -3,15 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
     <title>DREAMY - Dasbor Admin</title>
     <style>
         /* Anda bisa menata ukuran pemindai di sini */
-        #qr-reader {
+        #qr-reader-wrapper {
             width: 100%;
             max-width: 400px; /* Batasi lebar maksimum agar tidak terlalu besar di layar lebar */
             border: 2px dashed #9ca3af; /* Garis putus-putus agar terlihat seperti area scan */
             border-radius: 8px;
+            position: relative;
             overflow: hidden; /* Sembunyikan bagian video yang mungkin keluar dari border */
+            background: #111827; /* Latar belakang gelap agar kontras */
+        }
+        #qr-reader video {
+            border-radius: 6px; /* Agar video di dalamnya juga punya sudut melengkung */
+        }
+        .scanner-line {
+            position: absolute;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: #059669; /* Hijau emerald */
+            box-shadow: 0 0 10px #059669, 0 0 20px #059669;
+            border-radius: 3px;
+            animation: scan-animation 2.5s infinite ease-in-out;
+        }
+        @keyframes scan-animation {
+            0% { top: 0%; }
+            50% { top: calc(100% - 3px); }
+            100% { top: 0%; }
         }
         /* Memberi sedikit ruang di tengah untuk hasil scan */
         #scan-result {
@@ -27,14 +48,36 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://unpkg.com/html5-qrcode/html5-qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
+    <!-- Firebase SDK -->
+    <script type="module" src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js"></script>
+    <script type="module" src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js"></script>
+    <script type="module" src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js"></script>
     <link rel="stylesheet" href="style.css">
     <link rel="icon" href="data:;base64,iVBORw0KGgo=">
 </head>
 <body class="min-h-screen">
 
     <div id="admin-dashboard-page" class="min-h-screen">
-        <header class="bg-white shadow-md sticky top-0 z-20">
-            <div class="container mx-auto px-4"><div class="h-20 flex items-center justify-between"><h1 class="text-2xl font-bold text-blue-600 font-game tracking-tighter">DREAMY</h1><div class="flex items-center space-x-2 md:space-x-4"><button class="p-2 rounded-full hover:bg-gray-100"><i data-lucide="bell" class="w-5 h-5 text-gray-600"></i></button><button class="p-2 rounded-full hover:bg-gray-100"><i data-lucide="help-circle" class="w-5 h-5 text-gray-600"></i></button><button id="admin-logout-button" class="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg"><span class="hidden md:inline">Logout</span><i data-lucide="log-out" class="w-5 h-5"></i></button></div></div></div>
+        <header class="bg-white shadow-md sticky top-0 z-30">
+            <div class="container mx-auto px-4"><div class="h-20 flex items-center justify-between"><h1 class="text-2xl font-bold text-blue-600 font-game tracking-tighter">DREAMY</h1><div class="flex items-center space-x-2 md:space-x-4">
+                <!-- Notification Bell -->
+                <div class="relative">
+                    <button id="notification-button" class="p-2 rounded-full hover:bg-gray-100 relative">
+                        <i data-lucide="bell" class="w-5 h-5 text-gray-600"></i>
+                        <span id="notification-badge" class="absolute top-1 right-1 block h-2 w-2 rounded-full bg-red-500 ring-1 ring-white hidden"></span>
+                    </button>
+                    <!-- Notification Dropdown Panel -->
+                    <div id="notification-panel" class="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-lg shadow-xl z-40 hidden origin-top-right transition-transform transform opacity-0 scale-95">
+                        <div class="p-4 border-b flex justify-between items-center">
+                            <h4 class="font-semibold text-gray-800">Notifikasi</h4>
+                            <button id="mark-all-read-button" class="text-xs text-blue-600 hover:underline font-medium">Tandai semua dibaca</button>
+                        </div>
+                        <div id="notification-list" class="max-h-96 overflow-y-auto">
+                            <div class="p-4 text-center text-gray-500">Tidak ada notifikasi baru.</div>
+                        </div>
+                    </div>
+                </div>
+                <button class="p-2 rounded-full hover:bg-gray-100"><i data-lucide="help-circle" class="w-5 h-5 text-gray-600"></i></button><button id="admin-logout-button" class="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg"><span class="hidden md:inline">Logout</span><i data-lucide="log-out" class="w-5 h-5"></i></button></div></div></div>
             <nav class="border-t border-gray-200"><div class="container mx-auto px-4"><div id="admin-nav-links" class="flex items-center space-x-4 md:space-x-6 overflow-x-auto">
                 <a href="#dashboard" class="nav-link active flex items-center px-2 py-4 text-sm font-semibold border-b-2"><i data-lucide="layout-dashboard" class="w-4 h-4 mr-2"></i>Dashboard</a>
                 <a href="#attendance" class="nav-link text-gray-500 hover:text-blue-600 flex items-center px-2 py-4 text-sm font-semibold border-b-2 border-transparent"><i data-lucide="calendar-check" class="w-4 h-4 mr-2"></i>Attendance</a>
@@ -420,9 +463,12 @@
                 <h3 class="text-lg font-semibold">Pindai Kode QR Siswa</h3>
                 <button id="close-qr-scanner-modal-button" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
             </div>
-            <div class="p-6 flex flex-col items-center">
-                <div id="qr-reader"></div>
-                <div id="scan-result" class="text-center mt-4 font-semibold text-gray-600"></div>
+            <div class="p-6 flex flex-col items-center bg-gray-50">
+                <div id="qr-reader-wrapper">
+                    <div id="qr-reader"></div>
+                    <div class="scanner-line"></div>
+                </div>
+                <div id="scan-result" class="text-center mt-4 font-semibold text-gray-700 h-6">Arahkan kamera ke Kode QR Siswa</div>
             </div>
         </div>
     </div>
