@@ -42,6 +42,7 @@ const audioPlayer = {
     },
     click() { this.play('C4', '16n'); },
     success() { this.play('G5', '16n'); },
+    notification() { this.play('A5', '16n'); }, // <-- MANTRA BARU: Suara untuk notifikasi
     error() { this.play('C3', '8n'); },
     xpGain() {
         if (!this.isReady) return;
@@ -191,6 +192,14 @@ function createLucideIcons() {
     }
 }
 
+// --- FUNGSI PEMBANTU BARU: Mendapatkan Tanggal Lokal (YYYY-MM-DD) ---
+function getLocalDateString(date = new Date()) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
 // --- FUNGSI PEMROSESAN GAMBAR (shared) ---
 function processImageToBase64(file) {
     return new Promise((resolve, reject) => {
@@ -242,12 +251,26 @@ if(loginForm) {
         const loginButton = document.getElementById('login-button');
         const loginNotification = document.getElementById('login-notification');
         loginButton.disabled = true;
-        loginButton.textContent = 'Memeriksa...';
+        loginButton.textContent = 'Memverifikasi...';
         try {
             const email = document.getElementById('login-email').value;
             const password = document.getElementById('login-password').value;
-            await signInWithEmailAndPassword(auth, email, password);
-            // Router di atas akan handle redirect otomatis
+            const userCredential = await signInWithEmailAndPassword(auth, email, password);
+            
+            // --- MANTRA BARU: Kirim Notifikasi Login ke Admin ---
+            const roleRef = ref(db, `roles/${userCredential.user.uid}`);
+            const roleSnap = await get(roleRef);
+            // Hanya kirim notifikasi jika yang login adalah siswa
+            if (roleSnap.exists() && !roleSnap.val().isAdmin) {
+                const studentSnap = await get(ref(db, `students/${userCredential.user.uid}`));
+                if (studentSnap.exists()) {
+                    const studentName = studentSnap.val().nama;
+                    // Panggil fungsi notifikasi global
+                    addNotification(`Siswa <strong>${studentName}</strong> baru saja login.`, 'login', { studentId: userCredential.user.uid });
+                }
+            }
+            // --- AKHIR MANTRA ---
+
         } catch (error) {
             loginNotification.textContent = 'Email atau password salah!';
             loginNotification.classList.remove('hidden');
@@ -517,18 +540,18 @@ async function openStudentShop(uid) {
             }
             if (emptySlotIndex === -1) throw new Error("Inventaris penuh!");
 
-            const newCoin = (studentData.coin || 0) - itemData.price;
-            const newStock = (itemData.stock || 0) - 1;
-            const newItemForInventory = { name: itemData.name, description: itemData.description, effect: itemData.effect, effectValue: itemData.effectValue, iconUrl: itemData.imageBase64 };
+            // --- LOGIKA BARU: Membuat Permintaan Pembelian ---
+            // Siswa tidak lagi mengubah data secara langsung, tapi membuat "request"
+            // yang akan diproses oleh Cloud Function.
+            const purchaseRequestRef = push(ref(db, 'purchaseRequests'));
+            await set(purchaseRequestRef, {
+                studentId: uid,
+                itemId: itemId,
+                requestedAt: Date.now()
+            });
+            // --- AKHIR LOGIKA BARU ---
 
-            const updates = {};
-            updates[`/students/${uid}/coin`] = newCoin;
-            updates[`/shopItems/${itemId}/stock`] = newStock;
-            updates[`/students/${uid}/inventory/${emptySlotIndex}`] = newItemForInventory;
-            
-            await update(ref(db), updates);
-            
-            showToast(`Berhasil membeli ${itemData.name}!`);
+            showToast(`Pesanan ${itemData.name} sedang diproses...`);
             audioPlayer.success();
             closeShop();
 
@@ -713,6 +736,19 @@ async function setupGuildPage(uid) {
 
         const userMessage = chatInput.value.trim();
         if (!userMessage) return;
+
+        // --- MANTRA BARU: Deteksi Kata Kasar & Notifikasi Admin ---
+        const offensiveWords = ['tai', 'tolol', 'bajingan', 'bangsat', 'goblok', 'kontol', 'memek', 'anjing', 'babi']; // Tambahkan daftar kata kasar di sini
+        const isOffensive = offensiveWords.some(word => userMessage.toLowerCase().includes(word));
+        if (isOffensive) {
+            const studentName = studentSnap.val().nama;
+            addNotification(
+                `<strong>${studentName}</strong> terdeteksi menggunakan kata kasar: "<i>${userMessage.substring(0, 50)}...</i>"`, 
+                'abusive_chat', 
+                { studentId: uid, message: userMessage }
+            );
+        }
+        // --- AKHIR MANTRA ---
 
         isIvyThinking = true;
         chatInput.disabled = true;
@@ -1052,10 +1088,172 @@ async function handleCompleteBounty(bountyId, closeModalCallback) {
         confirmButton.textContent = 'Konfirmasi & Selesaikan Misi';
     }
 }
+
+// =======================================================
+//                  LOGIKA NOTIFIKASI ADMIN
+// =======================================================
+
+// --- FUNGSI INTI BARU: Menambahkan Notifikasi ke Firebase ---
+async function addNotification(message, type = 'info', details = {}) {
+    try {
+        // Pastikan untuk mengimpor `push` dan `ref` dari 'firebase/database' di atas
+        const notificationsRef = ref(db, 'notifications');
+        await push(notificationsRef, {
+            message: message,
+            type: type,
+            details: details,
+            read: false,
+            timestamp: Date.now() // Menggunakan timestamp klien, serverTimestamp() lebih disarankan jika memungkinkan
+        });
+    } catch (error) {
+        console.error("Gagal mengirim notifikasi ke admin:", error);
+    }
+}
+// --- AKHIR FUNGSI INTI ---
+
+
+
+
+// Fungsi pembantu untuk memformat waktu (misal: "5 menit lalu")
+function formatTimeAgo(timestamp) {
+    if (!timestamp) return 'Baru saja';
+    const now = Date.now();
+    const seconds = Math.floor((now - timestamp) / 1000);
+
+    let interval = seconds / 31536000;
+    if (interval > 1) return Math.floor(interval) + " tahun lalu";
+    interval = seconds / 2592000;
+    if (interval > 1) return Math.floor(interval) + " bulan lalu";
+    interval = seconds / 86400;
+    if (interval > 1) return Math.floor(interval) + " hari lalu";
+    interval = seconds / 3600;
+    if (interval > 1) return Math.floor(interval) + " jam lalu";
+    interval = seconds / 60;
+    if (interval > 1) return Math.floor(interval) + " menit lalu";
+    return Math.max(0, Math.floor(seconds)) + " detik lalu";
+}
+
+// Fungsi untuk mengelola tampilan panel notifikasi
+function setupNotificationPanel() {
+    const notificationButton = document.getElementById('notification-button');
+    const notificationPanel = document.getElementById('notification-panel');
+    const markAllReadButton = document.getElementById('mark-all-read-button');
+
+    if (!notificationButton || !notificationPanel || !markAllReadButton) return;
+
+    // Tampilkan/sembunyikan panel saat tombol diklik
+    notificationButton.addEventListener('click', (event) => {
+        event.stopPropagation();
+        const isHidden = notificationPanel.classList.contains('hidden');
+        if (isHidden) {
+            notificationPanel.classList.remove('hidden');
+            setTimeout(() => {
+                notificationPanel.classList.remove('opacity-0', 'scale-95');
+            }, 10);
+        } else {
+            notificationPanel.classList.add('opacity-0', 'scale-95');
+            setTimeout(() => {
+                notificationPanel.classList.add('hidden');
+            }, 300);
+        }
+    });
+
+    // Sembunyikan panel saat mengklik di luar area panel
+    document.addEventListener('click', (event) => {
+        if (!notificationPanel.classList.contains('hidden') && !notificationPanel.contains(event.target) && !notificationButton.contains(event.target)) {
+            notificationPanel.classList.add('opacity-0', 'scale-95');
+            setTimeout(() => {
+                notificationPanel.classList.add('hidden');
+            }, 300);
+        }
+    });
+
+    // Fungsi untuk menandai semua notifikasi sebagai sudah dibaca
+    markAllReadButton.addEventListener('click', async () => {
+        const notificationsRef = ref(db, 'notifications');
+        try {
+            const snapshot = await get(query(notificationsRef, orderByChild('read'), equalTo(false)));
+            if (snapshot.exists()) {
+                const updates = {};
+                snapshot.forEach(child => {
+                    updates[child.key + '/read'] = true;
+                });
+                await update(ref(db, 'notifications'), updates);
+                showToast('Semua notifikasi ditandai sebagai dibaca.');
+            }
+        } catch (error) {
+            console.error("Error menandai notifikasi sebagai dibaca:", error);
+            showToast('Gagal menandai notifikasi.', 'error');
+        }
+    });
+}
+
+// Fungsi untuk mengambil dan menampilkan notifikasi dari Firebase
+function listenForNotifications() {
+    const notificationList = document.getElementById('notification-list');
+    const notificationBadge = document.getElementById('notification-badge');
+    
+    if (!notificationList || !notificationBadge) return; // Pastikan elemen ada
+
+    let previousUnreadCount = -1; // Variabel untuk melacak jumlah notifikasi belum dibaca sebelumnya
+
+    const notificationsQuery = query(ref(db, 'notifications'), orderByChild('timestamp'));
+
+    onValue(notificationsQuery, (snapshot) => {
+        const notifications = [];
+        snapshot.forEach((childSnapshot) => {
+            const notifData = childSnapshot.val();
+            // Validasi untuk memastikan notifikasi memiliki data yang benar sebelum diproses
+            if (notifData && notifData.message && typeof notifData.read !== 'undefined') {
+                notifications.push({ id: childSnapshot.key, ...notifData });
+            }
+        });
+
+        notifications.reverse(); // Urutkan berdasarkan timestamp (terbaru di atas)
+        const unreadCount = notifications.filter(n => !n.read).length;
+
+        // --- MANTRA SAKTI: Mainkan suara jika ada notifikasi baru yang belum dibaca ---
+        if (previousUnreadCount !== -1 && unreadCount > previousUnreadCount) {
+            audioPlayer.notification(); // Mainkan suara notifikasi
+        }
+        previousUnreadCount = unreadCount; // Update hitungan untuk perbandingan berikutnya
+
+        notificationBadge.classList.toggle('hidden', unreadCount === 0);
+        if (unreadCount > 0) {
+            notificationBadge.textContent = unreadCount > 9 ? '9+' : unreadCount;
+        }
+
+        notificationList.innerHTML = notifications.length > 0 ? notifications.map(n => `
+            <a href="#" class="block p-4 border-b border-gray-100 hover:bg-gray-50 ${!n.read ? 'bg-blue-50' : ''}" data-notification-id="${n.id}">
+                <p class="text-sm text-gray-800">${n.message}</p>
+                <p class="text-xs text-gray-500 mt-1">${formatTimeAgo(n.timestamp)}</p>
+            </a>`).join('') : '<div class="p-4 text-center text-gray-500">Tidak ada notifikasi baru.</div>';
+
+        notificationList.querySelectorAll('[data-notification-id]').forEach(item => {
+            item.addEventListener('click', async (event) => {
+                event.preventDefault();
+                const notificationId = item.dataset.notificationId;
+                if (notificationId) {
+                    try {
+                        await update(ref(db, `notifications/${notificationId}`), { read: true });
+                    } catch (error) {
+                        console.error("Error marking single notification as read:", error);
+                    }
+                }
+            });
+        });
+    });
+}
+
 // =======================================================
 //                  LOGIKA DASBOR ADMIN
 // =======================================================
 function setupAdminDashboard() {
+    // --- MANTRA BARU: Inisialisasi Notifikasi ---
+    setupNotificationPanel();
+    listenForNotifications();
+    // --- AKHIR MANTRA ---
+
     // --- ELEMEN UI ADMIN ---
     const adminDashboardMain = document.getElementById('admin-dashboard-main');
     const questsPage = document.getElementById('quests-page');
@@ -2394,38 +2592,45 @@ startButton.onclick = async () => {
         
         let statUpdates = {};
         switch(action) {
-            case 'hadir':
+            case 'hadir': {
                 const currentTotalXp = ((data.level || 1) - 1) * xpPerLevel + (data.xp || 0);
                 const newTotalXp = currentTotalXp + 10;
                 statUpdates.xp = newTotalXp % xpPerLevel;
                 statUpdates.level = Math.floor(newTotalXp / xpPerLevel) + 1;
                 statUpdates.coin = (data.coin || 0) + 10;
                 message = `+10 XP, +10 Koin untuk ${data.nama}!`;
-                audioPlayer.xpGain(); // Suara dapat XP
+                audioPlayer.xpGain();
                 break;
-            case 'sakit':
+            }
+            case 'sakit': {
                 statUpdates.hp = Math.max(0, (data.hp || 100) - 2);
+                checkAndNotifyCriticalHp(uid, statUpdates.hp, data.nama, data.hp); // Cek HP Kritis
                 message = `-2 HP untuk ${data.nama}. Cepat sembuh!`;
-                audioPlayer.hpLoss(); // Suara kena damage
+                audioPlayer.hpLoss();
                 break;
-            case 'izin':
+            }
+            case 'izin': {
                 statUpdates.hp = Math.max(0, (data.hp || 100) - 5);
+                checkAndNotifyCriticalHp(uid, statUpdates.hp, data.nama, data.hp); // Cek HP Kritis
                 message = `-5 HP untuk ${data.nama}.`;
-                audioPlayer.hpLoss(); // Suara kena damage
+                audioPlayer.hpLoss();
                 break;
-            case 'alfa':
+            }
+            case 'alfa': {
                 statUpdates.hp = Math.max(0, (data.hp || 100) - 10);
+                checkAndNotifyCriticalHp(uid, statUpdates.hp, data.nama, data.hp); // Cek HP Kritis
                 message = `-10 HP untuk ${data.nama}. Jangan diulangi!`;
-                audioPlayer.hpLoss(); // Suara kena damage
+                audioPlayer.hpLoss();
                 break;
+            }
         }
 
         // Gabungkan semua update dalam satu operasi
         for (const key in statUpdates) {
             allUpdates[`/students/${uid}/${key}`] = statUpdates[key];
         }
-        const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
-        allUpdates[`/attendance/${today}/${uid}`] = { status: action };
+        const today = getLocalDateString(); // PERBAIKAN: Gunakan tanggal lokal untuk menghindari bug timezone
+        allUpdates[`/attendance/${today}/${uid}`] = { status: action, timestamp: Date.now() };
 
         try {
             await update(ref(db), allUpdates);
@@ -2435,6 +2640,21 @@ startButton.onclick = async () => {
             console.error(error);
         }
     }
+
+    // --- FUNGSI PEMBANTU BARU: Cek & Kirim Notifikasi HP Kritis ---
+    async function checkAndNotifyCriticalHp(uid, newHp, studentName, oldHp) {
+        const hpThreshold = 10;
+        // Kirim notifikasi HANYA jika HP baru melewati ambang batas,
+        // dan HP sebelumnya masih di atas ambang batas. Ini mencegah spam notifikasi.
+        if (newHp <= hpThreshold && oldHp > hpThreshold) {
+            addNotification(
+                `HP <strong>${studentName}</strong> kritis (${newHp} HP)!`, 
+                'hp_critical', 
+                { studentId: uid }
+            );
+        }
+    }
+
     
     document.getElementById('attendance-container').addEventListener('click', (e) => {
         const target = e.target.closest('.attendance-btn');
@@ -2512,10 +2732,12 @@ startButton.onclick = async () => {
         const attendanceData = attendanceSnap.exists() ? attendanceSnap.val() : {};
 
         const dateList = [];
-        let currentDate = new Date(startDate);
-        const lastDate = new Date(endDate);
+        // PERBAIKAN: Loop tanggal yang aman dari masalah timezone
+        let currentDate = new Date(startDate + 'T00:00:00'); // Pastikan mulai dari awal hari
+        const lastDate = new Date(endDate + 'T00:00:00');
+
         while (currentDate <= lastDate) {
-            dateList.push(currentDate.toISOString().slice(0, 10));
+            dateList.push(getLocalDateString(currentDate));
             currentDate.setDate(currentDate.getDate() + 1);
         }
 
