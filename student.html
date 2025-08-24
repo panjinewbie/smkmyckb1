@@ -17,7 +17,10 @@
 
     <div id="student-dashboard-page" class="min-h-screen">
          <header class="bg-white shadow-md sticky top-0 z-20">
-            <div class="container mx-auto px-4"><div class="h-20 flex items-center justify-between"><h1 class="text-2xl font-bold text-blue-600 font-game tracking-tighter">DREAMY</h1><div class="flex items-center space-x-2 md:space-x-4"><button class="p-2 rounded-full hover:bg-gray-100"><i data-lucide="bell" class="w-5 h-5 text-gray-600"></i></button><button class="p-2 rounded-full hover:bg-gray-100"><i data-lucide="help-circle" class="w-5 h-5 text-gray-600"></i></button><button id="student-logout-button" class="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg"><span class="hidden md:inline">Logout</span><i data-lucide="log-out" class="w-5 h-5"></i></button></div></div></div>
+            <div class="container mx-auto px-4"><div class="h-20 flex items-center justify-between"><h1 class="text-2xl font-bold text-blue-600 font-game tracking-tighter">DREAMY</h1><div class="flex items-center space-x-2 md:space-x-4">
+                <a href="https://www.smkmyckb.site" target="_blank" rel="noopener noreferrer" class="p-2 rounded-full hover:bg-gray-100">
+    <i data-lucide="globe" class="w-5 h-5 text-gray-600"></i></a>
+                <button id="student-logout-button" class="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg"><span class="hidden md:inline">Logout</span><i data-lucide="log-out" class="w-5 h-5"></i></button></div></div></div>
             <nav class="border-t border-gray-200"><div class="container mx-auto px-4"><div class="flex items-center space-x-4 md:space-x-6 overflow-x-auto"><a href="#" class="nav-link active flex items-center px-2 py-4 text-sm font-semibold border-b-2"><i data-lucide="user-2" class="w-4 h-4 mr-2"></i>Profil</a><a href="#bounty-board" id="bounty-board-nav-link" class="nav-link text-gray-500 hover:text-blue-600 flex items-center px-2 py-4 text-sm font-semibold border-b-2 border-transparent"><i data-lucide="clipboard-list" class="w-4 h-4 mr-2"></i>Bounty Board</a><a href="#shop" class="nav-link text-gray-500 hover:text-blue-600 flex items-center px-2 py-4 text-sm font-semibold border-b-2 border-transparent"><i data-lucide="shopping-cart" class="w-4 h-4 mr-2"></i>Shop</a><a href="#guild" class="nav-link text-gray-500 hover:text-blue-600 flex items-center px-2 py-4 text-sm font-semibold border-b-2 border-transparent"><i data-lucide="users" class="w-4 h-4 mr-2"></i>Guild</a></div></div></nav>
         
             </header>
@@ -41,6 +44,10 @@
                 <div class="bg-white p-4 rounded-lg shadow-md flex items-center gap-4">
                     <div class="bg-yellow-100 p-3 rounded-full"><i data-lucide="coins" class="w-6 h-6 text-yellow-500"></i></div>
                     <div><p class="text-sm text-gray-500">Koin</p><p id="coin-value" class="text-2xl font-bold">0</p></div>
+                <div>
+        <p class="text-sm text-gray-500">Login Streak</p>
+        <p id="login-streak-value" class="text-2xl font-bold">0 Hari</p>
+    </div>
                 </div>
             </div>
             
