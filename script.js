@@ -1439,12 +1439,51 @@ function setupAdminDashboard() {
                 const avatar = student.fotoProfilBase64 ? 
                     `<img src="${student.fotoProfilBase64}" alt="${student.nama}" class="w-10 h-10 rounded-full object-cover">` : 
                     `<div class="w-10 h-10 bg-gray-700 text-white flex items-center justify-center rounded-full font-bold">${student.nama.charAt(0)}</div>`;
-                studentRow.innerHTML = `<td class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap flex items-center">${avatar}<div class="ml-4"><div class="font-bold">${student.nama}</div><div class="text-xs text-gray-500">NIS: ${student.nis} | ${student.kelas} | ${student.guild || 'No Guild'}</div></div></td><td class="px-6 py-4 text-center text-lg font-bold">${student.level || 1}</td><td class="px-6 py-4 text-center">${student.xp || 0}</td><td class="px-6 py-4"><div class="w-full bg-gray-200 rounded-full h-4 relative"><div class="bg-red-500 h-4 rounded-full" style="width: ${hpPercent}%"></div><span class="absolute inset-0 text-center text-xs font-bold text-white">${student.hp || maxHp}/${maxHp}</span></div></td>
-                <td class="px-6 py-4 text-center space-x-1">
-                    <button class="battle-init-btn p-2 bg-red-100 text-red-600 hover:bg-red-200 rounded-lg" data-id="${key}" title="Mulai Battle"><i data-lucide="swords" class="w-4 h-4"></i></button>
-                    <button class="edit-btn p-2 bg-blue-100 text-blue-600 hover:bg-blue-200 rounded-lg" data-id="${key}" title="Edit Siswa"><i data-lucide="edit" class="w-4 h-4"></i></button>
-                    <button class="delete-btn p-2 bg-gray-100 text-gray-600 hover:bg-gray-200 rounded-lg" data-id="${key}" title="Hapus Siswa"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                </td>`;
+                let statusEffectsHtml = '';
+if (student.statusEffects && Object.keys(student.statusEffects).length > 0) {
+    const effectMap = {
+        racun: { icon: 'skull', color: 'text-red-500', title: 'Racun' },
+        diam: { icon: 'mic-off', color: 'text-gray-500', title: 'Diam' },
+        knock: { icon: 'dizzy', color: 'text-yellow-500', title: 'Pusing' }
+    };
+    statusEffectsHtml += '<div class="flex justify-center items-center gap-2">';
+    for (const effectKey in student.statusEffects) {
+        if (effectMap[effectKey]) {
+            const effect = effectMap[effectKey];
+            statusEffectsHtml += `<i data-lucide="${effect.icon}" class="w-4 h-4 ${effect.color}" title="${effect.title}"></i>`;
+        }
+    }
+    statusEffectsHtml += '</div>';
+} else {
+    statusEffectsHtml = '<span class="text-xs text-gray-400">-</span>';
+}
+                    studentRow.innerHTML = `
+    <td class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap flex items-center">
+        ${avatar} 
+        <div class="ml-4">
+           ${statusEffectsHtml} <div class="font-bold">${student.nama }</div>
+            <div class="text-xs text-gray-500">NIS: ${student.nis} | ${student.kelas} | ${student.guild || 'No Guild'}</div>
+        </div>
+    </td>
+    <td class="px-6 py-4 text-center text-lg font-bold">${student.level || 1}</td>
+    <td class="px-6 py-4 text-center">${student.xp || 0}</td>
+    <td class="px-6 py-4">
+        <div class="w-full bg-gray-200 rounded-full h-4 relative">
+            <div class="bg-red-500 h-4 rounded-full" style="width: ${hpPercent}%"></div>
+            <span class="absolute inset-0 text-center text-xs font-bold text-white">${student.hp || maxHp}/${maxHp}</span>
+        </div>
+    </td>
+    <td class="px-6 py-4 text-center font-semibold text-yellow-600">
+        <div class="flex items-center justify-center gap-1">
+            <i data-lucide="coins" class="w-4 h-4"></i>
+            <span>${student.coin || 0}</span>
+        </div>
+    </td>
+    <td class="px-6 py-4 text-center space-x-1">
+        <button class="battle-init-btn p-2 bg-red-100 text-red-600 hover:bg-red-200 rounded-lg" data-id="${key}" title="Mulai Battle"><i data-lucide="swords" class="w-4 h-4"></i></button>
+        <button class="edit-btn p-2 bg-blue-100 text-blue-600 hover:bg-blue-200 rounded-lg" data-id="${key}" title="Edit Siswa"><i data-lucide="edit" class="w-4 h-4"></i></button>
+        <button class="delete-btn p-2 bg-gray-100 text-gray-600 hover:bg-gray-200 rounded-lg" data-id="${key}" title="Hapus Siswa"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+    </td>`;
                 studentTableBody.appendChild(studentRow);
                 totalStudents++;
                 totalLevel += (student.level || 1);
