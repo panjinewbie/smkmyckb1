@@ -698,15 +698,11 @@ function openUseItemModal(uid, itemIndex, itemData) {
     const descEl = document.getElementById('use-item-description');
     const effectEl = document.getElementById('use-item-effect-text');
     const useButton = document.getElementById('use-item-confirm-button');
-    const depositButton = document.getElementById('deposit-to-guild-button'); // Tombol baru
+    const depositButton = document.getElementById('deposit-to-guild-button');
     const closeButton = document.getElementById('close-use-item-modal-button');
 
-    if (!modal || !depositButton) {
-        console.error("Elemen UI modal penggunaan item tidak ditemukan.");
-        return;
-    }
+    if (!modal || !depositButton) return;
 
-    // Isi modal dengan data item
     nameEl.textContent = itemData.name;
     iconEl.src = itemData.iconUrl || 'https://placehold.co/128x128/e2e8f0/3d4852?text=Item';
     descEl.textContent = itemData.description;
@@ -717,19 +713,34 @@ function openUseItemModal(uid, itemIndex, itemData) {
         case 'GAIN_XP': effectText = `Menambahkan ${itemData.effectValue} XP.`; break;
         case 'BLOCK_ATTACK': effectText = `Memblok 1x serangan musuh.`; break;
         case 'NONE': effectText = 'Tidak ada efek khusus.'; break;
+        // --- Teks Efek Baru ---
+        case 'CURSE_RACUN': effectText = 'Memberikan efek Racun pada target.'; break;
+        case 'CURSE_DIAM': effectText = 'Memberikan efek Diam pada target.'; break;
+        case 'CURSE_KNOCK': effectText = 'Memberikan efek Knock pada target.'; break;
+        case 'CURE_EFFECT': effectText = 'Menghilangkan 1 efek negatif dari dirimu.'; break;
     }
     effectEl.textContent = effectText;
 
     const closeModal = () => {
-        audioPlayer.closeModal();
         modal.classList.add('opacity-0');
         setTimeout(() => modal.classList.add('hidden'), 300);
         useButton.onclick = null;
-        depositButton.onclick = null; // Hapus listener
+        depositButton.onclick = null;
     };
 
-    // --- LOGIKA TOMBOL BARU DISINI ---
-    useButton.onclick = () => handleUseItem(uid, itemIndex, itemData, closeModal);
+    // --- LOGIKA TOMBOL YANG DIPERBARUI ---
+    if (itemData.effect.startsWith('CURSE_')) {
+        useButton.textContent = 'Pilih Target';
+        useButton.onclick = () => {
+            closeModal(); // Tutup modal item dulu
+            // Buka modal baru untuk memilih target (akan kita buat fungsinya)
+            openTargetStudentModal(uid, itemIndex, itemData); 
+        };
+    } else {
+        useButton.textContent = 'Gunakan Item';
+        useButton.onclick = () => handleUseItem(uid, itemIndex, itemData, closeModal);
+    }
+    
     depositButton.onclick = async () => {
         const studentSnap = await get(ref(db, `students/${uid}`));
         if (studentSnap.exists()) {
@@ -738,7 +749,6 @@ function openUseItemModal(uid, itemIndex, itemData) {
     };
     closeButton.onclick = closeModal;
 
-    // Tampilkan modal
     audioPlayer.openModal();
     modal.classList.remove('hidden');
     setTimeout(() => modal.classList.remove('opacity-0'), 10);
@@ -771,6 +781,23 @@ async function handleUseItem(uid, itemIndex, itemData, closeModalCallback) {
             updates[`/students/${uid}/level`] = Math.floor(newTotalXp / xpPerLevel) + 1;
             updates[`/students/${uid}/xp`] = newTotalXp % xpPerLevel;
         }
+        // --- MANTRA BARU UNTUK PENANGKAL ---
+        else if (itemData.effect === 'CURE_EFFECT') {
+            const activeEffects = studentData.statusEffects || {};
+            const effectKeys = Object.keys(activeEffects);
+            if (effectKeys.length > 0) {
+                const effectToCure = effectKeys[0]; // Sembuhkan efek pertama yang ditemukan
+                updates[`/students/${uid}/statusEffects/${effectToCure}`] = null;
+                successMessage = `Efek ${effectToCure} berhasil disembuhkan!`;
+            } else {
+                successMessage = "Kamu tidak punya efek negatif untuk disembuhkan.";
+            }
+        }
+        // Jika item adalah item kutukan, kita tidak melakukan apa-apa di sini
+        // karena logikanya akan ditangani oleh fungsi lain.
+        else if (itemData.effect.startsWith('CURSE_')) {
+             throw new Error("Item ini harus digunakan pada siswa lain!");
+        }
         // Efek lain seperti BLOCK_ATTACK atau NONE tidak mengubah data siswa secara langsung,
         // jadi kita hanya perlu menghapus itemnya dari inventaris.
 
@@ -784,6 +811,104 @@ async function handleUseItem(uid, itemIndex, itemData, closeModalCallback) {
     } finally {
         useButton.disabled = false;
         useButton.textContent = 'Gunakan Item';
+    }
+}
+// Salin dan tempel DUA FUNGSI INI ke dalam file script.js kamu
+
+// FUNGSI BARU 1: MEMBUKA MODAL PEMILIHAN TARGET
+async function openTargetStudentModal(casterUid, itemIndex, itemData) {
+    const modal = document.getElementById('target-student-modal');
+    const studentList = document.getElementById('target-student-list');
+    const closeButton = document.getElementById('close-target-modal-button');
+    
+    if (!modal || !studentList || !closeButton) {
+        showToast("Elemen UI untuk memilih target tidak ditemukan!", true);
+        return;
+    }
+
+    const closeModal = () => {
+        modal.classList.add('opacity-0');
+        setTimeout(() => modal.classList.add('hidden'), 300);
+    };
+    
+    closeButton.onclick = closeModal;
+    studentList.innerHTML = '<p class="text-gray-400">Memuat daftar siswa...</p>';
+
+    // Tampilkan modal
+    audioPlayer.openModal();
+    modal.classList.remove('hidden');
+    setTimeout(() => modal.classList.remove('opacity-0'), 10);
+
+    // Ambil semua data siswa
+    const studentsSnap = await get(ref(db, 'students'));
+    if (!studentsSnap.exists()) {
+        studentList.innerHTML = '<p>Tidak ada siswa lain di dunia ini.</p>';
+        return;
+    }
+
+    studentList.innerHTML = '';
+    studentsSnap.forEach(childSnap => {
+        const targetStudent = childSnap.val();
+        const targetUid = childSnap.key;
+
+        // Jangan tampilkan diri sendiri sebagai target
+        if (targetUid === casterUid) return;
+
+        const studentDiv = document.createElement('div');
+        studentDiv.className = 'flex items-center p-2 rounded-lg hover:bg-gray-100 cursor-pointer';
+        studentDiv.innerHTML = `
+            <img src="${targetStudent.fotoProfilBase64 || `https://placehold.co/40x40/e2e8f0/3d4852?text=${targetStudent.nama.charAt(0)}`}" class="w-10 h-10 rounded-full object-cover mr-3">
+            <div>
+                <p class="font-semibold">${targetStudent.nama}</p>
+                <p class="text-xs text-gray-500">Level ${targetStudent.level}</p>
+            </div>
+        `;
+        studentDiv.onclick = () => {
+            if (confirm(`Yakin ingin menggunakan "${itemData.name}" pada ${targetStudent.nama}?`)) {
+                handleUseCurseItem(casterUid, targetUid, itemIndex, itemData, targetStudent.nama);
+                closeModal();
+            }
+        };
+        studentList.appendChild(studentDiv);
+    });
+}
+
+// FUNGSI BARU 2: MENGEKSEKUSI ITEM KUTUKAN
+async function handleUseCurseItem(casterUid, targetUid, itemIndex, itemData, targetName) {
+    try {
+        const effect = itemData.effect.replace('CURSE_', '').toLowerCase(); // racun, diam, knock
+        const durationInDays = 1; // Kutukan berlaku 1 hari
+        const expiryTimestamp = Date.now() + (durationInDays * 24 * 60 * 60 * 1000);
+
+        const updates = {};
+        // Beri efek ke target
+        updates[`/students/${targetUid}/statusEffects/${effect}`] = { expires: expiryTimestamp };
+        // Hapus item dari inventori si pengguna
+        updates[`/students/${casterUid}/inventory/${itemIndex}`] = null;
+        
+        // Logika khusus untuk 'knock'
+        if (effect === 'knock') {
+            updates[`/students/${targetUid}/hp`] = 10;
+        }
+
+        await update(ref(db), updates);
+        showToast(`Berhasil mengutuk ${targetName} dengan sihir ${effect}!`);
+        audioPlayer.success();
+
+        // Kirim notifikasi ke admin
+        const casterSnap = await get(ref(db, `students/${casterUid}`));
+        if(casterSnap.exists()){
+            const casterName = casterSnap.val().nama;
+            addNotification(
+                `<strong>${casterName}</strong> baru saja mengutuk <strong>${targetName}</strong> dengan item <i>${itemData.name}</i>.`, 
+                'curse_cast', 
+                { casterId: casterUid, targetId: targetUid }
+            );
+        }
+
+    } catch (error) {
+        showToast(`Gagal merapal sihir: ${error.message}`, true);
+        audioPlayer.error();
     }
 }
 // =======================================================
