@@ -55,7 +55,7 @@
     <link rel="stylesheet" href="style.css">
     <link rel="icon" href="data:;base64,iVBORw0KGgo=">
 </head>
-<body class="min-h-screen">
+<body class="min-h-screen admin-bg">
 
     <div id="admin-dashboard-page" class="min-h-screen">
         <header class="bg-white shadow-md sticky top-0 z-30">
@@ -391,12 +391,16 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label for="item-effect" class="block text-sm font-medium text-gray-700">Efek Item</label>
-                        <select id="item-effect" required class="mt-1 w-full p-2 border border-gray-300 rounded-md bg-white">
-                            <option value="HEAL_HP">Pulihkan HP</option>
-                            <option value="GAIN_XP">Dapatkan XP</option>
-                            <option value="BLOCK_ATTACK">Blok Serangan Musuh (1x)</option>
-                            <option value="NONE">Tidak ada efek khusus</option>
-                        </select>
+<select id="item-effect" required class="mt-1 w-full p-2 border border-gray-300 rounded-md bg-white">
+    <option value="HEAL_HP">Pulihkan HP</option>
+    <option value="GAIN_XP">Dapatkan XP</option>
+    <option value="BLOCK_ATTACK">Blok Serangan Musuh (1x)</option>
+    <option value="NONE">Tidak ada efek khusus</option>
+    <option value="CURSE_RACUN">☠️ Beri Kutukan Racun</option>
+    <option value="CURSE_DIAM">🔇 Beri Kutukan Diam</option>
+    <option value="CURSE_KNOCK">😵 Beri Kutukan Knock</option>
+    <option value="CURE_EFFECT">🌿 Sembuhkan 1 Efek Negatif</option>
+    </select>
                     </div>
                     <div>
                         <label for="item-effect-value" class="block text-sm font-medium text-gray-700">Nilai Efek (jika ada)</label>
