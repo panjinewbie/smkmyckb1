@@ -2450,11 +2450,19 @@ startButton.onclick = async () => {
         const sleep = ms => new Promise(res => setTimeout(res, ms));
         // Inisialisasi state pertarungan
         party.forEach(p => {
-            p.currentHp = p.hp;
-            p.maxHp = (p.level || 1) * 100;
-            // Pastikan statusEffects adalah objek untuk mencegah error
-            if (!p.statusEffects) p.statusEffects = {};
-        });
+    p.currentHp = p.hp;
+    let baseMaxHp = (p.level || 1) * 100;
+
+    // Skill Pasif Prajurit: HP lebih tebal
+    if (p.peran === 'Prajurit') {
+        p.maxHp = Math.floor(baseMaxHp * 1.20); // Bonus 20% HP
+        p.currentHp = Math.min(p.hp, p.maxHp); // Pastikan HP saat ini tidak melebihi max HP baru
+    } else {
+        p.maxHp = baseMaxHp;
+    }
+
+    if (!p.statusEffects) p.statusEffects = {};
+});
         monster.currentHp = monster.monsterHp;
         monster.maxHp = monster.monsterMaxHp || monster.monsterHp;
 
@@ -2617,16 +2625,61 @@ startButton.onclick = async () => {
             }
 
             if (isCorrect) {
-                let studentDamage = 25 + Math.floor(Math.random() * 10);
-                if (currentPlayer.statusEffects.diam) {
-                    studentDamage = Math.floor(studentDamage / 2);
-                    addLog(`🤫 ${currentPlayer.nama} terkena efek diam, serangan melemah!`);
-                }
-                monster.currentHp = Math.max(0, monster.currentHp - studentDamage);
-                addLog(`Jawaban BENAR! ${currentPlayer.nama} menyerang, ${studentDamage} damage.`, 'heal');
-                audioPlayer.xpGain();
-                updateUI();
-                if (monster.currentHp <= 0) { endBattle(true); return; }
+    addLog(`Jawaban BENAR! ${currentPlayer.nama} beraksi...`);
+    audioPlayer.xpGain();
+    await sleep(800); // Jeda sedikit biar dramatis
+
+    // --- Logika untuk PRAJURIT ---
+    if (currentPlayer.peran === 'Prajurit') {
+        let studentDamage = 25 + Math.floor(Math.random() * 10);
+        // Skill Aktif: Peluang Critical Hit 25%
+        if (Math.random() < 0.25) { 
+            studentDamage = Math.floor(studentDamage * 1.5); // Damage 150%
+            addLog(`💥 SERANGAN PERKASA! ${currentPlayer.nama} mendaratkan serangan kritis, ${studentDamage} damage!`, 'heal');
+        } else {
+            addLog(`⚔️ ${currentPlayer.nama} menyerang, ${studentDamage} damage.`, 'normal');
+        }
+        monster.currentHp = Math.max(0, monster.currentHp - studentDamage);
+    }
+
+    // --- Logika untuk PENYEMBUH ---
+    else if (currentPlayer.peran === 'Penyembuh') {
+        // Jika sendirian, pulihkan diri sendiri
+        if (party.length === 1) {
+            const healAmount = Math.floor(currentPlayer.maxHp * 0.20); // Pulihkan 20%
+            currentPlayer.currentHp = Math.min(currentPlayer.maxHp, currentPlayer.currentHp + healAmount);
+            addLog(`💖 PEMULIHAN AJAIB! ${currentPlayer.nama} memulihkan dirinya sendiri sebesar ${healAmount} HP.`, 'heal');
+        } else { // Jika party, cari teman dengan HP terendah
+            let target = party.filter(p => p.currentHp > 0)
+                              .sort((a, b) => (a.currentHp / a.maxHp) - (b.currentHp / b.maxHp))[0];
+            const healAmount = Math.floor(target.maxHp * 0.15); // Pulihkan 15%
+            target.currentHp = Math.min(target.maxHp, target.currentHp + healAmount);
+            addLog(`💖 ${currentPlayer.nama} menyembuhkan ${target.nama} sebesar ${healAmount} HP.`, 'heal');
+        }
+    }
+
+    // --- Logika untuk PENYIHIR ---
+    else if (currentPlayer.peran === 'Penyihir') {
+        let studentDamage = 25 + Math.floor(Math.random() * 10); // Damage standar
+         addLog(`✨ ${currentPlayer.nama} merapal sihir, ${studentDamage} damage.`, 'normal');
+        monster.currentHp = Math.max(0, monster.currentHp - studentDamage);
+
+        // Skill Aktif: Peluang meracuni monster 30%
+        if (Math.random() < 0.30) {
+            // Di sini kita bisa menambahkan efek ke monster jika ada sistemnya
+            addLog(`☠️ SIHIR KUTUKAN! ${monster.monsterName} terkena racun!`, 'damage');
+        }
+    }
+
+    // --- Logika Default (jika peran tidak terdefinisi) ---
+    else {
+        let studentDamage = 25 + Math.floor(Math.random() * 10);
+        addLog(`👤 ${currentPlayer.nama} menyerang, ${studentDamage} damage.`, 'normal');
+        monster.currentHp = Math.max(0, monster.currentHp - studentDamage);
+    }
+
+    updateUI();
+    if (monster.currentHp <= 0) { endBattle(true); return; }
             } else {
                 const monsterDamage = 15 + Math.floor(Math.random() * 10);
                 currentPlayer.currentHp = Math.max(0, currentPlayer.currentHp - monsterDamage);
