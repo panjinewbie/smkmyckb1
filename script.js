@@ -698,9 +698,10 @@ function openUseItemModal(uid, itemIndex, itemData) {
     const descEl = document.getElementById('use-item-description');
     const effectEl = document.getElementById('use-item-effect-text');
     const useButton = document.getElementById('use-item-confirm-button');
+    const depositButton = document.getElementById('deposit-to-guild-button'); // Tombol baru
     const closeButton = document.getElementById('close-use-item-modal-button');
 
-    if (!modal || !nameEl || !iconEl || !descEl || !effectEl || !useButton || !closeButton) {
+    if (!modal || !depositButton) {
         console.error("Elemen UI modal penggunaan item tidak ditemukan.");
         return;
     }
@@ -709,22 +710,13 @@ function openUseItemModal(uid, itemIndex, itemData) {
     nameEl.textContent = itemData.name;
     iconEl.src = itemData.iconUrl || 'https://placehold.co/128x128/e2e8f0/3d4852?text=Item';
     descEl.textContent = itemData.description;
-    
+
     let effectText = 'Efek tidak diketahui.';
-    // PENYESUAIAN DI SINI: Menggunakan format efek dari admin (HEAL_HP, GAIN_XP, dll)
     switch (itemData.effect) {
-        case 'HEAL_HP':
-            effectText = `Memulihkan ${itemData.effectValue} HP.`;
-            break;
-        case 'GAIN_XP':
-            effectText = `Menambahkan ${itemData.effectValue} XP.`;
-            break;
-        case 'BLOCK_ATTACK':
-            effectText = `Memblok 1x serangan musuh.`;
-            break;
-        case 'NONE':
-            effectText = 'Tidak ada efek khusus.';
-            break;
+        case 'HEAL_HP': effectText = `Memulihkan ${itemData.effectValue} HP.`; break;
+        case 'GAIN_XP': effectText = `Menambahkan ${itemData.effectValue} XP.`; break;
+        case 'BLOCK_ATTACK': effectText = `Memblok 1x serangan musuh.`; break;
+        case 'NONE': effectText = 'Tidak ada efek khusus.'; break;
     }
     effectEl.textContent = effectText;
 
@@ -732,10 +724,18 @@ function openUseItemModal(uid, itemIndex, itemData) {
         audioPlayer.closeModal();
         modal.classList.add('opacity-0');
         setTimeout(() => modal.classList.add('hidden'), 300);
-        useButton.onclick = null; // Hapus listener untuk mencegah kebocoran memori
+        useButton.onclick = null;
+        depositButton.onclick = null; // Hapus listener
     };
 
+    // --- LOGIKA TOMBOL BARU DISINI ---
     useButton.onclick = () => handleUseItem(uid, itemIndex, itemData, closeModal);
+    depositButton.onclick = async () => {
+        const studentSnap = await get(ref(db, `students/${uid}`));
+        if (studentSnap.exists()) {
+            depositItemToGuild(uid, studentSnap.val(), itemIndex, itemData, closeModal);
+        }
+    };
     closeButton.onclick = closeModal;
 
     // Tampilkan modal
@@ -794,31 +794,80 @@ async function setupGuildPage(uid) {
     const guildNameHeader = document.getElementById('guild-name-header');
     const chatForm = document.getElementById('Ivy-chat-form');
     const chatInput = document.getElementById('Ivy-chat-input');
-    let isIvyThinking = false; // Mantra baru: Mencegah spam ke Ivy
-    
+    const guildInventorySlots = document.getElementById('guild-inventory-slots');
+    const guildInventoryCapacity = document.getElementById('guild-inventory-capacity');
+    let isIvyThinking = false;
+
     memberList.innerHTML = '<p class="text-sm text-gray-400">Memuat anggota...</p>';
+    guildInventorySlots.innerHTML = '<p class="text-xs text-gray-400 col-span-full text-center">Memuat peti guild...</p>';
 
     const studentSnap = await get(ref(db, `students/${uid}`));
     if (!studentSnap.exists()) return;
-    const guildName = studentSnap.val().guild || 'Tanpa Guild';
+    const studentData = studentSnap.val();
+    const guildName = studentData.guild || 'Tanpa Guild';
     guildNameHeader.textContent = `Markas Guild ${guildName}`;
 
-    const studentsQuery = query(ref(db, 'students'), orderByChild('guild'), equalTo(guildName));
-    const guildSnaps = await get(studentsQuery);
-    
-    memberList.innerHTML = '';
-    if (guildSnaps.exists()) {
-        guildSnaps.forEach(childSnap => {
-            const member = childSnap.val();
-            const memberDiv = document.createElement('div');
-            memberDiv.className = 'flex items-center gap-3';
-            memberDiv.innerHTML = `
-                <img src="${member.fotoProfilBase64 || `https://placehold.co/40x40/e2e8f0/3d4852?text=${member.nama.charAt(0)}`}" class="w-10 h-10 rounded-full object-cover">
-                <div><p class="font-semibold text-sm">${member.nama}</p><p class="text-xs text-gray-500">Level ${member.level}</p></div>
-            `;
-            memberList.appendChild(memberDiv);
-        });
+    if (guildName === 'Tanpa Guild') {
+        guildInventorySlots.innerHTML = '<p class="text-xs text-gray-400 col-span-full text-center">Kamu tidak punya guild.</p>';
+        memberList.innerHTML = '<p class="text-sm text-gray-400">Kamu belum bergabung dengan guild.</p>';
+        return;
     }
+
+    // --- MANTRA BARU: KALKULASI & RENDER GUILD INVENTORY ---
+    const studentsQuery = query(ref(db, 'students'), orderByChild('guild'), equalTo(guildName));
+    onValue(studentsQuery, (guildSnaps) => {
+        memberList.innerHTML = '';
+        let totalGuildSlots = 0;
+        let membersData = [];
+        if (guildSnaps.exists()) {
+            guildSnaps.forEach(childSnap => {
+                const member = childSnap.val();
+                membersData.push(member);
+                const memberInventorySize = 2 + ((member.level || 1) - 1) * 1;
+                totalGuildSlots += memberInventorySize;
+
+                const memberDiv = document.createElement('div');
+                memberDiv.className = 'flex items-center gap-3';
+                memberDiv.innerHTML = `
+                    <img src="${member.fotoProfilBase64 || `https://placehold.co/40x40/e2e8f0/3d4852?text=${member.nama.charAt(0)}`}" class="w-10 h-10 rounded-full object-cover">
+                    <div><p class="font-semibold text-sm">${member.nama}</p><p class="text-xs text-gray-500">Level ${member.level}</p></div>
+                `;
+                memberList.appendChild(memberDiv);
+            });
+        }
+
+        guildInventoryCapacity.textContent = `Kapasitas: ${totalGuildSlots} Slot`;
+
+        const guildInvRef = ref(db, `guilds/${guildName}/inventory`);
+        onValue(guildInvRef, (invSnap) => {
+            const guildInventory = invSnap.val() || [];
+            guildInventorySlots.innerHTML = '';
+            for (let i = 0; i < totalGuildSlots; i++) {
+                const item = guildInventory[i];
+                const slot = document.createElement('button');
+                slot.className = 'inventory-slot w-16 h-16 bg-gray-200 rounded-lg border-2 border-dashed border-gray-400 flex items-center justify-center text-gray-400 relative transition-transform active:scale-90 disabled:cursor-not-allowed disabled:opacity-50';
+                slot.dataset.index = i;
+
+                if (item) {
+                    slot.innerHTML = `<img src="${item.iconUrl}" title="${item.name}: ${item.description}" class="w-full h-full object-cover rounded-lg pointer-events-none">`;
+                    slot.classList.remove('border-dashed', 'bg-gray-200');
+                    slot.classList.add('guild-inventory-item', 'cursor-pointer', 'hover:ring-2', 'hover:ring-yellow-500');
+                    slot.itemData = item;
+                } else {
+                    slot.innerHTML = `<span class="text-xs">Kosong</span>`;
+                    slot.disabled = true;
+                }
+                guildInventorySlots.appendChild(slot);
+            }
+        });
+    });
+
+    guildInventorySlots.onclick = (e) => {
+        const slot = e.target.closest('.guild-inventory-item');
+        if (slot && slot.itemData) {
+            handleGuildInventoryClick(uid, studentData, slot.dataset.index, slot.itemData);
+        }
+    };
 
     chatForm.onsubmit = async (e) => {
         e.preventDefault();
@@ -909,6 +958,85 @@ function appendChatMessage(message, sender, isLoading = false) {
     chatBox.appendChild(msgDiv);
     chatBox.scrollTop = chatBox.scrollHeight;
     return msgDiv;
+}
+// =======================================================
+//          LOGIKA INVENTORI GUILD (BARU)
+// =======================================================
+async function handleGuildInventoryClick(uid, studentData, guildItemIndex, itemData) {
+    if (!confirm(`Ambil item "${itemData.name}" dari Peti Guild?`)) return;
+
+    try {
+        const inventory = studentData.inventory || [];
+        const inventorySize = 2 + ((studentData.level - 1) * 1);
+        let emptySlotIndex = -1;
+        for (let i = 0; i < inventorySize; i++) {
+            if (!inventory[i]) {
+                emptySlotIndex = i;
+                break;
+            }
+        }
+
+        if (emptySlotIndex === -1) throw new Error("Inventaris pribadimu penuh!");
+
+        const guildName = studentData.guild;
+        const updates = {};
+        updates[`/guilds/${guildName}/inventory/${guildItemIndex}`] = null;
+        updates[`/students/${uid}/inventory/${emptySlotIndex}`] = itemData;
+
+        await update(ref(db), updates);
+        showToast(`Berhasil mengambil ${itemData.name}!`);
+        audioPlayer.success();
+
+    } catch (error) {
+        showToast(error.message, true);
+        audioPlayer.error();
+    }
+}
+
+async function depositItemToGuild(uid, studentData, itemIndex, itemData, closeModalCallback) {
+    const guildName = studentData.guild;
+    if (!guildName || guildName === 'Tanpa Guild') {
+        showToast("Kamu tidak berada di guild manapun!", true);
+        return;
+    }
+
+    try {
+        const guildInvRef = ref(db, `guilds/${guildName}/inventory`);
+        const guildInvSnap = await get(guildInvRef);
+        const guildInventory = guildInvSnap.val() || [];
+
+        // Kalkulasi ulang kapasitas guild untuk validasi
+        const studentsQuery = query(ref(db, 'students'), orderByChild('guild'), equalTo(guildName));
+        const guildMembersSnap = await get(studentsQuery);
+        let totalGuildSlots = 0;
+        guildMembersSnap.forEach(childSnap => {
+            const member = childSnap.val();
+            totalGuildSlots += 2 + ((member.level || 1) - 1) * 1;
+        });
+
+        let emptyGuildSlotIndex = -1;
+        for (let i = 0; i < totalGuildSlots; i++) {
+            if (!guildInventory[i]) {
+                emptyGuildSlotIndex = i;
+                break;
+            }
+        }
+
+        if (emptyGuildSlotIndex === -1) throw new Error("Peti Guild sudah penuh!");
+
+        const updates = {};
+        updates[`/students/${uid}/inventory/${itemIndex}`] = null;
+        updates[`/guilds/${guildName}/inventory/${emptyGuildSlotIndex}`] = itemData;
+
+        await update(ref(db), updates);
+        showToast(`Berhasil menyimpan ${itemData.name} di Peti Guild!`);
+        audioPlayer.success();
+        closeModalCallback();
+
+    } catch (error) {
+        showToast(error.message, true);
+        audioPlayer.error();
+    }
 }
 // =======================================================
 //                  LOGIKA BOUNTY BOARD (SISWA)
