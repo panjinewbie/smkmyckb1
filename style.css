@@ -15,14 +15,10 @@ button:disabled { opacity: 0.7; cursor: not-allowed; }
 }
 /* --- MANTRA BARU UNTUK BACKGROUND ADMIN --- */
 .admin-bg {
-    background-image: url('asset/gambar/background-login.jpg.png');
+    background-image: url('asset/gambar/halaman admin3.png');
     background-size: cover;
     background-position: center center;
     background-attachment: fixed; /* Biar background-nya diem pas di-scroll */
 }
 
 /* Bikin kartu-kartu konten jadi sedikit transparan biar nyatu sama background */
-#admin-dashboard-page .bg-white {
-    background-color: rgba(255, 255, 255, 0.9); /* Sedikit tembus pandang */
-    backdrop-filter: blur(2px); /* Efek blur di belakang kartu (opsional, tapi keren!) */
-}
