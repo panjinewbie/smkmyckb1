@@ -348,6 +348,29 @@ async function handleDailyLogin(uid) {
 
 function setupStudentDashboard(uid) {
     document.getElementById('student-logout-button').onclick = () => signOut(auth);
+
+    // --- LOGIKA MODAL CHAT DENGAN IVY ---
+    const ivyChatModal = document.getElementById('ivy-chat-modal');
+    const ivyChatToggleButton = document.getElementById('ivy-chat-toggle-button');
+    const closeIvyChatModalButton = document.getElementById('close-ivy-chat-modal-button');
+
+    if (ivyChatModal && ivyChatToggleButton && closeIvyChatModalButton) {
+        const openIvyChatModal = () => {
+            audioPlayer.openModal();
+            ivyChatModal.classList.remove('hidden');
+            setTimeout(() => ivyChatModal.classList.remove('opacity-0'), 10);
+        };
+
+        const closeIvyChatModal = () => {
+            audioPlayer.closeModal();
+            ivyChatModal.classList.add('opacity-0');
+            setTimeout(() => ivyChatModal.classList.add('hidden'), 300);
+        };
+
+        ivyChatToggleButton.addEventListener('click', openIvyChatModal);
+        closeIvyChatModalButton.addEventListener('click', closeIvyChatModal);
+        ivyChatModal.addEventListener('click', (event) => { if (event.target === ivyChatModal) { closeIvyChatModal(); } });
+    }
     
     // --- MANTRA BARU DISINI ---
     // Menghubungkan tombol navigasi Shop ke fungsi buka toko
@@ -921,6 +944,7 @@ async function setupGuildPage(uid) {
     const chatInput = document.getElementById('Ivy-chat-input');
     const guildInventorySlots = document.getElementById('guild-inventory-slots');
     const guildInventoryCapacity = document.getElementById('guild-inventory-capacity');
+    
     let isIvyThinking = false;
 
     memberList.innerHTML = '<p class="text-sm text-gray-400">Memuat anggota...</p>';
