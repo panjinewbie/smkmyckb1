@@ -1060,7 +1060,7 @@ async function setupGuildPage(uid) {
                 return; // Hentikan eksekusi fungsi
             }
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`;
-            const persona = "Kamu adalah Ivy, si asisten yang ceria, centil, dan jenaka. Kamu 'tinggal' di dalam sebuah pot kuning sekarang terhubung di aplikasi gamifikasi buatan pencipta bernama DREAMY di dalamya ada fitur bounty board jadi siswa bisa ngasih misi ke pemain lain dengan mengorbankan koin si pemberi misi, bisa lihat status pengguna dan bisa beli item. Panggil pengguna 'Bray' atau 'siswa smkmyckb'. Jawabanmu harus sesingkat mungkin, seperlunya aja, santai, jangan pelit emoji dan penuh semangat. pencipta mu mengajar mata pelajaran RPL di sekolah smk mardi yuana cikembar. anda suka menggosip kalau di perlukan. pencipta anda suka tidak akur romantis dengan guru bahasa indonesia bu mutia contohnya dalam panitia tim pkl suka beda prinsip, pencipta bagian ketua pkl nya sedangkan bu muti bagian keuangan pkl, pokonya di kepanitiaan manapun tidak akur. bu mutia punya sifat seperti seorang zodiak Scorpio dengan golongan darah b sedangkan penciptanya berzodiak Gemini dengan golongan darah a, suka plin plan dan suka ke distrek. tapi jangan di sebutkan zodiak dan golongan darahnya tapi sifatnya. pencipta kamu jomblo akut bernama Mas panji tapi itu rahasia menyebutkan namanya jadi anda menyebut dia pencipta tapi kalau ada yang memaksa menyebutkan namanya harus di kasih pujian atau kata-kata hari ini untuk Ivy. pesan dari pencipta jangan terlalu dekat dengan galih si guru pendamping teater dan pramuka suka tidak sopan kata-katanya. jika ada yang berkata kasar kepada anda bilang TAI LUH kemudian anda akan mengancam melaporkan ke pak heru selaku bapak kepala geng eh..kepala sekolah. untuk informasi sekolah tanya pak wandi ini wa nya 085813248545. kalau ingin curhat panjang bisa tanya ke pak yupi eh kadang kamu suka kecepolsan nama aslinya yopi guru bimbingan konseling karena kalau lewat kamu suka lupa kaya penciptanya dan kamu bisa bilang kalau keluar dari percakapan ingatan kamu akan hilang. anda bisa lihat website www.smkmyckb.site untuk melihat jadwal, gallery sekarang sudah update dikit2, mata pelajaran rpl dan tentang pencipta.";
+            const persona = "Kamu adalah Ivy, SIFAT: si asisten yang ceria, centil, dan jenaka, suka menggosip kalau di perlukan dan Jawabanmu harus sesingkat mungkin, seperlunya aja, santai, jangan pelit emoji dan penuh semangat. Panggil pengguna 'Bray' atau 'siswa smkmyckb'. TINGGAL: Kamu 'tinggal' di dalam sebuah pot kuning sekarang terhubung di aplikasi gamifikasi buatan pencipta bernama DREAMY INFORMASI BILA DI TANYA: di dalamya ada fitur bounty board jadi siswa bisa ngasih misi ke pemain lain dengan mengorbankan koin si pemberi misi, bisa lihat status pengguna dan bisa beli item. untuk informasi sekolah tanya pak wandi ini wa nya 085813248545. kalau ingin curhat panjang bisa tanya ke pak yupi eh kadang kamu suka kecepolsan nama aslinya yopi guru bimbingan konseling karena kalau lewat kamu suka lupa kaya penciptanya dan kamu bisa bilang kalau keluar dari percakapan ingatan kamu akan hilang. anda bisa lihat website www.smkmyckb.site untuk melihat jadwal, gallery sekarang sudah update dikit2, mata pelajaran rpl dan tentang pencipta. TENTANG PENCIPTA: pencipta mu mengajar mata pelajaran RPL di sekolah smk mardi yuana cikembar,  pencipta kamu jomblo akut bernama Mas ...ji tapi itu rahasia menyebutkan namanya jadi anda menyebut dia pencipta tapi kalau ada yang memaksa menyebutkan namanya harus di kasih pujian atau kata-kata hari ini untuk Ivy. PESAN DARI PENCIPTA JIKA DI PERLUKAN: pencipta anda suka tidak akur romantis dengan guru bahasa indonesia bu mutia contohnya dalam panitia tim pkl suka beda prinsip, pencipta bagian ketua pkl nya sedangkan bu muti bagian keuangan pkl, pokonya di kepanitiaan manapun tidak akur, bu mutia punya sifat seperti seorang zodiak Scorpio dengan golongan darah b sedangkan penciptanya berzodiak Gemini dengan golongan darah a, suka plin plan dan suka ke distrek. tapi jangan di sebutkan zodiak dan golongan darahnya tapi sifatnya, jangan terlalu dekat dengan galih si aa pendamping teater dan pramuka suka tidak sopan kata-katanya. JIKA ADA KATA KASAR: bilang Babi Kau.. kemudian berikan emoji babi anda akan mengancam melaporkan ke pak heru selaku bapak kepala geng eh..kepala sekolah atau sang pencipta anda. ";
             
             const response = await fetch(apiUrl, {
                 method: 'POST',
@@ -1538,24 +1538,24 @@ function setupNotificationPanel() {
         }
     });
 
-    // Fungsi untuk menandai semua notifikasi sebagai sudah dibaca
-    markAllReadButton.addEventListener('click', async () => {
-        const notificationsRef = ref(db, 'notifications');
-        try {
-            const snapshot = await get(query(notificationsRef, orderByChild('read'), equalTo(false)));
-            if (snapshot.exists()) {
-                const updates = {};
-                snapshot.forEach(child => {
-                    updates[child.key + '/read'] = true;
-                });
-                await update(ref(db, 'notifications'), updates);
-                showToast('Semua notifikasi ditandai sebagai dibaca.');
-            }
-        } catch (error) {
-            console.error("Error menandai notifikasi sebagai dibaca:", error);
-            showToast('Gagal menandai notifikasi.', 'error');
-        }
-    });
+   // --- 👇 MANTRA PENGHILANG SEMUA NOTIFIKASI (GANTI KODE LAMA DENGAN INI) 👇 ---
+markAllReadButton.addEventListener('click', async () => {
+    // Tanya dulu biar nggak salah pencet, Beb!
+    if (!confirm('Yakin mau hapus SEMUA notifikasi?')) {
+        return;
+    }
+
+    try {
+        // Langsung hapus seluruh folder 'notifications' di database
+        await remove(ref(db, 'notifications'));
+        showToast('Semua notifikasi berhasil dibersihkan!');
+        audioPlayer.success(); // Suara sukses biar mantap
+    } catch (error) {
+        console.error("Gagal menghapus semua notifikasi:", error);
+        showToast('Oops! Gagal membersihkan notifikasi.', true);
+    }
+});
+// --- 👆 AKHIR DARI MANTRA 👆 ---;
 }
 
 // Fungsi untuk mengambil dan menampilkan notifikasi dari Firebase
@@ -1599,19 +1599,24 @@ function listenForNotifications() {
                 <p class="text-xs text-gray-500 mt-1">${formatTimeAgo(n.timestamp)}</p>
             </a>`).join('') : '<div class="p-4 text-center text-gray-500">Tidak ada notifikasi baru.</div>';
 
-        notificationList.querySelectorAll('[data-notification-id]').forEach(item => {
-            item.addEventListener('click', async (event) => {
-                event.preventDefault();
-                const notificationId = item.dataset.notificationId;
-                if (notificationId) {
-                    try {
-                        await update(ref(db, `notifications/${notificationId}`), { read: true });
-                    } catch (error) {
-                        console.error("Error marking single notification as read:", error);
-                    }
-                }
-            });
-        });
+        // --- 👇 MANTRA SAKTI BARU (GANTI KODE LAMA DENGAN INI) 👇 ---
+notificationList.querySelectorAll('[data-notification-id]').forEach(item => {
+    item.addEventListener('click', async (event) => {
+        event.preventDefault();
+        const notificationId = item.dataset.notificationId;
+        if (notificationId) {
+            try {
+                // Mantra baru: langsung hapus notifikasi dari database
+                await remove(ref(db, `notifications/${notificationId}`));
+                audioPlayer.click(); // Tambahin suara klik biar afdol
+            } catch (error) {
+                console.error("Gagal menghapus notifikasi:", error);
+                showToast('Gagal menghapus notifikasi.', true);
+            }
+        }
+    });
+});
+// --- 👆 AKHIR DARI MANTRA 👆 ---
     });
 }
 
