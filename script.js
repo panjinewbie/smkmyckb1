@@ -1764,68 +1764,83 @@ function setupAdminDashboard() {
     });
 
     // --- FUNGSI DATA SISWA (ADMIN) ---
-    const studentsRef = ref(db, 'students');
-    onValue(studentsRef, (snapshot) => {
+   // --- GANTI KODE onValue(studentsRef, ...) YANG LAMA DENGAN KODE BARU INI ---
+const studentsRef = ref(db, 'students');
+onValue(studentsRef, (snapshot) => {
+    const studentTableBody = document.getElementById('student-table-body');
+    const filterKelas = document.getElementById('dashboard-filter-kelas');
+    const filterGuild = document.getElementById('dashboard-filter-guild');
+    let allStudents = [];
+
+    if (snapshot.exists()) {
+        allStudents = Object.entries(snapshot.val());
+    }
+
+    // --- MANTRA BARU: Mengisi pilihan filter ---
+    const uniqueKelas = [...new Set(allStudents.map(([_, student]) => student.kelas))];
+    const uniqueGuilds = [...new Set(allStudents.map(([_, student]) => student.guild || 'No Guild'))];
+
+    // Simpan nilai filter yang sedang aktif
+    const activeKelas = filterKelas.value;
+    const activeGuild = filterGuild.value;
+
+    filterKelas.innerHTML = '<option value="semua">Semua Kelas</option>';
+    uniqueKelas.sort().forEach(kelas => {
+        filterKelas.innerHTML += `<option value="${kelas}" ${kelas === activeKelas ? 'selected' : ''}>${kelas}</option>`;
+    });
+
+    filterGuild.innerHTML = '<option value="semua">Semua Guild</option>';
+    uniqueGuilds.sort().forEach(guild => {
+        filterGuild.innerHTML += `<option value="${guild}" ${guild === activeGuild ? 'selected' : ''}>${guild}</option>`;
+    });
+
+    // --- MANTRA BARU: Fungsi untuk render tabel ---
+    const renderTable = () => {
+        const selectedKelas = filterKelas.value;
+        const selectedGuild = filterGuild.value;
+
+        const filteredStudents = allStudents.filter(([_, student]) => {
+            const kelasMatch = selectedKelas === 'semua' || student.kelas === selectedKelas;
+            const guildMatch = selectedGuild === 'semua' || (student.guild || 'No Guild') === selectedGuild;
+            return kelasMatch && guildMatch;
+        });
+
         studentTableBody.innerHTML = '';
         let totalStudents = 0, totalLevel = 0, totalCoins = 0;
-        if (!snapshot.exists()) {
-            studentTableBody.innerHTML = '<tr><td colspan="5" class="text-center p-8 text-gray-400">Belum ada siswa.</td></tr>';
+
+        if (filteredStudents.length === 0) {
+            studentTableBody.innerHTML = '<tr><td colspan="7" class="text-center p-8 text-gray-400">Tidak ada siswa yang cocok.</td></tr>';
         } else {
-            const studentsData = snapshot.val();
-            Object.keys(studentsData).forEach(key => {
-                const student = studentsData[key];
+            filteredStudents.forEach(([key, student]) => {
+                // --- (Kode untuk membuat baris tabel tetap sama, tidak perlu diubah) ---
                 const studentRow = document.createElement('tr');
                 const maxHp = (student.level || 1) * 100;
                 const hpPercent = (student.hp / maxHp) * 100;
                 studentRow.className = 'bg-white border-b hover:bg-gray-50';
-                const avatar = student.fotoProfilBase64 ? 
-                    `<img src="${student.fotoProfilBase64}" alt="${student.nama}" class="w-10 h-10 rounded-full object-cover">` : 
+                const avatar = student.fotoProfilBase64 ?
+                    `<img src="${student.fotoProfilBase64}" alt="${student.nama}" class="w-10 h-10 rounded-full object-cover">` :
                     `<div class="w-10 h-10 bg-gray-700 text-white flex items-center justify-center rounded-full font-bold">${student.nama.charAt(0)}</div>`;
+
                 let statusEffectsHtml = '';
-if (student.statusEffects && Object.keys(student.statusEffects).length > 0) {
-    const effectMap = {
-        racun: { icon: 'skull', color: 'text-red-500', title: 'Racun' },
-        diam: { icon: 'mic-off', color: 'text-gray-500', title: 'Diam' },
-        knock: { icon: 'dizzy', color: 'text-yellow-500', title: 'Pusing' }
-    };
-    statusEffectsHtml += '<div class="flex justify-center items-center gap-2">';
-    for (const effectKey in student.statusEffects) {
-        if (effectMap[effectKey]) {
-            const effect = effectMap[effectKey];
-            statusEffectsHtml += `<i data-lucide="${effect.icon}" class="w-4 h-4 ${effect.color}" title="${effect.title}"></i>`;
-        }
-    }
-    statusEffectsHtml += '</div>';
-} else {
-    statusEffectsHtml = '<span class="text-xs text-gray-400">-</span>';
-}
-                    studentRow.innerHTML = `
-    <td class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap flex items-center">
-        ${avatar} 
-        <div class="ml-4">
-           ${statusEffectsHtml} <div class="font-bold">${student.nama }</div>
-            <div class="text-xs text-gray-500">NIS: ${student.nis} | ${student.kelas} | ${student.guild || 'No Guild'}</div>
-        </div>
-    </td>
-    <td class="px-6 py-4 text-center text-lg font-bold">${student.level || 1}</td>
-    <td class="px-6 py-4 text-center">${student.xp || 0}</td>
-    <td class="px-6 py-4">
-        <div class="w-full bg-gray-200 rounded-full h-4 relative">
-            <div class="bg-red-500 h-4 rounded-full" style="width: ${hpPercent}%"></div>
-            <span class="absolute inset-0 text-center text-xs font-bold text-white">${student.hp || maxHp}/${maxHp}</span>
-        </div>
-    </td>
-    <td class="px-6 py-4 text-center font-semibold text-yellow-600">
-        <div class="flex items-center justify-center gap-1">
-            <i data-lucide="coins" class="w-4 h-4"></i>
-            <span>${student.coin || 0}</span>
-        </div>
-    </td>
-    <td class="px-6 py-4 text-center space-x-1">
-        <button class="battle-init-btn p-2 bg-red-100 text-red-600 hover:bg-red-200 rounded-lg" data-id="${key}" title="Mulai Battle"><i data-lucide="swords" class="w-4 h-4"></i></button>
-        <button class="edit-btn p-2 bg-blue-100 text-blue-600 hover:bg-blue-200 rounded-lg" data-id="${key}" title="Edit Siswa"><i data-lucide="edit" class="w-4 h-4"></i></button>
-        <button class="delete-btn p-2 bg-gray-100 text-gray-600 hover:bg-gray-200 rounded-lg" data-id="${key}" title="Hapus Siswa"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-    </td>`;
+                if (student.statusEffects && Object.keys(student.statusEffects).length > 0) {
+                    const effectMap = { racun: { icon: 'skull', color: 'text-red-500', title: 'Racun' }, diam: { icon: 'mic-off', color: 'text-gray-500', title: 'Diam' }, knock: { icon: 'dizzy', color: 'text-yellow-500', title: 'Pusing' }};
+                    statusEffectsHtml += '<div class="flex justify-left items-left gap-2">';
+                    for (const effectKey in student.statusEffects) { if (effectMap[effectKey]) { const effect = effectMap[effectKey]; statusEffectsHtml += `<i data-lucide="${effect.icon}" class="w-4 h-4 ${effect.color}" title="${effect.title}"></i>`; } }
+                    statusEffectsHtml += '</div>';
+                } else { statusEffectsHtml = '<span class="text-xs text-gray-400">-</span>'; }
+
+                studentRow.innerHTML = `
+                    <td class="px-6 py-3 font-medium text-gray-900 whitespace-nowrap flex items-center">${avatar}<div class="ml-4">${statusEffectsHtml}<div class="font-bold">${student.nama}</div><div class="text-xs text-gray-500">NIS: ${student.nis} | ${student.kelas} | ${student.guild || 'No Guild'}</div></div></td>
+                    <td class="px-6 py-3 text-center text-lg font-bold">${student.level || 1}</td>
+                    <td class="px-6 py-3 text-center">${student.xp || 0}</td>
+                    <td class="px-6 py-3"><div class="w-full bg-gray-200 rounded-full h-4 relative"><div class="bg-red-500 h-4 rounded-full" style="width: ${hpPercent}%"></div><span class="absolute inset-0 text-center text-xs font-bold text-white">${student.hp || maxHp}/${maxHp}</span></div></td>
+                    <td class="px-6 py-3 text-center font-semibold text-yellow-600 flex items-center justify-center gap-1"><i data-lucide="coins" class="w-4 h-4"></i><span>${student.coin || 0}</span></td>
+                    
+                    <td class="px-6 py-3 text-center space-x-1">
+                        <button class="battle-init-btn p-2 bg-red-100 text-red-600 hover:bg-red-200 rounded-lg" data-id="${key}" title="Mulai Battle"><i data-lucide="swords" class="w-4 h-4"></i></button>
+                        <button class="edit-btn p-2 bg-blue-100 text-blue-600 hover:bg-blue-200 rounded-lg" data-id="${key}" title="Edit Siswa"><i data-lucide="edit" class="w-4 h-4"></i></button>
+                        <button class="delete-btn p-2 bg-gray-100 text-gray-600 hover:bg-gray-200 rounded-lg" data-id="${key}" title="Hapus Siswa"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    </td>`;
                 studentTableBody.appendChild(studentRow);
                 totalStudents++;
                 totalLevel += (student.level || 1);
@@ -1836,7 +1851,13 @@ if (student.statusEffects && Object.keys(student.statusEffects).length > 0) {
         document.getElementById('average-level').textContent = totalStudents > 0 ? (totalLevel / totalStudents).toFixed(1) : '0';
         document.getElementById('total-coins').textContent = totalCoins;
         createLucideIcons();
-    });
+    };
+
+    // Pasang pendengar di filter dan panggil renderTable pertama kali
+    filterKelas.onchange = renderTable;
+    filterGuild.onchange = renderTable;
+    renderTable();
+});
 
     studentForm.addEventListener('submit', async (e) => {
         e.preventDefault();
