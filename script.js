@@ -2228,9 +2228,11 @@ if (addAdminBountyButton && adminBountyModal && adminBountyForm && adminBountyLi
     //               LOGIKA HALAMAN MAGIC CONTROLS
     // =======================================================
     async function setupMagicControlsPage() {
-        const container = document.getElementById('magic-student-list-container');
-        const selectAllCheckbox = document.getElementById('select-all-students-magic');
-        if (!container) return;
+    const container = document.getElementById('magic-student-list-container');
+    const selectAllCheckbox = document.getElementById('select-all-students-magic');
+    const filterKelas = document.getElementById('magic-filter-kelas');
+    const filterGuild = document.getElementById('magic-filter-guild');
+         if (!container || !filterKelas || !filterGuild) return;
 
         container.innerHTML = '<p class="text-center text-gray-400">Memuat data siswa...</p>';
 
@@ -2242,7 +2244,39 @@ if (addAdminBountyButton && adminBountyModal && adminBountyForm && adminBountyLi
 
         container.innerHTML = '';
         const studentsData = studentsSnap.val();
-        Object.entries(studentsData).forEach(([uid, student]) => {
+       const allStudents = Object.entries(studentsData); // Simpan data asli
+       // --- MANTRA BARU: Mengisi pilihan filter ---
+    const uniqueKelas = new Set(allStudents.map(([_, student]) => student.kelas));
+    const uniqueGuilds = new Set(allStudents.map(([_, student]) => student.guild || 'No Guild'));
+
+    filterKelas.innerHTML = '<option value="semua">Semua Kelas</option>';
+    uniqueKelas.forEach(kelas => {
+        filterKelas.innerHTML += `<option value="${kelas}">${kelas}</option>`;
+    });
+
+    filterGuild.innerHTML = '<option value="semua">Semua Guild</option>';
+    uniqueGuilds.forEach(guild => {
+        filterGuild.innerHTML += `<option value="${guild}">${guild}</option>`;
+    });
+
+    // --- MANTRA BARU: Fungsi untuk menampilkan siswa sesuai filter ---
+    const renderFilteredStudents = () => {
+        const selectedKelas = filterKelas.value;
+        const selectedGuild = filterGuild.value;
+
+        const filteredStudents = allStudents.filter(([_, student]) => {
+            const kelasMatch = selectedKelas === 'semua' || student.kelas === selectedKelas;
+            const guildMatch = selectedGuild === 'semua' || (student.guild || 'No Guild') === selectedGuild;
+            return kelasMatch && guildMatch;
+        });
+
+        container.innerHTML = ''; // Kosongkan daftar
+        if (filteredStudents.length === 0) {
+            container.innerHTML = '<p class="text-center text-gray-500">Tidak ada siswa yang cocok dengan filter.</p>';
+            return;
+        }
+
+        filteredStudents.forEach(([uid, student]) => {
             const studentLabel = document.createElement('label');
             studentLabel.className = 'flex items-center p-2 rounded-md hover:bg-gray-100 cursor-pointer';
             studentLabel.innerHTML = `
@@ -2253,13 +2287,22 @@ if (addAdminBountyButton && adminBountyModal && adminBountyForm && adminBountyLi
             `;
             container.appendChild(studentLabel);
         });
-        
-        selectAllCheckbox.onchange = (e) => {
-            container.querySelectorAll('.magic-student-checkbox').forEach(checkbox => {
-                checkbox.checked = e.target.checked;
-            });
-        };
-    }
+        selectAllCheckbox.checked = false; // Reset checkbox "Pilih Semua"
+    };
+
+    // --- MANTRA BARU: Pasang pendengar di filter ---
+    filterKelas.addEventListener('change', renderFilteredStudents);
+    filterGuild.addEventListener('change', renderFilteredStudents);
+
+    selectAllCheckbox.onchange = (e) => {
+        container.querySelectorAll('.magic-student-checkbox').forEach(checkbox => {
+            checkbox.checked = e.target.checked;
+        });
+    };
+
+    // Tampilkan semua siswa saat pertama kali halaman dibuka
+    renderFilteredStudents();
+}
 
     async function applyMagicToSelectedStudents(action) {
         const selectedCheckboxes = document.querySelectorAll('.magic-student-checkbox:checked');
