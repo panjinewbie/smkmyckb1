@@ -279,17 +279,32 @@
                     </div>
 
                     <div id="magic-student-list" class="mt-8 border-t pt-6">
-                        <div class="flex justify-between items-center mb-4">
-                            <h3 class="font-semibold text-lg">Pilih Target Siswa</h3>
-                            <label class="flex items-center space-x-2 text-sm">
-                                <input type="checkbox" id="select-all-students-magic" class="rounded">
-                                <span>Pilih Semua</span>
-                            </label>
-                        </div>
-                        <div id="magic-student-list-container" class="space-y-2 max-h-96 overflow-y-auto pr-2">
-                             <p class="text-center text-gray-400">Memuat data siswa...</p>
-                        </div>
-                    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div>
+            <label for="magic-filter-kelas" class="block text-sm font-medium text-gray-700">Filter berdasarkan Kelas</label>
+            <select id="magic-filter-kelas" class="mt-1 w-full p-2 border border-gray-300 rounded-md bg-white">
+                <option value="semua">Semua Kelas</option>
+            </select>
+        </div>
+        <div>
+            <label for="magic-filter-guild" class="block text-sm font-medium text-gray-700">Filter berdasarkan Guild</label>
+            <select id="magic-filter-guild" class="mt-1 w-full p-2 border border-gray-300 rounded-md bg-white">
+                <option value="semua">Semua Guild</option>
+            </select>
+        </div>
+    </div>
+    <div class="flex justify-between items-center mb-4">
+        <h3 class="font-semibold text-lg">Pilih Target Siswa</h3>
+        <label class="flex items-center space-x-2 text-sm">
+            <input type="checkbox" id="select-all-students-magic" class="rounded">
+            <span>Pilih Semua</span>
+        </label>
+    </div>
+    <div id="magic-student-list-container" class="space-y-2 max-h-96 overflow-y-auto pr-2">
+         <p class="text-center text-gray-400">Memuat data siswa...</p>
+    </div>
+</div>
                 </div>
             </div>
         </main>
