@@ -1671,6 +1671,8 @@ function setupAdminDashboard() {
     // --- MANTRA BARU: Inisialisasi Notifikasi ---
     setupNotificationPanel();
     listenForNotifications();
+    setupNoiseDetector(); 
+
     // --- AKHIR MANTRA ---
 
     // --- ELEMEN UI ADMIN ---
@@ -2606,7 +2608,241 @@ if (addAdminBountyButton && adminBountyModal && adminBountyForm && adminBountyLi
             }
         }
     });
+// =======================================================
+//          LOGIKA BARU: DETEKTOR KEBISINGAN
+// =======================================================
+function setupNoiseDetector() {
+    // Elemen UI
+    const openButton = document.getElementById('open-noise-detector-button');
+    const modal = document.getElementById('noise-detector-modal');
+    const closeButton = document.getElementById('close-noise-detector-modal');
+    const startButton = document.getElementById('start-noise-detection');
+    const stopButton = document.getElementById('stop-noise-detection');
+    const finishButton = document.getElementById('finish-and-reward');
+    const slider = document.getElementById('noise-threshold-slider');
+    const thresholdValueDisplay = document.getElementById('noise-threshold-value');
+    const meterBar = document.getElementById('noise-meter-bar');
+    const meterValue = document.getElementById('noise-meter-value');
+    const thresholdLine = document.getElementById('noise-meter-threshold-line');
+    const penaltyLog = document.getElementById('noise-penalty-log');
+    const classFilter = document.getElementById('noise-filter-kelas');
+    const studentListContainer = document.getElementById('noise-student-list');
 
+    // Variabel untuk audio
+    let audioContext, analyser, microphone, javascriptNode;
+    let isDetecting = false;
+    let animationFrameId;
+    let allStudentsData = {};
+    let penalizedStudents = new Set();
+
+    // Fungsi untuk membuka modal & mengisi data
+    const openModal = async () => {
+        modal.classList.remove('hidden');
+        setTimeout(() => modal.classList.remove('opacity-0'), 10);
+
+        const studentsSnap = await get(ref(db, 'students'));
+        if (studentsSnap.exists()) {
+            allStudentsData = studentsSnap.val();
+            const uniqueKelas = [...new Set(Object.values(allStudentsData).map(s => s.kelas))];
+            classFilter.innerHTML = '<option value="semua">Pilih Semua Kelas</option>';
+            uniqueKelas.sort().forEach(k => {
+                classFilter.innerHTML += `<option value="${k}">${k}</option>`;
+            });
+        }
+    };
+
+    const closeModal = () => {
+        if (isDetecting) stopDetection();
+        modal.classList.add('opacity-0');
+        setTimeout(() => modal.classList.add('hidden'), 300);
+    };
+
+    classFilter.onchange = () => {
+        const selectedKelas = classFilter.value;
+        studentListContainer.innerHTML = '';
+        penalizedStudents.clear(); // Reset daftar hukuman
+        penaltyLog.innerHTML = '<p class="text-gray-400">Log akan muncul di sini...</p>';
+
+        const studentsToDisplay = Object.entries(allStudentsData).filter(([_, student]) => 
+            selectedKelas === 'semua' || student.kelas === selectedKelas
+        );
+
+        if(studentsToDisplay.length === 0) {
+             studentListContainer.innerHTML = '<p class="text-xs text-gray-400">Tidak ada siswa di kelas ini.</p>';
+             return;
+        }
+
+        // Tambahkan checkbox "Pilih Semua"
+        studentListContainer.innerHTML = `
+            <label class="flex items-center p-1 font-bold border-b">
+                <input type="checkbox" id="noise-select-all" class="mr-2 rounded">
+                <span>Pilih Semua Siswa</span>
+            </label>
+        `;
+
+        studentsToDisplay.forEach(([uid, student]) => {
+            const label = document.createElement('label');
+            label.className = "flex items-center p-1 hover:bg-gray-100";
+            label.innerHTML = `<input type="checkbox" data-uid="${uid}" class="noise-student-checkbox mr-2 rounded"><span>${student.nama}</span>`;
+            studentListContainer.appendChild(label);
+        });
+
+        document.getElementById('noise-select-all').onchange = (e) => {
+             studentListContainer.querySelectorAll('.noise-student-checkbox').forEach(cb => cb.checked = e.target.checked);
+        };
+    };
+
+
+    const startDetection = async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            analyser = audioContext.createAnalyser();
+            microphone = audioContext.createMediaStreamSource(stream);
+            javascriptNode = audioContext.createScriptProcessor(2048, 1, 1);
+
+            analyser.smoothingTimeConstant = 0.8;
+            analyser.fftSize = 1024;
+
+            microphone.connect(analyser);
+            analyser.connect(javascriptNode);
+            javascriptNode.connect(audioContext.destination);
+
+            javascriptNode.onaudioprocess = () => {
+                const array = new Uint8Array(analyser.frequencyBinCount);
+                analyser.getByteFrequencyData(array);
+                let values = 0;
+                const length = array.length;
+                for (let i = 0; i < length; i++) {
+                    values += (array[i]);
+                }
+                const average = values / length;
+                updateMeter(average);
+            };
+
+            isDetecting = true;
+            startButton.disabled = true;
+            stopButton.disabled = false;
+            finishButton.disabled = true;
+            penaltyLog.innerHTML = '<p class="text-gray-400">Mendengarkan...</p>';
+
+        } catch (err) {
+            alert('Gagal mengakses mikrofon. Pastikan kamu memberi izin ya, Beb!');
+            console.error(err);
+        }
+    };
+
+    const stopDetection = () => {
+    // Hentikan proses render visual
+    cancelAnimationFrame(animationFrameId);
+
+    // Matikan track mikrofon
+    if (microphone && microphone.mediaStream) {
+        microphone.mediaStream.getTracks().forEach(track => track.stop());
+    }
+
+    // --- Mantra Baru: Cek dulu sebelum menutup! ---
+    if (audioContext && audioContext.state !== 'closed') {
+        audioContext.close();
+    }
+
+    isDetecting = false;
+    startButton.disabled = false;
+    stopButton.disabled = true;
+    finishButton.disabled = false;
+};
+
+    const updateMeter = (volume) => {
+        const volumeLevel = Math.min(100, Math.floor(volume));
+        meterBar.style.width = `${volumeLevel}%`;
+        meterValue.textContent = volumeLevel;
+
+        if (volumeLevel < 30) meterBar.className = 'bg-green-500 h-8 rounded-full transition-all duration-100';
+        else if (volumeLevel < 60) meterBar.className = 'bg-yellow-500 h-8 rounded-full transition-all duration-100';
+        else meterBar.className = 'bg-red-500 h-8 rounded-full transition-all duration-100';
+
+        // Logika Hukuman
+        const threshold = parseInt(slider.value);
+        if (volumeLevel > threshold) {
+            const selectedCheckboxes = studentListContainer.querySelectorAll('.noise-student-checkbox:checked');
+            selectedCheckboxes.forEach(cb => {
+                const uid = cb.dataset.uid;
+                if (!penalizedStudents.has(uid)) {
+                    penalizedStudents.add(uid);
+                    applyPenalty(uid);
+                }
+            });
+        }
+    };
+
+    const applyPenalty = async (uid) => {
+        const studentData = allStudentsData[uid];
+        if (!studentData) return;
+
+        const penaltyAmount = Math.floor(studentData.hp * 0.10);
+        const newHp = Math.max(0, studentData.hp - penaltyAmount);
+
+        await update(ref(db, `students/${uid}`), { hp: newHp });
+
+        const logEntry = document.createElement('p');
+        logEntry.className = "text-red-600";
+        logEntry.innerHTML = `<strong>${studentData.nama}</strong> berisik! HP berkurang ${penaltyAmount}.`;
+        if (penaltyLog.querySelector('.text-gray-400')) penaltyLog.innerHTML = '';
+        penaltyLog.appendChild(logEntry);
+        penaltyLog.scrollTop = penaltyLog.scrollHeight;
+        audioPlayer.hpLoss();
+    };
+
+    const finishAndGiveReward = async () => {
+        stopDetection();
+        const selectedUIDs = [...studentListContainer.querySelectorAll('.noise-student-checkbox:checked')].map(cb => cb.dataset.uid);
+
+        const quietStudents = selectedUIDs.filter(uid => !penalizedStudents.has(uid));
+
+        if (quietStudents.length === 0) {
+            showToast("Tidak ada siswa yang berhak dapat hadiah.", true);
+            return;
+        }
+
+        const updates = {};
+        let rewardLog = '<strong>Hadiah untuk siswa teladan:</strong><br>';
+
+        for (const uid of quietStudents) {
+            const studentData = allStudentsData[uid];
+            const randomCoin = Math.floor(Math.random() * 10) + 5; // 5-14 koin
+            const randomXp = Math.floor(Math.random() * 10) + 5;   // 5-14 XP
+
+            const newCoin = (studentData.coin || 0) + randomCoin;
+            const newTotalXp = ((studentData.level - 1) * 1000) + studentData.xp + randomXp;
+            const newLevel = Math.floor(newTotalXp / 1000) + 1;
+            const newXp = newTotalXp % 1000;
+
+            updates[`/students/${uid}/coin`] = newCoin;
+            updates[`/students/${uid}/level`] = newLevel;
+            updates[`/students/${uid}/xp`] = newXp;
+
+            rewardLog += `• ${studentData.nama} +${randomCoin} koin, +${randomXp} XP<br>`;
+        }
+
+        await update(ref(db), updates);
+        penaltyLog.innerHTML = rewardLog;
+        showToast(`Hadiah berhasil diberikan kepada ${quietStudents.length} siswa!`);
+        finishButton.disabled = true;
+    };
+
+
+    // Event Listeners
+    openButton.onclick = openModal;
+    closeButton.onclick = closeModal;
+    slider.oninput = () => {
+        const val = slider.value;
+        thresholdValueDisplay.textContent = val;
+        thresholdLine.style.left = `${val}%`;
+    };
+    startButton.onclick = startDetection;
+    stopButton.onclick = stopDetection;
+    finishButton.onclick = finishAndGiveReward;
+}
     // =======================================================
     //                  LOGIKA BATTLE BARU
     // =======================================================
