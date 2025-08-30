@@ -564,7 +564,7 @@ if(profileNavLink && profileNavLink.textContent === 'Profil'){
     });
     document.getElementById('bounty-list-container').addEventListener('click', async (e) => {
     const takeButton = e.target.closest('.take-bounty-btn');
-    const completeButton = e.target.closest('.complete-bounty-btn');
+     const manageButton = e.target.closest('.manage-bounty-btn');
 
     if (takeButton) {
         takeButton.disabled = true;
@@ -590,10 +590,10 @@ if(profileNavLink && profileNavLink.textContent === 'Profil'){
             takeButton.disabled = false;
             takeButton.textContent = 'Ambil Misi';
         }
-    } else if (completeButton) {
+    } else if (manageButton) {
         // Ini adalah logika baru untuk tombol selesaikan misi
-        const bountyId = completeButton.dataset.id;
-        openCompleteBountyModal(bountyId);
+        const bountyId = manageButton.dataset.id;
+        openManageBountyModal(bountyId); // Panggil fungsi modal yang baru
     }
 });
 
@@ -1506,7 +1506,7 @@ function setupBountyBoardPage(uid) {
 
             let buttonHtml = '';
             if (isCreator) {
-                 buttonHtml = `<button data-id="${bountyId}" class="complete-bounty-btn w-full p-2 rounded-lg text-white font-bold text-sm bg-purple-600 hover:bg-purple-700">Selesaikan Misi</button>`;
+                 buttonHtml = `<button data-id="${bountyId}" class="manage-bounty-btn w-full p-2 rounded-lg text-white font-bold text-sm bg-purple-600 hover:bg-purple-700">Kelola Misi</button>`;
             } else if (isTakenByCurrentUser) {
                 buttonHtml = `<button disabled class="w-full p-2 rounded-lg text-white font-bold text-sm bg-blue-400 cursor-not-allowed">Sudah Diambil</button>`;
             } else if (isFull) {
@@ -1539,30 +1539,31 @@ function setupBountyBoardPage(uid) {
 
 // --- LOGIKA UNTUK MENYELESAIKAN BOUNTY ---
 
-async function openCompleteBountyModal(bountyId) {
+// --- GANTI FUNGSI LAMA DENGAN TIGA FUNGSI BARU INI ---
+
+// FUNGSI 1: Membuka Modal Pengelolaan Misi
+async function openManageBountyModal(bountyId) {
     const modal = document.getElementById('complete-bounty-modal');
     const titleEl = document.getElementById('complete-bounty-title');
     const takersListEl = document.getElementById('bounty-takers-list');
     const confirmButton = document.getElementById('confirm-complete-bounty-button');
+    const cancelButton = document.getElementById('cancel-bounty-button');
     const closeButton = document.getElementById('close-complete-bounty-modal-button');
 
-    // Pemeriksaan elemen untuk mencegah error
     if (!modal || !titleEl || !takersListEl || !confirmButton || !closeButton) {
-        console.error("Elemen UI untuk modal selesaikan bounty tidak ditemukan. Pastikan HTML-nya ada di student.html.");
-        showToast("Gagal membuka detail misi.", true);
+        console.error("Elemen UI untuk modal kelola bounty tidak ditemukan.");
         return;
     }
 
     const closeModal = () => {
-        audioPlayer.closeModal();
         modal.classList.add('opacity-0');
         setTimeout(() => modal.classList.add('hidden'), 300);
-        confirmButton.onclick = null; // Penting untuk hapus listener!
+        confirmButton.onclick = null;
+        cancelButton.onclick = null;
     };
 
     closeButton.onclick = closeModal;
 
-    // Ambil data bounty
     const bountySnap = await get(ref(db, `bounties/${bountyId}`));
     if (!bountySnap.exists()) {
         showToast("Misi tidak ditemukan!", true);
@@ -1571,78 +1572,110 @@ async function openCompleteBountyModal(bountyId) {
     const bountyData = bountySnap.val();
     titleEl.textContent = bountyData.title;
 
-    // Ambil data para pengambil misi
     takersListEl.innerHTML = '';
+    let selectedWinnerId = null; // Untuk menyimpan siapa yang dipilih
+
+    // Logika untuk tombol "Batalkan Misi"
+    cancelButton.onclick = () => handleCancelBounty(bountyId, bountyData, closeModal);
+
     if (bountyData.takers && Object.keys(bountyData.takers).length > 0) {
         const takerIds = Object.keys(bountyData.takers);
         const takerPromises = takerIds.map(uid => get(ref(db, `students/${uid}`)));
         const takerSnaps = await Promise.all(takerPromises);
 
-        takerSnaps.forEach(snap => {
+        takerSnaps.forEach((snap, index) => {
             if (snap.exists()) {
-                takersListEl.innerHTML += `<p class="text-sm p-1">${snap.val().nama}</p>`;
+                const takerId = takerIds[index];
+                const takerDiv = document.createElement('div');
+                takerDiv.className = 'flex items-center justify-between p-2 rounded cursor-pointer hover:bg-gray-200';
+                takerDiv.innerHTML = `<span class="font-medium">${snap.val().nama}</span><button data-winner-id="${takerId}" class="select-winner-btn bg-green-500 text-white text-xs font-bold py-1 px-2 rounded">Pilih</button>`;
+                takersListEl.appendChild(takerDiv);
             }
+        });
+
+        // Event listener untuk tombol "Pilih"
+        takersListEl.querySelectorAll('.select-winner-btn').forEach(btn => {
+            btn.onclick = () => {
+                // Reset semua tombol
+                takersListEl.querySelectorAll('.select-winner-btn').forEach(b => {
+                    b.textContent = 'Pilih';
+                    b.classList.remove('bg-blue-600');
+                    b.classList.add('bg-green-500');
+                });
+                // Tandai yang dipilih
+                btn.textContent = 'Terpilih';
+                btn.classList.add('bg-blue-600');
+                selectedWinnerId = btn.dataset.winnerId;
+                confirmButton.disabled = false; // Aktifkan tombol konfirmasi
+            };
         });
     } else {
         takersListEl.innerHTML = '<p class="text-sm text-gray-500 p-1">Belum ada yang mengambil misi ini.</p>';
     }
 
-    // Set event untuk tombol konfirmasi
-    confirmButton.onclick = () => handleCompleteBounty(bountyId, closeModal);
+    confirmButton.disabled = true; // Nonaktifkan tombol sampai ada yang dipilih
+    confirmButton.onclick = () => {
+        if (selectedWinnerId) {
+            handleCompleteBountyWithWinner(bountyId, bountyData, selectedWinnerId, closeModal);
+        } else {
+            showToast("Pilih seorang pemenang dulu, Beb!", true);
+        }
+    };
 
-    // Tampilkan modal
-    audioPlayer.openModal();
     modal.classList.remove('hidden');
     setTimeout(() => modal.classList.remove('opacity-0'), 10);
 }
 
-async function handleCompleteBounty(bountyId, closeModalCallback) {
+// FUNGSI 2: Menyelesaikan Misi dengan Pemenang Terpilih
+async function handleCompleteBountyWithWinner(bountyId, bountyData, winnerId, closeModalCallback) {
     const confirmButton = document.getElementById('confirm-complete-bounty-button');
     confirmButton.disabled = true;
     confirmButton.textContent = 'Memproses...';
 
     try {
-        const bountyRef = ref(db, `bounties/${bountyId}`);
-        const bountySnap = await get(bountyRef);
-        if (!bountySnap.exists()) throw new Error("Misi sudah tidak ada!");
-
-        const bountyData = bountySnap.val();
         const updates = {};
-
-        // --- PERUBAHAN: Ubah status bounty menjadi 'completed' alih-alih menghapusnya ---
+        // Ubah status misi jadi 'completed'
         updates[`/bounties/${bountyId}/status`] = 'completed';
 
-        // Jika ada yang mengambil misi, bagikan hadiahnya
-        if (bountyData.takers && Object.keys(bountyData.takers).length > 0) {
-            const takerIds = Object.keys(bountyData.takers);
-            const rewardPerTaker = bountyData.rewardPerTaker || 0;
-
-            // Ambil data semua taker dalam satu waktu
-            const studentPromises = takerIds.map(uid => get(ref(db, `students/${uid}`)));
-            const studentSnaps = await Promise.all(studentPromises);
-
-            studentSnaps.forEach(studentSnap => {
-                if (studentSnap.exists()) {
-                    const uid = studentSnap.key;
-                    const studentData = studentSnap.val();
-                    const newCoin = (studentData.coin || 0) + rewardPerTaker;
-                    updates[`/students/${uid}/coin`] = newCoin;
-                }
-            });
+        // Ambil data pemenang untuk ditambahkan koin
+        const winnerSnap = await get(ref(db, `students/${winnerId}`));
+        if (winnerSnap.exists()) {
+            const winnerData = winnerSnap.val();
+            const totalReward = bountyData.rewardCoin || 0;
+            updates[`/students/${winnerId}/coin`] = (winnerData.coin || 0) + totalReward;
         }
 
-        // Jalankan semua update ke database
         await update(ref(db), updates);
-
-        showToast('Misi berhasil diselesaikan dan hadiah telah dibagikan!');
-        audioPlayer.success();
+        showToast('Misi selesai! Hadiah telah diberikan kepada pemenang.');
         closeModalCallback();
-
     } catch (error) {
         showToast(error.message, true);
     } finally {
-        confirmButton.disabled = false;
-        confirmButton.textContent = 'Konfirmasi & Selesaikan Misi';
+        confirmButton.textContent = 'Konfirmasi & Beri Hadiah';
+    }
+}
+
+// FUNGSI 3: Membatalkan Misi
+async function handleCancelBounty(bountyId, bountyData, closeModalCallback) {
+    if (!confirm("Yakin mau membatalkan misi ini? Koin akan dikembalikan.")) return;
+
+    try {
+        const updates = {};
+        // Hapus misi dari daftar
+        updates[`/bounties/${bountyId}`] = null;
+
+        // Kembalikan koin ke si pembuat misi
+        const creatorSnap = await get(ref(db, `students/${bountyData.creatorId}`));
+        if (creatorSnap.exists()) {
+            const creatorData = creatorSnap.val();
+            updates[`/students/${bountyData.creatorId}/coin`] = (creatorData.coin || 0) + bountyData.rewardCoin;
+        }
+
+        await update(ref(db), updates);
+        showToast("Misi berhasil dibatalkan dan koin telah dikembalikan.");
+        closeModalCallback();
+    } catch (error) {
+        showToast(error.message, true);
     }
 }
 
