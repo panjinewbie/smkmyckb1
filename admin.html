@@ -431,15 +431,25 @@
                     <div>
                         <label for="item-effect" class="block text-sm font-medium text-gray-700">Efek Item</label>
 <select id="item-effect" required class="mt-1 w-full p-2 border border-gray-300 rounded-md bg-white">
-    <option value="HEAL_HP">Pulihkan HP</option>
-    <option value="GAIN_XP">Dapatkan XP</option>
-    <option value="BLOCK_ATTACK">Blok Serangan Musuh (1x)</option>
-    <option value="NONE">Tidak ada efek khusus</option>
-    <option value="CURSE_RACUN">☠️ Beri Kutukan Racun</option>
-    <option value="CURSE_DIAM">🔇 Beri Kutukan Diam</option>
-    <option value="CURSE_KNOCK">😵 Beri Kutukan Knock</option>
-    <option value="CURE_EFFECT">🌿 Sembuhkan 1 Efek Negatif</option>
-    </select>
+    <optgroup label="Efek Instan & Bantuan">
+        <option value="HEAL_HP">❤️ Pulihkan HP</option>
+        <option value="GAIN_XP">✨ Dapatkan XP</option>
+        <option value="BLOCK_ATTACK">🛡️ Blok Serangan Musuh (1x)</option>
+        <option value="CURE_EFFECT">🌿 Sembuhkan 1 Efek Negatif</option>
+        <option value="NONE">😑 Tidak ada efek khusus</option>
+    </optgroup>
+    <optgroup label="Buff Positif (Keuntungan)">
+        <option value="BUFF_HP_REGEN">💖 Regenerasi HP (+5% per hari)</option>
+        <option value="BUFF_TEMP_HP">❤️‍🩹 HP Sementara (Temporary HP)</option>
+        <option value="BUFF_ATTACK">⚔️ Penguat Serangan (masih belum aktif)</option>
+        <option value="BUFF_DEFENSE">🛡️ Penguat Pertahanan (masih belum aktif)</option>
+    </optgroup>
+    <optgroup label="Kutukan (Target Siswa Lain)">
+        <option value="CURSE_RACUN">☠️ Beri Kutukan Racun</option>
+        <option value="CURSE_DIAM">🔇 Beri Kutukan Diam</option>
+        <option value="CURSE_KNOCK">😵 Beri Kutukan Knock</option>
+    </optgroup>
+</select>
                     </div>
                     <div>
                         <label for="item-effect-value" class="block text-sm font-medium text-gray-700">Nilai Efek (jika ada)</label>
