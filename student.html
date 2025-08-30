@@ -246,23 +246,26 @@
 </div>
 <!-- Modal Selesaikan Misi Bounty -->
 <div id="complete-bounty-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 hidden opacity-0 transition-opacity duration-300">
-    <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
-        <div class="flex justify-between items-center mb-4">
-            <h3 class="text-xl font-bold text-gray-800">Selesaikan Misi: <span id="complete-bounty-title"></span></h3>
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-md max-h-[90vh] flex flex-col">
+        <div class="p-6 border-b flex justify-between items-center">
+            <h3 class="text-xl font-bold text-gray-800">Kelola Misi: <span id="complete-bounty-title"></span></h3>
             <button id="close-complete-bounty-modal-button" class="text-gray-400 hover:text-gray-600">
                 <i data-lucide="x" class="w-6 h-6"></i>
             </button>
         </div>
-        <div class="mb-4">
-            <p class="text-sm text-gray-600 mb-2">Hadiah akan dibagikan kepada siswa berikut:</p>
-            <div id="bounty-takers-list" class="bg-gray-100 rounded-md p-3 max-h-40 overflow-y-auto">
-                <!-- Daftar nama akan diisi oleh JavaScript -->
+        <div class="p-6 flex-grow overflow-y-auto">
+            <p class="text-sm text-gray-600 mb-2 font-semibold">Pilih pemenang dari daftar pengambil misi:</p>
+            <div id="bounty-takers-list" class="bg-gray-100 rounded-md p-3 space-y-2">
+                <p class="text-xs text-gray-400">Memuat daftar...</p>
             </div>
+            <p class="text-xs text-gray-500 mt-4">Pilih satu siswa untuk memberinya hadiah. Setelah itu, misi akan ditandai 'selesai' dan hilang dari papan bounty.</p>
         </div>
-        <p class="text-xs text-gray-500 mb-4">Misi ini akan ditandai sebagai 'selesai' dan hilang dari papan bounty. Tindakan ini tidak dapat dibatalkan.</p>
-        <div class="flex justify-end gap-3">
-            <button id="confirm-complete-bounty-button" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg">
-                Konfirmasi & Selesaikan Misi
+        <div class="p-4 bg-gray-50 rounded-b-lg flex justify-between items-center">
+             <button id="cancel-bounty-button" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg">
+                Batalkan Misi
+            </button>
+            <button id="confirm-complete-bounty-button" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg" disabled>
+                Konfirmasi & Beri Hadiah
             </button>
         </div>
     </div>
