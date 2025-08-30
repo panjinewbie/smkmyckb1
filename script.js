@@ -125,6 +125,8 @@ const showToast = (message, isError = false) => {
 };
 
 // --- FUNGSI BARU: Logika Inti untuk Efek Status ---
+// --- GANTI FUNGSI LAMA DENGAN VERSI BARU YANG LEBIH SAKTI INI ---
+// --- GANTI FUNGSI LAMA DENGAN VERSI SEMPURNA INI ---
 async function checkAndApplyStatusEffects(uid) {
     const studentRef = ref(db, `students/${uid}`);
     const studentSnap = await get(studentRef);
@@ -134,8 +136,10 @@ async function checkAndApplyStatusEffects(uid) {
     const statusEffects = studentData.statusEffects || {};
     const updates = {};
     const now = Date.now();
+    const today = getLocalDateString(new Date());
     let hasActiveEffects = false;
     let isMuted = false;
+    const maxHp = (studentData.level || 1) * 100;
 
     for (const effectKey in statusEffects) {
         const effect = statusEffects[effectKey];
@@ -144,39 +148,61 @@ async function checkAndApplyStatusEffects(uid) {
         // 1. Hapus efek yang sudah kedaluwarsa
         if (now > effect.expires) {
             updates[`/students/${uid}/statusEffects/${effectKey}`] = null;
-            if (effectKey === 'racun') {
-                updates[`/students/${uid}/lastPoisonCheck`] = null; // Hapus juga jejak racun
+            
+            // --- 👇 MANTRA PENYEMPURNA HP SEMENTARA DIMULAI DI SINI 👇 ---
+            if (effectKey === 'buff_temp_hp' && effect.tempHpGranted) {
+                const currentHp = updates[`/students/${uid}/hp`] || studentData.hp;
+                // Kurangi HP siswa sebanyak HP sementara yang pernah diberikan
+                updates[`/students/${uid}/hp`] = Math.max(1, currentHp - effect.tempHpGranted); // Minimal HP jadi 1, jangan langsung mati
             }
-            continue; // Lanjut ke efek berikutnya
+            // --- 👆 AKHIR DARI MANTRA 👆 ---
+
+            // Hapus juga jejak pengecekan lainnya
+            if (effectKey === 'racun') updates[`/students/${uid}/lastPoisonCheck`] = null;
+            if (effectKey === 'buff_hp_regen') updates[`/students/${uid}/lastRegenCheck`] = null;
+            continue;
         }
 
         hasActiveEffects = true;
 
-        // 2. Terapkan konsekuensi efek aktif
+        // 2. Terapkan konsekuensi EFEK NEGATIF
         if (effectKey === 'diam') {
             isMuted = true;
             alert('Akunmu terkena sihir Diam! Kamu tidak bisa masuk untuk sementara waktu sampai efeknya hilang.');
             await signOut(auth);
-            break; // Hentikan loop jika di-logout
+            break;
         }
-
         if (effectKey === 'racun') {
             const lastCheck = studentData.lastPoisonCheck || now;
             const hoursPassed = (now - lastCheck) / (1000 * 60 * 60);
-            const damagePerHour = 1; // Mengurangi 1 HP setiap jam
+            const damagePerHour = 1;
             const totalDamage = Math.floor(hoursPassed * damagePerHour);
 
             if (totalDamage > 0) {
                 updates[`/students/${uid}/hp`] = Math.max(0, studentData.hp - totalDamage);
                 updates[`/students/${uid}/lastPoisonCheck`] = now;
-                console.log(`Siswa ${studentData.nama} kehilangan ${totalDamage} HP karena racun.`);
+            }
+        }
+        
+        // 3. Terapkan konsekuensi EFEK POSITIF (Regenerasi)
+        if (effectKey === 'buff_hp_regen') {
+            const lastRegenDate = studentData.lastRegenCheck || '';
+            
+            if (lastRegenDate !== today) {
+                const regenAmount = Math.ceil(maxHp * 0.05);
+                const currentHp = updates[`/students/${uid}/hp`] || studentData.hp;
+                const newHp = Math.min(maxHp, currentHp + regenAmount);
+                
+                updates[`/students/${uid}/hp`] = newHp;
+                updates[`/students/${uid}/lastRegenCheck`] = today;
+                console.log(`Siswa ${studentData.nama} mendapat ${regenAmount} HP dari regenerasi.`);
             }
         }
     }
 
     if (Object.keys(updates).length > 0) {
         await update(ref(db), updates);
-        if (hasActiveEffects) showToast("Efek status aktif diterapkan...", false);
+        console.log("Efek status aktif berhasil diterapkan dan yang kedaluwarsa telah dihapus.");
     }
 
     return isMuted;
@@ -777,6 +803,7 @@ function openUseItemModal(uid, itemIndex, itemData) {
     setTimeout(() => modal.classList.remove('opacity-0'), 10);
 }
 
+// --- GANTI SELURUH FUNGSI LAMA DENGAN INI ---
 async function handleUseItem(uid, itemIndex, itemData, closeModalCallback) {
     const useButton = document.getElementById('use-item-confirm-button');
     useButton.disabled = true;
@@ -791,7 +818,7 @@ async function handleUseItem(uid, itemIndex, itemData, closeModalCallback) {
         const updates = {};
         let successMessage = `Berhasil menggunakan ${itemData.name}!`;
 
-        // PENAMBAHAN LOGIKA EFEK DI SINI
+        // Logika Efek Instan
         if (itemData.effect === 'HEAL_HP') {
             const maxHp = (studentData.level || 1) * 100;
             const currentHp = Number(studentData.hp) || 0;
@@ -803,28 +830,45 @@ async function handleUseItem(uid, itemIndex, itemData, closeModalCallback) {
             const newTotalXp = currentTotalXp + (Number(itemData.effectValue) || 0);
             updates[`/students/${uid}/level`] = Math.floor(newTotalXp / xpPerLevel) + 1;
             updates[`/students/${uid}/xp`] = newTotalXp % xpPerLevel;
-        }
-        // --- MANTRA BARU UNTUK PENANGKAL ---
-        else if (itemData.effect === 'CURE_EFFECT') {
+        } else if (itemData.effect === 'CURE_EFFECT') {
             const activeEffects = studentData.statusEffects || {};
             const effectKeys = Object.keys(activeEffects);
             if (effectKeys.length > 0) {
-                const effectToCure = effectKeys[0]; // Sembuhkan efek pertama yang ditemukan
+                const effectToCure = effectKeys[0]; // Sembuhkan efek pertama
                 updates[`/students/${uid}/statusEffects/${effectToCure}`] = null;
                 successMessage = `Efek ${effectToCure} berhasil disembuhkan!`;
             } else {
                 successMessage = "Kamu tidak punya efek negatif untuk disembuhkan.";
             }
+        } 
+        // --- 👇 MANTRA BARU UNTUK BUFF POSITIF 👇 ---
+        else if (itemData.effect.startsWith('BUFF_')) {
+            const durationInDays = 3; // Semua buff berlaku 3 hari
+            const expiryTimestamp = Date.now() + (durationInDays * 24 * 60 * 60 * 1000);
+            const effectKey = itemData.effect.toLowerCase(); // contoh: buff_hp_regen
+            
+            updates[`/students/${uid}/statusEffects/${effectKey}`] = { 
+                expires: expiryTimestamp,
+                value: itemData.effectValue || 0, // Simpan nilainya jika ada
+                name: itemData.name // Simpan nama item untuk referensi
+            };
+
+            // Logika khusus untuk HP Sementara
+            if (itemData.effect === 'BUFF_TEMP_HP') {
+                const tempHpValue = Number(itemData.effectValue) || 0;
+                updates[`/students/${uid}/hp`] = (studentData.hp || 0) + tempHpValue;
+                // Kita perlu cara melacak HP sementara ini, kita simpan di dalam efeknya saja
+                updates[`/students/${uid}/statusEffects/${effectKey}`].tempHpGranted = tempHpValue;
+            }
+            
+            successMessage = `Kamu merasakan kekuatan dari ${itemData.name}! Efek akan aktif selama ${durationInDays} hari.`;
         }
-        // Jika item adalah item kutukan, kita tidak melakukan apa-apa di sini
-        // karena logikanya akan ditangani oleh fungsi lain.
+        // --- 👆 AKHIR DARI MANTRA 👆 ---
         else if (itemData.effect.startsWith('CURSE_')) {
              throw new Error("Item ini harus digunakan pada siswa lain!");
         }
-        // Efek lain seperti BLOCK_ATTACK atau NONE tidak mengubah data siswa secara langsung,
-        // jadi kita hanya perlu menghapus itemnya dari inventaris.
 
-        updates[`/students/${uid}/inventory/${itemIndex}`] = null; // Hapus item setelah digunakan
+        updates[`/students/${uid}/inventory/${itemIndex}`] = null; // Hapus item
         await update(ref(db), updates);
         showToast(successMessage);
         closeModalCallback();
