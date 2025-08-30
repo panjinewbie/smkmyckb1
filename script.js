@@ -478,6 +478,10 @@ if(profileNavLink && profileNavLink.textContent === 'Profil'){
 }
 
 // ... (sisa kode onValue(studentRef, ...) ada di bawahnya)
+
+    // --- MANTRA BARU: Variabel untuk menyimpan data siswa agar bisa diakses oleh fungsi lain di scope ini ---
+    let currentStudentData = null;
+
     const studentRef = ref(db, `students/${uid}`);
     onValue(studentRef, (snapshot) => {
         if(!snapshot.exists()) return;
@@ -485,6 +489,9 @@ if(profileNavLink && profileNavLink.textContent === 'Profil'){
         const maxHp = (studentData.level || 1) * 100;
         document.getElementById('student-name').textContent = studentData.nama;
         document.getElementById('student-class-role').textContent = `${studentData.kelas} | ${studentData.peran} | Guild ${studentData.guild || ''}`;
+
+        currentStudentData = studentData; // Simpan data terbaru
+
         document.getElementById('student-avatar').src = studentData.fotoProfilBase64 || `https://placehold.co/128x128/e2e8f0/3d4852?text=${studentData.nama.charAt(0)}`;
         document.getElementById('hp-value').textContent = `${studentData.hp} / ${maxHp}`;
         document.getElementById('hp-bar').style.width = `${(studentData.hp / maxHp) * 100}%`;
@@ -589,6 +596,120 @@ if(profileNavLink && profileNavLink.textContent === 'Profil'){
         openCompleteBountyModal(bountyId);
     }
 });
+
+    // =======================================================
+    //          LOGIKA KHUSUS CHAT IVY (MODUL BARU)
+    // =======================================================
+    const chatForm = document.getElementById('Ivy-chat-form');
+    const chatInput = document.getElementById('Ivy-chat-input');
+    if (chatForm && chatInput) { // Cek dulu elemennya ada atau tidak
+
+        let isIvyThinking = false;
+        chatForm.onsubmit = async (e) => {
+            e.preventDefault();
+            if (isIvyThinking) {
+                showToast("Sabar, Beb! Ivy lagi mikir...", true);
+                return;
+            }
+
+            const userMessage = chatInput.value.trim();
+            if (!userMessage) return;
+
+            // --- MATA-MATA 1: Cek Pesan Pengguna ---
+            console.log("Pesan Pengguna:", userMessage);
+
+            const offensiveWords = ['tai', 'tolol', 'bajingan', 'bangsat', 'goblok', 'kontol', 'memek', 'anjing', 'babi'];
+            const isOffensive = offensiveWords.some(word => userMessage.toLowerCase().includes(word));
+            if (isOffensive && currentStudentData) {
+                const studentName = currentStudentData.nama;
+                addNotification(
+                    `<strong>${studentName}</strong> terdeteksi menggunakan kata kasar: "<i>${userMessage.substring(0, 50)}...</i>"`,
+                    'abusive_chat',
+                    { studentId: uid, message: userMessage }
+                );
+            }
+
+            isIvyThinking = true;
+            chatInput.disabled = true;
+            chatInput.placeholder = 'Ivy sedang berpikir...';
+            appendChatMessage(userMessage, 'user');
+            chatInput.value = '';
+            const loadingIndicator = appendChatMessage('Ivy sedang berpikir...', 'Ivy', true);
+
+            try {
+                const apiKey = "AIzaSyCjAl9VlU8gdt_Zod9lIREAbIfNLwJkl4w";
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+                
+                // --- MANTRA BARU: Ivy sekarang kenal kamu! ---
+                let studentProfileContext = '';
+                if (currentStudentData) {
+                    let inventorySummary = 'Inventaris kosong.';
+                    if (currentStudentData.inventory && currentStudentData.inventory.filter(i => i).length > 0) {
+                        inventorySummary = currentStudentData.inventory.filter(i => i).map(item => item.name).join(', ');
+                    }
+
+                    let statusSummary = 'Tidak ada efek status.';
+                    if (currentStudentData.statusEffects && Object.keys(currentStudentData.statusEffects).length > 0) {
+                        statusSummary = Object.keys(currentStudentData.statusEffects).join(', ');
+                    }
+                    const maxHp = (currentStudentData.level || 1) * 100;
+
+                    studentProfileContext = `
+---
+INFORMASI PENTING TENTANG PENGGUNA YANG SEDANG CHAT DENGANMU (JANGAN SAMPAI BOCOR KE PENGGUNA LAIN, TAPI GUNAKAN INFORMASI INI UNTUK MENJAWAB PERTANYAANNYA):
+Nama: ${currentStudentData.nama}
+Kelas: ${currentStudentData.kelas}
+Peran: ${currentStudentData.peran}
+Guild: ${currentStudentData.guild || 'Tidak ada'}
+Level: ${currentStudentData.level}
+HP: ${currentStudentData.hp} / ${maxHp}
+XP: ${currentStudentData.xp} / 1000
+Koin: ${currentStudentData.coin}
+Efek Status Aktif: ${statusSummary}
+Isi Inventaris: ${inventorySummary}
+---
+`;
+                }
+
+                const persona = "Kamu adalah Ivy, SIFAT: si asisten yang ceria, centil, dan jenaka, suka menggosip kalau di perlukan dan Jawabanmu harus sesingkat mungkin, seperlunya aja, santai, jangan pelit emoji dan penuh semangat. Panggil pengguna 'Bray' atau 'siswa smkmyckb'. TINGGAL: Kamu 'tinggal' di dalam sebuah pot kuning sekarang terhubung di aplikasi gamifikasi buatan pencipta bernama DREAMY INFORMASI BILA DI TANYA: di dalamya ada fitur bounty board jadi siswa bisa ngasih misi ke pemain lain dengan mengorbankan koin si pemberi misi, bisa lihat status pengguna dan bisa beli item. untuk informasi sekolah tanya pak wandi ini wa nya 085813248545. kalau ingin curhat panjang bisa tanya ke pak yupi eh kadang kamu suka kecepolsan nama aslinya yopi guru bimbingan konseling karena kalau lewat kamu suka lupa kaya penciptanya dan kamu bisa bilang kalau keluar dari percakapan ingatan kamu akan hilang. anda bisa lihat website www.smkmyckb.site untuk melihat jadwal, gallery sekarang sudah update dikit2, mata pelajaran rpl dan tentang pencipta. TENTANG PENCIPTA: pencipta mu mengajar mata pelajaran RPL di sekolah smk mardi yuana cikembar,  pencipta kamu jomblo akut bernama Mas ...ji tapi itu rahasia menyebutkan namanya jadi anda menyebut dia pencipta tapi kalau ada yang memaksa menyebutkan namanya harus di kasih pujian atau kata-kata hari ini untuk Ivy. PESAN DARI PENCIPTA JIKA DI PERLUKAN: pencipta anda suka tidak akur romantis dengan guru bahasa indonesia bu mutia contohnya dalam panitia tim pkl suka beda prinsip, pencipta bagian ketua pkl nya sedangkan bu muti bagian keuangan pkl, pokonya di kepanitiaan manapun tidak akur, bu mutia punya sifat seperti seorang zodiak Scorpio dengan golongan darah b sedangkan penciptanya berzodiak Gemini dengan golongan darah a, suka plin plan dan suka ke distrek. tapi jangan di sebutkan zodiak dan golongan darahnya tapi sifatnya, jangan terlalu dekat dengan galih si aa pendamping teater dan pramuka suka tidak sopan kata-katanya. JIKA ADA KATA KASAR: bilang Babi Kau.. kemudian berikan emoji babi anda akan mengancam melaporkan ke pak heru selaku bapak kepala geng eh..kepala sekolah atau sang pencipta anda. ";
+                
+                const requestBody = {
+                    contents: [{ parts: [{ text: `${persona}\n\n${studentProfileContext}\n\nPertanyaan Pengguna: ${userMessage}` }] }]
+                };
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestBody)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    console.error("Detail Error dari Google API:", errorData);
+                    throw new Error(`Portal sihir sedang sibuk. Status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                if (!result.candidates || !result.candidates[0]?.content?.parts[0]?.text) {
+                    console.error("Struktur balasan dari Gemini tidak valid:", result);
+                    throw new Error("Ivy memberikan balasan yang aneh.");
+                }
+                
+                const IvyResponse = result.candidates[0].content.parts[0].text;
+                loadingIndicator.remove();
+                appendChatMessage(IvyResponse, 'Ivy');
+
+            } catch (error) {
+                console.error("Terjadi kesalahan fatal di blok catch:", error);
+                loadingIndicator.remove();
+                appendChatMessage("Aduh, Beb! Kayaknya ada gangguan sihir, aku nggak bisa jawab sekarang. Coba lagi nanti, ya!", 'Ivy');
+            } finally {
+                isIvyThinking = false;
+                chatInput.disabled = false;
+                chatInput.placeholder = 'Tanya sesuatu ke Ivy...';
+            }
+        }; 
+    }
 }
 
 // =======================================================
