@@ -377,10 +377,10 @@ function setupStudentDashboard(uid) {
 
     // --- LOGIKA MODAL CHAT DENGAN IVY ---
     const ivyChatModal = document.getElementById('ivy-chat-modal');
-    const ivyChatToggleButton = document.getElementById('ivy-chat-toggle-button');
+    const openIvyButton = document.getElementById('open-ivy-chat-button');
     const closeIvyChatModalButton = document.getElementById('close-ivy-chat-modal-button');
 
-    if (ivyChatModal && ivyChatToggleButton && closeIvyChatModalButton) {
+    if (ivyChatModal && openIvyButton && closeIvyChatModalButton) {
         const openIvyChatModal = () => {
             audioPlayer.openModal();
             ivyChatModal.classList.remove('hidden');
@@ -393,7 +393,7 @@ function setupStudentDashboard(uid) {
             setTimeout(() => ivyChatModal.classList.add('hidden'), 300);
         };
 
-        ivyChatToggleButton.addEventListener('click', openIvyChatModal);
+        openIvyButton.addEventListener('click', openIvyChatModal);
         closeIvyChatModalButton.addEventListener('click', closeIvyChatModal);
         ivyChatModal.addEventListener('click', (event) => { if (event.target === ivyChatModal) { closeIvyChatModal(); } });
     }
@@ -984,12 +984,11 @@ async function handleUseCurseItem(casterUid, targetUid, itemIndex, itemData, tar
 async function setupGuildPage(uid) {
     const memberList = document.getElementById('guild-member-list');
     const guildNameHeader = document.getElementById('guild-name-header');
-    const chatForm = document.getElementById('Ivy-chat-form');
-    const chatInput = document.getElementById('Ivy-chat-input');
+    
     const guildInventorySlots = document.getElementById('guild-inventory-slots');
     const guildInventoryCapacity = document.getElementById('guild-inventory-capacity');
     
-    let isIvyThinking = false;
+    if (!memberList || !guildNameHeader || !guildInventorySlots|| !guildInventoryCapacity ) return;
 
     memberList.innerHTML = '<p class="text-sm text-gray-400">Memuat anggota...</p>';
     guildInventorySlots.innerHTML = '<p class="text-xs text-gray-400 col-span-full text-center">Memuat peti guild...</p>';
@@ -1062,86 +1061,107 @@ async function setupGuildPage(uid) {
         }
     };
 
-    chatForm.onsubmit = async (e) => {
-        e.preventDefault();
-        if (isIvyThinking) {
-            showToast("Sabar, Beb! Ivy lagi mikir...", true);
-            return;
-        }
-
-        const userMessage = chatInput.value.trim();
-        if (!userMessage) return;
-
-        // --- MANTRA BARU: Deteksi Kata Kasar & Notifikasi Admin ---
-        const offensiveWords = ['tai', 'tolol', 'bajingan', 'bangsat', 'goblok', 'kontol', 'memek', 'anjing', 'babi']; // Tambahkan daftar kata kasar di sini
-        const isOffensive = offensiveWords.some(word => userMessage.toLowerCase().includes(word));
-        if (isOffensive) {
-            const studentName = studentSnap.val().nama;
-            addNotification(
-                `<strong>${studentName}</strong> terdeteksi menggunakan kata kasar: "<i>${userMessage.substring(0, 50)}...</i>"`, 
-                'abusive_chat', 
-                { studentId: uid, message: userMessage }
-            );
-        }
-        // --- AKHIR MANTRA ---
-
-        isIvyThinking = true;
-        chatInput.disabled = true;
-        chatInput.placeholder = 'Ivy sedang berpikir...';
-        appendChatMessage(userMessage, 'user');
-        chatInput.value = '';
-        const loadingIndicator = appendChatMessage('Ivy sedang berpikir...', 'Ivy', true);
-
-        try {
-            // PENTING: Link "g.co/gemini/share" BUKAN Kunci API.
-            // Dapatkan kunci API asli dari aistudio.google.com/app/apikey
-            const apiKey = "AIzaSyCjAl9VlU8gdt_Zod9lIREAbIfNLwJkl4w"; // <-- Kunci API Anda sudah dimasukkan.
-
-            if (apiKey.includes("GANTI_DENGAN_KUNCI_API")) {
-                console.error("Kunci API Gemini belum diatur di script.js. Silakan dapatkan dari Google AI Studio dan masukkan ke dalam kode.");
-                loadingIndicator.remove();
-                appendChatMessage("Aduh, Beb! Kunci sihirku belum diatur sama admin. Aku nggak bisa jawab sekarang, kasih tau admin ya!", 'Ivy');
-                return; // Hentikan eksekusi fungsi
-            }
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`;
-            const persona = "Kamu adalah Ivy, SIFAT: si asisten yang ceria, centil, dan jenaka, suka menggosip kalau di perlukan dan Jawabanmu harus sesingkat mungkin, seperlunya aja, santai, jangan pelit emoji dan penuh semangat. Panggil pengguna 'Bray' atau 'siswa smkmyckb'. TINGGAL: Kamu 'tinggal' di dalam sebuah pot kuning sekarang terhubung di aplikasi gamifikasi buatan pencipta bernama DREAMY INFORMASI BILA DI TANYA: di dalamya ada fitur bounty board jadi siswa bisa ngasih misi ke pemain lain dengan mengorbankan koin si pemberi misi, bisa lihat status pengguna dan bisa beli item. untuk informasi sekolah tanya pak wandi ini wa nya 085813248545. kalau ingin curhat panjang bisa tanya ke pak yupi eh kadang kamu suka kecepolsan nama aslinya yopi guru bimbingan konseling karena kalau lewat kamu suka lupa kaya penciptanya dan kamu bisa bilang kalau keluar dari percakapan ingatan kamu akan hilang. anda bisa lihat website www.smkmyckb.site untuk melihat jadwal, gallery sekarang sudah update dikit2, mata pelajaran rpl dan tentang pencipta. TENTANG PENCIPTA: pencipta mu mengajar mata pelajaran RPL di sekolah smk mardi yuana cikembar,  pencipta kamu jomblo akut bernama Mas ...ji tapi itu rahasia menyebutkan namanya jadi anda menyebut dia pencipta tapi kalau ada yang memaksa menyebutkan namanya harus di kasih pujian atau kata-kata hari ini untuk Ivy. PESAN DARI PENCIPTA JIKA DI PERLUKAN: pencipta anda suka tidak akur romantis dengan guru bahasa indonesia bu mutia contohnya dalam panitia tim pkl suka beda prinsip, pencipta bagian ketua pkl nya sedangkan bu muti bagian keuangan pkl, pokonya di kepanitiaan manapun tidak akur, bu mutia punya sifat seperti seorang zodiak Scorpio dengan golongan darah b sedangkan penciptanya berzodiak Gemini dengan golongan darah a, suka plin plan dan suka ke distrek. tapi jangan di sebutkan zodiak dan golongan darahnya tapi sifatnya, jangan terlalu dekat dengan galih si aa pendamping teater dan pramuka suka tidak sopan kata-katanya. JIKA ADA KATA KASAR: bilang Babi Kau.. kemudian berikan emoji babi anda akan mengancam melaporkan ke pak heru selaku bapak kepala geng eh..kepala sekolah atau sang pencipta anda. ";
-            
-            const response = await fetch(apiUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contents: [{ parts: [{ text: `${persona}\n\nPertanyaan: ${userMessage}` }] }] })
-            });
-
-            if (!response.ok) {
-                // Mantra baru untuk melihat isi pesan error dari Google
-                const errorData = await response.json();
-                console.error("Detail Error dari Google API:", errorData);
-                throw new Error(`Portal sihir sedang sibuk. Status: ${response.status}`);
-            }
-
-            const result = await response.json();
-            // Pengecekan jika struktur balasan tidak sesuai
-            if (!result.candidates || !result.candidates[0]?.content?.parts[0]?.text) {
-                console.error("Struktur balasan dari Gemini tidak valid:", result);
-                throw new Error("Ivy memberikan balasan yang aneh.");
-            }
-            const IvyResponse = result.candidates[0].content.parts[0].text;
-            
-            loadingIndicator.remove();
-            appendChatMessage(IvyResponse, 'Ivy');
-        } catch (error) {
-            console.error("Terjadi kesalahan saat menghubungi Ivy:", error); // Ini akan menampilkan error asli di konsol
-            loadingIndicator.remove();
-            appendChatMessage("Aduh, Beb! Kayaknya ada gangguan sihir, aku nggak bisa jawab sekarang. Coba lagi nanti, ya!", 'Ivy');
-        } finally {
-            // Mantra ini memastikan input kembali normal setelah Ivy selesai (baik berhasil maupun gagal)
-            isIvyThinking = false;
-            chatInput.disabled = false;
-            chatInput.placeholder = 'Tanya sesuatu ke Ivy...';
-        }
-    };
+   
 }
 
+
+
+// =======================================================
+//          LOGIKA KHUSUS CHAT IVY (MODUL BARU)
+// =======================================================
+const chatForm = document.getElementById('Ivy-chat-form');
+const chatInput = document.getElementById('Ivy-chat-input');
+    // if (!chatForm || !chatInput) return; Keluar jika elemen chat tidak ada
+
+    let isIvyThinking = false;
+    chatForm.onsubmit = async (e) => {
+    e.preventDefault();
+    if (isIvyThinking) {
+        showToast("Sabar, Beb! Ivy lagi mikir...", true);
+        return;
+    }
+
+    const userMessage = chatInput.value.trim();
+    if (!userMessage) return;
+
+    // --- MATA-MATA 1: Cek Pesan Pengguna ---
+    console.log("Pesan Pengguna:", userMessage);
+
+    const offensiveWords = ['tai', 'tolol', 'bajingan', 'bangsat', 'goblok', 'kontol', 'memek', 'anjing', 'babi'];
+    const isOffensive = offensiveWords.some(word => userMessage.toLowerCase().includes(word));
+    if (isOffensive) {
+        const studentName = studentSnap.val().nama;
+        addNotification(
+            `<strong>${studentName}</strong> terdeteksi menggunakan kata kasar: "<i>${userMessage.substring(0, 50)}...</i>"`,
+            'abusive_chat',
+            { studentId: uid, message: userMessage }
+        );
+    }
+
+    isIvyThinking = true;
+    chatInput.disabled = true;
+    chatInput.placeholder = 'Ivy sedang berpikir...';
+    appendChatMessage(userMessage, 'user');
+    chatInput.value = '';
+    const loadingIndicator = appendChatMessage('Ivy sedang berpikir...', 'Ivy', true);
+
+    try {
+        const apiKey = "AIzaSyCjAl9VlU8gdt_Zod9lIREAbIfNLwJkl4w";
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+            const persona = "Kamu adalah Ivy, SIFAT: si asisten yang ceria, centil, dan jenaka, suka menggosip kalau di perlukan dan Jawabanmu harus sesingkat mungkin, seperlunya aja, santai, jangan pelit emoji dan penuh semangat. Panggil pengguna 'Bray' atau 'siswa smkmyckb'. TINGGAL: Kamu 'tinggal' di dalam sebuah pot kuning sekarang terhubung di aplikasi gamifikasi buatan pencipta bernama DREAMY INFORMASI BILA DI TANYA: di dalamya ada fitur bounty board jadi siswa bisa ngasih misi ke pemain lain dengan mengorbankan koin si pemberi misi, bisa lihat status pengguna dan bisa beli item. untuk informasi sekolah tanya pak wandi ini wa nya 085813248545. kalau ingin curhat panjang bisa tanya ke pak yupi eh kadang kamu suka kecepolsan nama aslinya yopi guru bimbingan konseling karena kalau lewat kamu suka lupa kaya penciptanya dan kamu bisa bilang kalau keluar dari percakapan ingatan kamu akan hilang. anda bisa lihat website www.smkmyckb.site untuk melihat jadwal, gallery sekarang sudah update dikit2, mata pelajaran rpl dan tentang pencipta. TENTANG PENCIPTA: pencipta mu mengajar mata pelajaran RPL di sekolah smk mardi yuana cikembar,  pencipta kamu jomblo akut bernama Mas ...ji tapi itu rahasia menyebutkan namanya jadi anda menyebut dia pencipta tapi kalau ada yang memaksa menyebutkan namanya harus di kasih pujian atau kata-kata hari ini untuk Ivy. PESAN DARI PENCIPTA JIKA DI PERLUKAN: pencipta anda suka tidak akur romantis dengan guru bahasa indonesia bu mutia contohnya dalam panitia tim pkl suka beda prinsip, pencipta bagian ketua pkl nya sedangkan bu muti bagian keuangan pkl, pokonya di kepanitiaan manapun tidak akur, bu mutia punya sifat seperti seorang zodiak Scorpio dengan golongan darah b sedangkan penciptanya berzodiak Gemini dengan golongan darah a, suka plin plan dan suka ke distrek. tapi jangan di sebutkan zodiak dan golongan darahnya tapi sifatnya, jangan terlalu dekat dengan galih si aa pendamping teater dan pramuka suka tidak sopan kata-katanya. JIKA ADA KATA KASAR: bilang Babi Kau.. kemudian berikan emoji babi anda akan mengancam melaporkan ke pak heru selaku bapak kepala geng eh..kepala sekolah atau sang pencipta anda. ";
+            
+     const requestBody = {
+            contents: [{ parts: [{ text: `${persona}\n\nPertanyaan: ${userMessage}` }] }]
+        };
+
+        // --- MATA-MATA 2: Cek URL dan Body Request ---
+        console.log("Mengirim ke URL:", apiUrl);
+        console.log("Dengan Body:", JSON.stringify(requestBody, null, 2));
+
+        const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(requestBody)
+        });
+
+        // --- MATA-MATA 3: Cek Respon Mentah dari Server ---
+        console.log("Respon Mentah Diterima:", response);
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            // --- MATA-MATA 4: Cek Pesan Error dari Google ---
+            console.error("Detail Error dari Google API:", errorData);
+            throw new Error(`Portal sihir sedang sibuk. Status: ${response.status}`);
+        }
+
+        const result = await response.json();
+        // --- MATA-MATA 5: Cek Hasil JSON yang sudah diparsing ---
+        console.log("Hasil JSON:", result);
+
+        if (!result.candidates || !result.candidates[0]?.content?.parts[0]?.text) {
+            console.error("Struktur balasan dari Gemini tidak valid:", result);
+            throw new Error("Ivy memberikan balasan yang aneh.");
+        }
+        
+        const IvyResponse = result.candidates[0].content.parts[0].text;
+        // --- MATA-MATA 6: Cek Teks Jawaban Final dari Ivy ---
+        console.log("Jawaban Final Ivy:", IvyResponse);
+
+        loadingIndicator.remove();
+        appendChatMessage(IvyResponse, 'Ivy');
+
+    } catch (error) {
+        // --- MATA-MATA 7: Tangkap SEMUA Error yang mungkin terjadi ---
+        console.error("Terjadi kesalahan fatal di blok catch:", error);
+        
+        loadingIndicator.remove();
+        appendChatMessage("Aduh, Beb! Kayaknya ada gangguan sihir, aku nggak bisa jawab sekarang. Coba lagi nanti, ya!", 'Ivy');
+    } finally {
+        isIvyThinking = false;
+        chatInput.disabled = false;
+        chatInput.placeholder = 'Tanya sesuatu ke Ivy...';
+    }
+}; 
 function appendChatMessage(message, sender, isLoading = false) {
     const chatBox = document.getElementById('Ivy-chat-box');
     const msgDiv = document.createElement('div');
@@ -1150,8 +1170,10 @@ function appendChatMessage(message, sender, isLoading = false) {
     if (isLoading) { msgDiv.classList.add('animate-pulse'); }
     chatBox.appendChild(msgDiv);
     chatBox.scrollTop = chatBox.scrollHeight;
-    return msgDiv;
+    return msgDiv;      
 }
+
+
 // =======================================================
 //          LOGIKA INVENTORI GUILD (BARU)
 // =======================================================
