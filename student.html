@@ -18,6 +18,20 @@
     <div id="student-dashboard-page" class="min-h-screen">
          <header class="bg-white shadow-md sticky top-0 z-20">
             <div class="container mx-auto px-4"><div class="h-20 flex items-center justify-between"><h1 class="text-2xl font-bold text-blue-600 font-game tracking-tighter">DREAMY</h1><div class="flex items-center space-x-2 md:space-x-4">
+                 <div class="relative">
+        <button id="student-notification-button" class="p-2 rounded-full hover:bg-gray-100 relative">
+            <i data-lucide="bell" class="w-5 h-5 text-gray-600"></i>
+            <span id="student-notification-badge" class="absolute top-1 right-1 block h-2 w-2 rounded-full bg-red-500 ring-1 ring-white hidden"></span>
+        </button>
+        <div id="student-notification-panel" class="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-lg shadow-xl z-40 hidden">
+            <div class="p-4 border-b flex justify-between items-center">
+                <h4 class="font-semibold text-gray-800">Notifikasi</h4>
+                <button id="student-mark-all-read-button" class="text-xs text-blue-600 hover:underline font-medium">Bersihkan Semua</button>
+            </div>
+            <div id="student-notification-list" class="max-h-96 overflow-y-auto">
+                </div>
+        </div>
+    </div>
                 <a href="https://www.smkmyckb.site" target="_blank" rel="noopener noreferrer" class="p-2 rounded-full hover:bg-gray-100">
     <i data-lucide="globe" class="w-5 h-5 text-gray-600"></i></a><button id="open-ivy-chat-button" class="p-2 rounded-full hover:bg-gray-100"><i data-lucide="help-circle" class="w-5 h-5 text-gray-600"></i></button>
                 <button id="student-logout-button" class="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg"><span class="hidden md:inline">Logout</span><i data-lucide="log-out" class="w-5 h-5"></i></button></div></div></div>
