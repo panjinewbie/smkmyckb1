@@ -658,6 +658,7 @@ if(profileNavLink && profileNavLink.textContent === 'Profil'){
 ---
 INFORMASI PENTING TENTANG PENGGUNA YANG SEDANG CHAT DENGANMU (JANGAN SAMPAI BOCOR KE PENGGUNA LAIN, TAPI GUNAKAN INFORMASI INI UNTUK MENJAWAB PERTANYAANNYA):
 Nama: ${currentStudentData.nama}
+Jenis Kelamin: ${currentStudentData.jenisKelamin || 'Tidak diketahui'}
 Kelas: ${currentStudentData.kelas}
 Peran: ${currentStudentData.peran}
 Guild: ${currentStudentData.guild || 'Tidak ada'}
@@ -667,6 +668,7 @@ XP: ${currentStudentData.xp} / 1000
 Koin: ${currentStudentData.coin}
 Efek Status Aktif: ${statusSummary}
 Isi Inventaris: ${inventorySummary}
+Catatan dari Admin: ${currentStudentData.catatan || 'Tidak ada catatan.'}
 ---
 `;
                 }
@@ -2181,6 +2183,8 @@ onValue(studentsRef, (snapshot) => {
             kelas: document.getElementById('kelas').value,
             peran: document.getElementById('peran').value,
             guild: document.getElementById('guild').value,
+            jenisKelamin: document.getElementById('jenis-kelamin').value,
+            catatan: document.getElementById('catatan').value,
             hp: parseInt(document.getElementById('hp').value),
             coin: parseInt(document.getElementById('coin').value),
             level: calculatedLevel,
@@ -2247,6 +2251,8 @@ onValue(studentsRef, (snapshot) => {
                 document.getElementById('kelas').value = student.kelas;
                 document.getElementById('peran').value = student.peran;
                 document.getElementById('guild').value = student.guild;
+                document.getElementById('jenis-kelamin').value = student.jenisKelamin || 'Pria'; // Default ke 'Pria' jika data lama
+                document.getElementById('catatan').value = student.catatan || '';
                 document.getElementById('xp').value = ((student.level - 1) * 1000) + student.xp;
                 document.getElementById('hp').value = student.hp;
                 document.getElementById('coin').value = student.coin || 0;
