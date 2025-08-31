@@ -374,7 +374,7 @@ async function handleDailyLogin(uid) {
 
 function setupStudentDashboard(uid) {
     document.getElementById('student-logout-button').onclick = () => signOut(auth);
-
+setupStudentNotifications(uid);
     // --- LOGIKA MODAL CHAT DENGAN IVY ---
     const ivyChatModal = document.getElementById('ivy-chat-modal');
     const openIvyButton = document.getElementById('open-ivy-chat-button');
@@ -857,7 +857,83 @@ async function setupStudentShopPage(uid) {
     shopItemList.addEventListener('click', buyHandler);   // Pasang listener baru
     renderShopItems(); // Panggil fungsi render untuk pertama kali saat halaman toko dibuka
 }
+// =======================================================
+//          LOGIKA NOTIFIKASI SISWA (MODUL BARU)
+// =======================================================
+function setupStudentNotifications(uid) {
+    const notificationButton = document.getElementById('student-notification-button');
+    const notificationPanel = document.getElementById('student-notification-panel');
+    const notificationList = document.getElementById('student-notification-list');
+    const notificationBadge = document.getElementById('student-notification-badge');
+    const markAllReadButton = document.getElementById('student-mark-all-read-button');
 
+    if (!notificationButton || !notificationPanel || !notificationList || !notificationBadge || !markAllReadButton) {
+        console.error("Elemen notifikasi siswa tidak ditemukan!");
+        return;
+    }
+
+    // Tampilkan/sembunyikan panel
+    notificationButton.onclick = (event) => {
+        event.stopPropagation();
+        notificationPanel.classList.toggle('hidden');
+    };
+
+    // Sembunyikan panel jika klik di luar
+    document.addEventListener('click', (event) => {
+        if (!notificationPanel.classList.contains('hidden') && !notificationPanel.contains(event.target) && !notificationButton.contains(event.target)) {
+            notificationPanel.classList.add('hidden');
+        }
+    });
+
+    // Tombol bersihkan semua
+    markAllReadButton.onclick = async () => {
+        if (confirm('Yakin mau hapus semua notifikasi?')) {
+            await remove(ref(db, `studentNotifications/${uid}`));
+        }
+    };
+
+    // Mendengarkan notifikasi baru
+    const notificationsQuery = query(ref(db, `studentNotifications/${uid}`), orderByChild('timestamp'));
+    let previousUnreadCount = -1;
+
+    onValue(notificationsQuery, (snapshot) => {
+        const notifications = [];
+        snapshot.forEach((childSnapshot) => {
+            notifications.push({ id: childSnapshot.key, ...childSnapshot.val() });
+        });
+
+        notifications.reverse(); // Terbaru di atas
+        const unreadCount = notifications.length;
+
+        // Mainkan suara jika ada notif baru
+        if (previousUnreadCount !== -1 && unreadCount > previousUnreadCount) {
+            audioPlayer.notification();
+        }
+        previousUnreadCount = unreadCount;
+
+        notificationBadge.classList.toggle('hidden', unreadCount === 0);
+        notificationBadge.textContent = unreadCount > 9 ? '9+' : unreadCount;
+
+        notificationList.innerHTML = notifications.length > 0 ? notifications.map(n => `
+            <a href="#" data-notification-id="${n.id}" class="block p-4 border-b border-gray-100 hover:bg-gray-50">
+                <p class="text-sm text-gray-800">${n.message}</p>
+                <p class="text-xs text-gray-500 mt-1">${formatTimeAgo(n.timestamp)}</p>
+            </a>`).join('') : '<div class="p-4 text-center text-gray-500">Tidak ada notifikasi baru.</div>';
+
+    });
+
+    // --- PERBAIKAN: Gunakan Event Delegation untuk menangani klik notifikasi ---
+    // Cukup pasang satu listener di elemen induk.
+    notificationList.onclick = async (event) => {
+        // Cari elemen <a> terdekat dari target yang diklik
+        const notificationItem = event.target.closest('[data-notification-id]');
+        if (notificationItem) {
+            event.preventDefault(); // Mencegah link berpindah halaman
+            const notificationId = notificationItem.dataset.notificationId;
+            await remove(ref(db, `studentNotifications/${uid}/${notificationId}`));
+        }
+    };
+}
 // =======================================================
 //                  LOGIKA PENGGUNAAN ITEM
 // =======================================================
@@ -1644,7 +1720,13 @@ async function handleCompleteBountyWithWinner(bountyId, bountyData, winnerId, cl
             const totalReward = bountyData.rewardCoin || 0;
             updates[`/students/${winnerId}/coin`] = (winnerData.coin || 0) + totalReward;
         }
-
+const totalReward = bountyData.rewardCoin || 0;
+        addNotification(
+            `🎉 Selamat! Kamu memenangkan misi <strong>${bountyData.title}</strong> dan mendapatkan <strong>${totalReward}</strong> Koin!`,
+            'bounty_win',
+            { bountyId: bountyId },
+            winnerId // <-- Ini target siswanya
+        );
         await update(ref(db), updates);
         showToast('Misi selesai! Hadiah telah diberikan kepada pemenang.');
         closeModalCallback();
@@ -1684,23 +1766,24 @@ async function handleCancelBounty(bountyId, bountyData, closeModalCallback) {
 // =======================================================
 
 // --- FUNGSI INTI BARU: Menambahkan Notifikasi ke Firebase ---
-async function addNotification(message, type = 'info', details = {}) {
+async function addNotification(message, type = 'info', details = {}, targetUid = null) {
     try {
-        // Pastikan untuk mengimpor `push` dan `ref` dari 'firebase/database' di atas
-        const notificationsRef = ref(db, 'notifications');
+        // Jika ada targetUid, notifikasi dikirim ke siswa. Jika tidak, ke admin.
+        const notificationPath = targetUid ? `studentNotifications/${targetUid}` : 'notifications';
+        const notificationsRef = ref(db, notificationPath);
+
         await push(notificationsRef, {
             message: message,
             type: type,
             details: details,
             read: false,
-            timestamp: Date.now() // Menggunakan timestamp klien, serverTimestamp() lebih disarankan jika memungkinkan
+            timestamp: Date.now()
         });
     } catch (error) {
-        console.error("Gagal mengirim notifikasi ke admin:", error);
+        console.error("Gagal mengirim notifikasi:", error);
     }
-}
 // --- AKHIR FUNGSI INTI ---
-
+}
 
 
 
