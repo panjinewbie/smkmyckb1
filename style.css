@@ -6,6 +6,11 @@ button:disabled { opacity: 0.7; cursor: not-allowed; }
 .hp-bar, .xp-bar { transition: width 0.5s ease-in-out; }
 .image-preview { max-width: 150px; max-height: 150px; object-fit: cover; }
 #qr-reader { border: 2px dashed #3b82f6; border-radius: 8px; }
+/* Tambahkan ini di style.css */
+.text-xxs {
+    font-size: 0.65rem; /* 10.4px */
+    line-height: 0.85rem;
+}
 /* --- MANTRA BARU UNTUK BACKGROUND LOGIN --- */
 .login-bg {
     background-image: url('asset/gambar/background-login.jpg.png');
@@ -22,3 +27,18 @@ button:disabled { opacity: 0.7; cursor: not-allowed; }
 }
 
 /* Bikin kartu-kartu konten jadi sedikit transparan biar nyatu sama background */
+.student-bg {
+    background-image: url('asset/gambar/halaman admin3.png'); /* Ganti dengan gambar background yang sesuai */
+    background-size: cover;
+    background-position: center center;
+    background-attachment: fixed;
+}
+
+/* Efek transparan (glassmorphism) untuk kartu konten di halaman student */
+.student-bg #main-content .bg-white,
+.student-bg #main-content .bg-gray-50 {
+    /* Menggunakan !important untuk menimpa class dari Tailwind */
+    background-color: rgba(255, 255, 255, 0.85) !important; 
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px); /* Untuk kompatibilitas Safari */
+}
