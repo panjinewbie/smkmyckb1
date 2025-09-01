@@ -265,7 +265,28 @@ function resizeImage(base64Str, maxWidth = 400, maxHeight = 400) {
         };
     });
 }
+// =======================================================
+//          FUNGSI BARU: PENGHITUNG SISA WAKTU
+// =======================================================
+function formatTimeRemaining(expiryTimestamp) {
+    const now = Date.now();
+    const remaining = expiryTimestamp - now;
 
+    if (remaining <= 0) {
+        return "Berakhir";
+    }
+
+    const days = Math.floor(remaining / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((remaining % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+
+    let result = "Sisa: ";
+    if (days > 0) result += `${days}h `;
+    if (hours > 0) result += `${hours}j `;
+    if (days === 0 && hours < 24) result += `${minutes}m`; // Tampilkan menit jika kurang dari sehari
+
+    return result.trim();
+}
 
 // =======================================================
 //                  LOGIKA HALAMAN LOGIN
@@ -540,21 +561,27 @@ if(profileNavLink && profileNavLink.textContent === 'Profil'){
                 knock: { icon: 'dizzy', text: 'Knock', color: 'yellow' }
             };
 
-            for (const effectKey in studentData.statusEffects) {
-                const effectData = studentData.statusEffects[effectKey];
-                if (effectData && effectMap[effectKey]) {
-                    const effectInfo = effectMap[effectKey];
-                    const expiryDate = new Date(effectData.expires).toLocaleString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
-                    const effectDiv = document.createElement('div');
-                    effectDiv.className = `flex flex-col items-center text-center p-3 bg-${effectInfo.color}-50 rounded-lg border border-${effectInfo.color}-200`;
-                    effectDiv.title = `Berakhir pada: ${expiryDate}`;
-                    effectDiv.innerHTML = `
-                        <i data-lucide="${effectInfo.icon}" class="w-6 h-6 text-${effectInfo.color}-500 mb-1"></i>
-                        <span class="text-xs text-gray-700 font-medium">${effectInfo.text}</span>
-                    `;
-                    activeStatusEffectsContainer.appendChild(effectDiv);
-                }
-            }
+            // --- GANTI BLOK for...in... YANG LAMA DENGAN INI ---
+for (const effectKey in studentData.statusEffects) {
+    const effectData = studentData.statusEffects[effectKey];
+    if (effectData && effectMap[effectKey]) {
+        const effectInfo = effectMap[effectKey];
+
+        // --- Mantra Baru: Hitung sisa waktu! ---
+        const remainingTime = formatTimeRemaining(effectData.expires);
+
+        const effectDiv = document.createElement('div');
+        effectDiv.className = `flex flex-col items-center text-center p-3 bg-${effectInfo.color}-50 rounded-lg border border-${effectInfo.color}-200 w-24`; // Inem kasih lebar tetap biar rapi
+
+        // --- Mantra Baru: Tampilkan sisa waktu di bawah ikon! ---
+        effectDiv.innerHTML = `
+            <i data-lucide="${effectInfo.icon}" class="w-8 h-8 text-${effectInfo.color}-500 mb-1"></i>
+            <span class="text-xs text-gray-700 font-medium">${effectInfo.text}</span>
+            <span class="text-xxs text-${effectInfo.color}-600 font-semibold mt-1">${remainingTime}</span>
+        `;
+        activeStatusEffectsContainer.appendChild(effectDiv);
+    }
+}
         } else {
             activeStatusEffectsContainer.innerHTML = '<p class="text-gray-500 text-sm">Tidak ada efek aktif saat ini.</p>';
         }
