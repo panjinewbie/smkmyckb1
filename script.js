@@ -1929,6 +1929,7 @@ notificationList.querySelectorAll('[data-notification-id]').forEach(item => {
 //                  LOGIKA DASBOR ADMIN
 // =======================================================
 function setupAdminDashboard() {
+    
     // --- MANTRA BARU: Inisialisasi Notifikasi ---
     setupNotificationPanel();
     listenForNotifications();
@@ -2525,37 +2526,167 @@ if (addAdminBountyButton && adminBountyModal && adminBountyForm && adminBountyLi
                     <div class="flex justify-between items-center mt-2 text-sm">
                         <span class="text-gray-500 text-xs">Slot: ${takersCount} / ${bounty.takerLimit}</span>
                     </div>
-                    <div class="mt-auto pt-4">
-                        <button data-id="${bountyId}" class="complete-admin-bounty-btn w-full p-2 rounded-lg text-white font-bold text-sm bg-purple-600 hover:bg-purple-700">Selesaikan & Beri Hadiah</button>
-                    </div>
+                    <div class="mt-auto pt-4 flex gap-2">
+        <button data-id="${bountyId}" class="grade-admin-bounty-btn w-full p-2 rounded-lg text-white font-bold text-sm bg-indigo-600 hover:bg-indigo-700 flex items-center justify-center">
+            <i data-lucide="check-square" class="w-4 h-4 mr-1"></i> Nilai
+        </button>
+        <button data-id="${bountyId}" class="cancel-admin-bounty-btn w-full p-2 rounded-lg text-white font-bold text-sm bg-red-600 hover:bg-red-700 flex items-center justify-center">
+            <i data-lucide="trash-2" class="w-4 h-4 mr-1"></i> Batal
+        </button>
+    </div>
                 `;
                 adminBountyListContainer.appendChild(card);
             });
             createLucideIcons();
         });
+// Di dalam setupAdminDashboard()
+adminBountyListContainer.addEventListener('click', async (e) => {
+    const gradeButton = e.target.closest('.grade-admin-bounty-btn');
+    const cancelButton = e.target.closest('.cancel-admin-bounty-btn'); // <-- TAMBAHKAN INI
 
-        adminBountyListContainer.addEventListener('click', async (e) => {
-            const completeButton = e.target.closest('.complete-admin-bounty-btn');
-            if (!completeButton) return;
+    if (gradeButton) {
+        const bountyId = gradeButton.dataset.id;
+        openGradeBountyModal(bountyId);
+    } else if (cancelButton) { // <-- TAMBAHKAN BLOK BARU INI
+        const bountyId = cancelButton.dataset.id;
+        if (!confirm('Yakin ingin membatalkan dan menghapus misi ini secara permanen? Tindakan ini tidak dapat diurungkan.')) return;
 
-            const bountyId = completeButton.dataset.id;
-            if (!confirm('Selesaikan misi ini dan berikan hadiah kepada semua yang mengambil?')) return;
+        cancelButton.disabled = true;
+        cancelButton.textContent = 'Menghapus...';
 
-            completeButton.disabled = true;
-            completeButton.textContent = 'Memproses...';
+        try {
+            // Langsung hapus data misi dari database
+            const bountyRef = ref(db, `bounties/${bountyId}`);
+            await remove(bountyRef);
+            showToast('Misi admin berhasil dibatalkan dan dihapus.');
+            audioPlayer.success();
+        } catch (error) {
+            showToast(`Gagal membatalkan misi: ${error.message}`, true);
+            cancelButton.disabled = false;
+            cancelButton.innerHTML = `<i data-lucide="trash-2" class="w-4 h-4 mr-1"></i> Batal`;
+            createLucideIcons();
+        }
+    }
+});
+// FUNGSI BARU 1: MEMBUKA MODAL PENILAIAN
+async function openGradeBountyModal(bountyId) {
+    const modal = document.getElementById('grade-bounty-modal');
+    const titleEl = document.getElementById('grade-bounty-title');
+    const studentListEl = document.getElementById('grade-bounty-student-list');
+    const confirmButton = document.getElementById('confirm-grade-bounty-button');
+    const closeButton = document.getElementById('close-grade-bounty-modal-button');
 
-            try {
-                // Logika untuk menyelesaikan misi dan memberi hadiah ada di sisi siswa saat ini.
-                // Untuk admin, kita hanya perlu mengubah statusnya. Hadiah akan diberikan oleh sistem lain atau secara manual.
-                // Atau, kita bisa implementasikan pemberian hadiah di sini.
-                // Untuk sekarang, kita ubah statusnya saja.
-                await update(ref(db, `bounties/${bountyId}`), { status: 'completed' });
-                showToast('Misi telah ditandai selesai!');
-            } catch (error) {
-                showToast(error.message, true);
+    if (!modal) return;
+
+    // Reset dan tampilkan modal
+    studentListEl.innerHTML = '<p class="text-center text-gray-400">Memuat data peserta...</p>';
+    audioPlayer.openModal();
+    modal.classList.remove('hidden');
+    setTimeout(() => modal.classList.remove('opacity-0'), 10);
+
+    const closeModal = () => {
+        modal.classList.add('opacity-0');
+        setTimeout(() => modal.classList.add('hidden'), 300);
+        confirmButton.onclick = null; // Hapus listener lama
+    };
+    closeButton.onclick = closeModal;
+
+    // Ambil data misi
+    const bountySnap = await get(ref(db, `bounties/${bountyId}`));
+    if (!bountySnap.exists()) {
+        showToast("Misi tidak ditemukan!", true);
+        closeModal();
+        return;
+    }
+    const bountyData = bountySnap.val();
+    titleEl.textContent = `Misi: ${bountyData.title}`;
+
+    // Ambil data para pengambil misi (takers)
+    studentListEl.innerHTML = '';
+    if (bountyData.takers && Object.keys(bountyData.takers).length > 0) {
+        const takerIds = Object.keys(bountyData.takers);
+        const takerPromises = takerIds.map(uid => get(ref(db, `students/${uid}`)));
+        const takerSnaps = await Promise.all(takerPromises);
+
+        takerSnaps.forEach((snap, index) => {
+            if (snap.exists()) {
+                const student = snap.val();
+                const studentId = takerIds[index];
+                const studentLabel = document.createElement('label');
+                studentLabel.className = 'flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer transition-colors';
+                studentLabel.innerHTML = `
+                    <input type="checkbox" data-uid="${studentId}" class="bounty-winner-checkbox h-5 w-5 rounded mr-4">
+                    <img src="${student.fotoProfilBase64 || `https://placehold.co/40x40/e2e8f0/3d4852?text=${student.nama.charAt(0)}`}" class="w-10 h-10 rounded-full object-cover mr-3">
+                    <div>
+                        <p class="font-semibold">${student.nama}</p>
+                        <p class="text-xs text-gray-500">${student.kelas}</p>
+                    </div>
+                `;
+                studentListEl.appendChild(studentLabel);
             }
         });
+    } else {
+        studentListEl.innerHTML = '<p class="text-center text-gray-500">Belum ada siswa yang mengambil misi ini.</p>';
     }
+
+    // Set event untuk tombol konfirmasi
+    confirmButton.onclick = () => handleGiveAdminReward(bountyId, bountyData, closeModal);
+}
+
+// FUNGSI BARU 2: MEMBERIKAN HADIAH & MENYELESAIKAN MISI
+async function handleGiveAdminReward(bountyId, bountyData, closeModalCallback) {
+    const selectedCheckboxes = document.querySelectorAll('.bounty-winner-checkbox:checked');
+    if (selectedCheckboxes.length === 0) {
+        showToast('Pilih minimal satu siswa untuk diberi hadiah!', true);
+        return;
+    }
+
+    const confirmButton = document.getElementById('confirm-grade-bounty-button');
+    confirmButton.disabled = true;
+    confirmButton.textContent = 'Memproses...';
+
+    try {
+        const winnerUids = Array.from(selectedCheckboxes).map(cb => cb.dataset.uid);
+        const updates = {};
+
+        // Tandai misi sebagai selesai
+        updates[`/bounties/${bountyId}/status`] = 'completed';
+
+        // Ambil data semua pemenang
+        const winnerPromises = winnerUids.map(uid => get(ref(db, `students/${uid}`)));
+        const winnerSnaps = await Promise.all(winnerPromises);
+
+        winnerSnaps.forEach(snap => {
+            if (snap.exists()) {
+                const student = snap.val();
+                const uid = snap.key;
+                const xpPerLevel = 1000;
+
+                // Hitung XP baru
+                const currentTotalXp = ((student.level || 1) - 1) * xpPerLevel + (student.xp || 0);
+                const newTotalXp = currentTotalXp + (bountyData.rewardXp || 0);
+                
+                updates[`/students/${uid}/level`] = Math.floor(newTotalXp / xpPerLevel) + 1;
+                updates[`/students/${uid}/xp`] = newTotalXp % xpPerLevel;
+
+                // Hitung Koin baru
+                updates[`/students/${uid}/coin`] = (student.coin || 0) + (bountyData.rewardCoin || 0);
+            }
+        });
+
+        await update(ref(db), updates);
+        showToast(`Hadiah berhasil diberikan kepada ${winnerUids.length} siswa!`);
+        audioPlayer.success();
+        closeModalCallback();
+
+    } catch (error) {
+        showToast(`Gagal memberikan hadiah: ${error.message}`, true);
+    } finally {
+        confirmButton.disabled = false;
+        confirmButton.textContent = 'Berikan Hadiah & Selesaikan Misi';
+    }
+}
+}
 // =======================================================
     //               LOGIKA HALAMAN MAGIC CONTROLS
     // =======================================================
