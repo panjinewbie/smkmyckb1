@@ -2097,7 +2097,32 @@ function setupAdminDashboard() {
         if (pageId === 'shop') setupShopPage();
         if (pageId === 'magic') setupMagicControlsPage();
     });
+// --- TAMBAHKAN BLOK KODE INI DI DALAM setupMagicControlsPage() ---
+const scanQrMagicButton = document.getElementById('scan-qr-magic-button');
+if (scanQrMagicButton) {
+    // Fungsi khusus untuk memilih siswa dari hasil scan
+    const selectStudentByNis = async (nis) => {
+        const snapshot = await get(query(ref(db, 'students'), orderByChild('nis'), equalTo(nis)));
+        if (snapshot.exists()) {
+            const [uid, student] = Object.entries(snapshot.val())[0];
+            const checkbox = document.querySelector(`#magic-student-list-container input[data-uid="${uid}"]`);
+            if (checkbox) {
+                checkbox.checked = true;
+                showToast(`${student.nama} berhasil dipilih sebagai target!`);
+            } else {
+                showToast(`${student.nama} tidak ada di daftar filter saat ini.`, true);
+            }
+        } else {
+            showToast(`Siswa dengan NIS ${nis} tidak ditemukan!`, true);
+        }
+    };
 
+    // Pasang event listener ke tombol baru kita
+    scanQrMagicButton.addEventListener('click', () => {
+        openQrModal();
+        startQrScanner(selectStudentByNis); // Beri perintah untuk memilih target
+    });
+}
     // --- FUNGSI DATA SISWA (ADMIN) ---
    // --- GANTI KODE onValue(studentsRef, ...) YANG LAMA DENGAN KODE BARU INI ---
 const studentsRef = ref(db, 'students');
@@ -3897,40 +3922,47 @@ startButton.onclick = async () => {
     
     // --- LOGIKA QR CODE SCANNER ---
     // Event listener untuk tombol utama "Scan QR"
-    document.getElementById('scan-qr-button').addEventListener('click', openQrModal);
+    document.getElementById('scan-qr-button').addEventListener('click', () => {
+    openQrModal();
+    startQrScanner(findStudentByNisAndMarkPresent); // Beri perintah untuk absensi
+});
     // PERBAIKAN: Menggunakan ID yang benar dari HTML (`close-qr-scanner-modal-button`)
     document.getElementById('close-qr-scanner-modal-button').addEventListener('click', () => closeQrModal(false));
     
     // PERBAIKAN: Fungsi start scanner yang lebih andal
-    const startQrScanner = () => {
-        const scanResultElement = document.getElementById('scan-result');
-        if (!document.getElementById('qr-reader')) {
-            console.error("Elemen #qr-reader tidak ditemukan.");
-            return;
+    // --- GANTI FUNGSI LAMA DENGAN VERSI BARU INI ---
+const startQrScanner = (onSuccessCallback) => {
+    const scanResultElement = document.getElementById('scan-result');
+    if (!document.getElementById('qr-reader')) {
+        console.error("Elemen #qr-reader tidak ditemukan.");
+        return;
+    }
+
+    html5QrCode = new Html5Qrcode("qr-reader");
+
+    const onScanSuccess = (decodedText, decodedResult) => {
+        if (html5QrCode && html5QrCode.isScanning) {
+            html5QrCode.stop()
+                .then(() => {
+                    scanResultElement.textContent = `Kode terdeteksi: ${decodedText}. Memproses...`;
+                    audioPlayer.success();
+
+                    // Jalankan perintah spesifik yang diberikan
+                    if (onSuccessCallback) {
+                        onSuccessCallback(decodedText);
+                    }
+
+                    setTimeout(() => closeQrModal(true), 1500);
+                })
+                .catch(err => console.error("Gagal menghentikan scanner.", err));
         }
-
-        html5QrCode = new Html5Qrcode("qr-reader");
-
-        const onScanSuccess = (decodedText, decodedResult) => {
-            // Pastikan hanya memproses sekali saja
-            if (html5QrCode && html5QrCode.isScanning) {
-                html5QrCode.stop()
-                    .then(() => {
-                        scanResultElement.textContent = `NIS terdeteksi: ${decodedText}. Memproses...`;
-                        audioPlayer.success();
-                        findStudentByNisAndMarkPresent(decodedText);
-                        // Tutup modal setelah jeda singkat agar pesan terlihat
-                        setTimeout(() => closeQrModal(true), 1500);
-                    })
-                    .catch(err => console.error("Gagal menghentikan scanner setelah scan berhasil.", err));
-            }
-        };
-
-        html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 250 } }, onScanSuccess)
-            .catch(err => {
-                scanResultElement.textContent = "Gagal memulai kamera. Beri izin akses kamera.";
-            });
     };
+
+    html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 250 } }, onScanSuccess)
+        .catch(err => {
+            scanResultElement.textContent = "Gagal memulai kamera. Beri izin akses kamera.";
+        });
+};
     
     async function findStudentByNisAndMarkPresent(nis) {
         const snapshot = await get(query(ref(db, 'students'), orderByChild('nis'), equalTo(nis)));
