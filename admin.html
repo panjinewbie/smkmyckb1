@@ -337,13 +337,18 @@
             </select>
         </div>
     </div>
-    <div class="flex justify-between items-center mb-4">
-        <h3 class="font-semibold text-lg">Pilih Target Siswa</h3>
+<div class="flex flex-wrap gap-4 justify-between items-center mb-4">
+    <h3 class="font-semibold text-lg">Pilih Target Siswa</h3>
+    <div class="flex items-center gap-2">
+        <button id="scan-qr-magic-button" class="bg-teal-500 hover:bg-teal-600 text-white font-bold py-1 px-3 rounded-lg flex items-center text-sm">
+            <i data-lucide="scan-line" class="w-4 h-4 mr-2"></i>Scan QR Target
+        </button>
         <label class="flex items-center space-x-2 text-sm">
             <input type="checkbox" id="select-all-students-magic" class="rounded">
             <span>Pilih Semua</span>
         </label>
     </div>
+</div>
     <div id="magic-student-list-container" class="space-y-2 max-h-96 overflow-y-auto pr-2">
          <p class="text-center text-gray-400">Memuat data siswa...</p>
     </div>
