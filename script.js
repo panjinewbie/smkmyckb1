@@ -3754,14 +3754,78 @@ startButton.onclick = async () => {
 
     updateUI();
     if (monster.currentHp <= 0) { endBattle(true); return; }
-            } else {
-                const monsterDamage = 15 + Math.floor(Math.random() * 10);
-                currentPlayer.currentHp = Math.max(0, currentPlayer.currentHp - monsterDamage);
-                addLog(`Jawaban SALAH! ${monster.monsterName} menyerang ${currentPlayer.nama}, ${monsterDamage} damage.`, 'damage');
-                audioPlayer.hpLoss();
-                updateUI();
-                if (party.every(p => p.currentHp <= 0)) { endBattle(false); return; }
-            }
+           // --- GANTI BLOK 'ELSE' YANG LAMA DENGAN INI ---
+} else {
+    // Logika jawaban SALAH (giliran monster menyerang)
+    addLog(`Jawaban SALAH! ${monster.monsterName} bersiap menyerang ${currentPlayer.nama}...`);
+    await sleep(800); // Kasih jeda biar dramatis
+
+    const availableSkills = monster.skills ? Object.keys(monster.skills).filter(s => monster.skills[s]) : [];
+    const monsterActionChoice = Math.random(); // Acak angka antara 0 dan 1
+
+    // 50% kemungkinan pakai skill (jika punya), 50% serangan fisik
+    if (availableSkills.length > 0 && monsterActionChoice > 0.5) {
+        // --- MONSTER PAKAI SKILL ---
+        const randomSkill = availableSkills[Math.floor(Math.random() * availableSkills.length)];
+        const updates = {};
+
+        switch (randomSkill) {
+            case 'racun':
+            case 'diam':
+            case 'knock':
+                const durationInDays = 2;
+                const expiryTimestamp = Date.now() + (durationInDays * 24 * 60 * 60 * 1000);
+                updates[`/students/${currentPlayer.id}/statusEffects/${randomSkill}`] = { expires: expiryTimestamp };
+                await update(ref(db), updates);
+                addLog(`☠️ ${monster.monsterName} menggunakan skill ${randomSkill}! ${currentPlayer.nama} terkena kutukan!`, 'damage');
+                break;
+
+            case 'mencuri':
+                const stolenCoins = Math.floor(Math.random() * 11) + 5; // Curi 5-15 koin
+                const newPlayerCoin = Math.max(0, (currentPlayer.coin || 0) - stolenCoins);
+                updates[`/students/${currentPlayer.id}/coin`] = newPlayerCoin;
+                await update(ref(db), updates);
+                addLog(`💰 ${monster.monsterName} menggunakan skill Mencuri! ${stolenCoins} koin ${currentPlayer.nama} dicuri!`, 'damage');
+                break;
+
+            case 'hisap':
+                const absorbedXp = Math.floor(Math.random() * 11) + 10; // Hisap 10-20 XP
+                const currentTotalXp = ((currentPlayer.level - 1) * 1000) + currentPlayer.xp;
+                const newTotalXp = Math.max(0, currentTotalXp - absorbedXp);
+
+                updates[`/students/${currentPlayer.id}/level`] = Math.floor(newTotalXp / 1000) + 1;
+                updates[`/students/${currentPlayer.id}/xp`] = newTotalXp % 1000;
+                await update(ref(db), updates);
+                addLog(`✨ ${monster.monsterName} menggunakan skill Hisap Energi! ${absorbedXp} XP ${currentPlayer.nama} terhisap!`, 'damage');
+                break;
+
+            default:
+                // Jika skill tidak dikenali, lakukan serangan fisik biasa
+                performPhysicalAttack();
+                break;
+        }
+
+    } else {
+        // --- MONSTER PAKAI SERANGAN FISIK BIASA ---
+        performPhysicalAttack();
+    }
+
+    // Fungsi bantuan untuk serangan fisik (biar nggak nulis kode 2x)
+    function performPhysicalAttack() {
+        let monsterDamage = 15 + Math.floor(Math.random() * 10);
+        if (currentPlayer.statusEffects.buff_defense) {
+            const blockedDamage = Math.ceil(monsterDamage * 0.5);
+            monsterDamage -= blockedDamage;
+            addLog(`🛡️ Pertahanan ${currentPlayer.nama} menguat, menahan ${blockedDamage} damage!`, 'heal');
+        }
+        currentPlayer.currentHp = Math.max(0, currentPlayer.currentHp - monsterDamage);
+        addLog(`⚔️ ${monster.monsterName} menyerang secara fisik, ${monsterDamage} damage diterima!`, 'damage');
+    }
+
+    audioPlayer.hpLoss();
+    updateUI();
+    if (party.every(p => p.currentHp <= 0)) { endBattle(false); return; }
+}
             
             await sleep(1200);
             nextTurn();
