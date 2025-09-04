@@ -17,7 +17,59 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 const auth = getAuth(app);
-
+// =======================================================
+//          KITAB AGUNG SEMUA SKILL
+// =======================================================
+const SKILL_BOOK = {
+    Prajurit: {
+        passive: [
+            { name: "Dasar Pertahanan", desc: "Mengurangi 3% damage fisik.", mpCost: 1 },
+            { name: "Fokus Bertahan", desc: "Pengurangan damage jadi 6%.", mpCost: 1 },
+            { name: "Tekad Baja", desc: "Damage -6%, tahan 10% dari skill Knock.", mpCost: 2 },
+            { name: "Pancingan Halus", desc: "Sedikit meningkatkan kemungkinan diserang.", mpCost: 2 },
+            { name: "Kulit Keras", desc: "Pengurangan damage fisik jadi 12%.", mpCost: 2 }
+        ],
+        active: [
+            { name: "Tanggung Jawab Ksatria", desc: "Minta admin agar hukuman teman ditimpakan padamu.", mpCost: 15 },
+            { name: "Permohonan Maaf", desc: "Minta admin batalkan -5 HP 'Izin' teman.", mpCost: 20 },
+            { name: "Perisai Pelindung Diri", desc: "Aktifkan buff +20% Defense untuk diri sendiri (24 jam).", mpCost: 25 },
+            { name: "Negosiasi Hukuman", desc: "Minta admin ubah 'Alfa' jadi 'Izin' untuk teman.", mpCost: 35 },
+            { name: "Sumpah Setia", desc: "Aktifkan buff +10% Defense untuk seluruh Guild (24 jam).", mpCost: 40 }
+        ]
+    },
+    Penyihir: {
+        passive: [
+            { name: "Insting Tajam", desc: "Meningkatkan 5% damage fisik.", mpCost: 1 },
+            { name: "Mata Elang", desc: "Peluang dapat koin ekstra setelah menang.", mpCost: 1 },
+            { name: "Analisis Cepat", desc: "Peluang 10% melihat HP monster.", mpCost: 2 },
+            { name: "Studi Efisien", desc: "Meningkatkan perolehan XP sebesar 8%.", mpCost: 2 },
+            { name: "Titik Lemah", desc: "Peluang 15% serangan jadi Critical.", mpCost: 2 }
+        ],
+        active: [
+            { name: "Bisikan Sihir", desc: "Minta 1 petunjuk untuk tugas/ice breaking.", mpCost: 15 },
+            { name: "Prediksi Jitu", desc: "Minta 1 kata kunci kisi-kisi kuis.", mpCost: 20 },
+            { name: "Mantra Penguat Diri", desc: "Aktifkan buff +20% Attack untuk diri sendiri (24 jam).", mpCost: 25 },
+            { name: "Ilusi Waktu", desc: "Minta tambahan waktu 5 menit untuk tugas.", mpCost: 35 },
+            { name: "Lingkaran Sihir", desc: "Aktifkan buff +10% Attack untuk seluruh Guild (24 jam).", mpCost: 40 }
+        ]
+    },
+    Penyembuh: {
+        passive: [
+            { name: "Meditasi Ringan", desc: "Memulihkan 1 HP setiap giliran.", mpCost: 1 },
+            { name: "Tangan Penolong", desc: "Efektivitas item penyembuh +15%.", mpCost: 1 },
+            { name: "Kekebalan Alami", desc: "Memberikan 25% ketahanan dari kutukan Racun.", mpCost: 2 },
+            { name: "Penawar Stres", desc: "Regenerasi MP harian +2.", mpCost: 2 },
+            { name: "Hati yang Murni", desc: "10% penyembuhan diri juga diterima teman.", mpCost: 2 }
+        ],
+        active: [
+            { name: "Ikatan Hati", desc: "Minta izin agar tim boleh saling bantu.", mpCost: 15 },
+            { name: "Permohonan Keringanan", desc: "Minta admin batalkan -2 HP 'Sakit' teman.", mpCost: 20 },
+            { name: "Aura Penyembuh Diri", desc: "Aktifkan buff Regen HP untuk diri sendiri (24 jam).", mpCost: 25 },
+            { name: "Kesempatan Kedua", desc: "Minta kesempatan revisi tugas harian.", mpCost: 35 },
+            { name: "Mukjizat", desc: "Minta admin ubah 'Alfa' teman jadi 'Izin'.", mpCost: 60 }
+        ]
+    }
+};
 // --- MANTRA BARU: Audio Player dengan Tone.js (VERSI DIPERBARUI) ---
 const audioPlayer = {
     isReady: false,
@@ -105,6 +157,68 @@ onAuthStateChanged(auth, async (user) => {
         }
     }
 });
+function renderActiveSkill(studentData, uid) {
+    const container = document.getElementById('active-skill-container');
+    const { peran, level, mp } = studentData;
+
+    if (!peran || !level || !SKILL_BOOK[peran]) {
+        container.innerHTML = '<p class="text-center text-gray-400">Peran tidak valid.</p>';
+        return;
+    }
+
+    const skillIndex = Math.min(level - 1, 4); // Skill max di level 5
+    const skill = SKILL_BOOK[peran].active[skillIndex];
+
+    if (!skill) {
+        container.innerHTML = '<p class="text-center text-gray-400">Skill belum terbuka.</p>';
+        return;
+    }
+
+    const hasEnoughMp = mp >= skill.mpCost;
+    container.innerHTML = `
+        <div class="flex flex-col sm:flex-row items-center gap-4">
+            <div class="flex-grow">
+                <h4 class="font-bold text-lg">${skill.name} <span class="text-sm font-normal text-gray-500">(Lv. ${level})</span></h4>
+                <p class="text-sm text-gray-600 mt-1">${skill.desc}</p>
+            </div>
+            <button id="use-active-skill-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg flex-shrink-0 disabled:bg-gray-400 disabled:cursor-not-allowed" ${!hasEnoughMp ? 'disabled' : ''}>
+                Gunakan (MP: ${skill.mpCost})
+            </button>
+        </div>
+    `;
+
+    document.getElementById('use-active-skill-button').onclick = async () => {
+        if (!confirm(`Yakin mau menggunakan skill "${skill.name}"? Ini akan memakai ${skill.mpCost} MP.`)) return;
+
+        try {
+            const newMp = mp - skill.mpCost;
+            await update(ref(db, `students/${uid}`), { mp: newMp });
+            
+            let adminMessage = `Siswa <strong>${studentData.nama}</strong> (${peran} Lv. ${level}) menggunakan skill: <strong>${skill.name}</strong>.`;
+            
+            // Logika khusus untuk buff
+            if (skill.name.includes('Buff')) {
+                const buffType = skill.name.toLowerCase().includes('defense') ? 'buff_defense' : 'buff_attack';
+                const expiryTimestamp = Date.now() + (24 * 60 * 60 * 1000); // 24 jam
+
+                if (skill.name.includes('Guild')) {
+                    // Beri buff ke seluruh guild
+                    // (Logika ini kompleks, untuk sekarang kita kirim notif saja)
+                    adminMessage += ` Efek ini ditujukan untuk seluruh Guild ${studentData.guild}.`;
+                } else {
+                    // Beri buff ke diri sendiri
+                    await update(ref(db, `students/${uid}/statusEffects`), { [buffType]: { expires: expiryTimestamp } });
+                }
+            }
+            
+            addNotification(adminMessage, 'skill_usage', { studentId: uid });
+            showToast(`Skill "${skill.name}" berhasil digunakan!`);
+
+        } catch (error) {
+            showToast("Gagal menggunakan skill.", true);
+        }
+    };
+}
 
 
 // --- FUNGSI TAMPILAN & NOTIFIKASI (DENGAN SUARA) ---
@@ -344,6 +458,12 @@ async function handleDailyLogin(uid) {
     const studentData = studentSnap.val();
     const lastLogin = studentData.lastLoginDate || null;
     let streak = studentData.loginStreak || 0;
+    // Regenerasi MP setiap hari
+    const maxMp = 50 + ((studentData.level - 1) * 5);
+    let currentMp = studentData.mp || 50;
+    currentMp = Math.min(maxMp, currentMp + 10); // Tambah 10 MP, jangan lebihi max
+
+    const updates = { [`/students/${uid}/mp`]: currentMp }; // Siapkan update MP
 
     // Kalo hari ini belum login...
     if (lastLogin !== today) {
@@ -379,16 +499,19 @@ async function handleDailyLogin(uid) {
 
         const newTotalXp = (currentLevel - 1) * xpPerLevel + currentXp + bonusXp;
 
-        updates[`/students/${uid}/coin`] = currentCoin + bonusCoin;
-        updates[`/students/${uid}/xp`] = newTotalXp % xpPerLevel;
-        updates[`/students/${uid}/level`] = Math.floor(newTotalXp / xpPerLevel) + 1;
-        updates[`/students/${uid}/lastLoginDate`] = today;
-        updates[`/students/${uid}/loginStreak`] = streak;
-
-        await update(ref(db), updates);
-        showToast(toastMessage); // Tampilkan notifikasi hadiahnya
+        Object.assign(updates, {
+            [`/students/${uid}/coin`]: newCoin,
+            [`/students/${uid}/xp`]: newXp,
+            [`/students/${uid}/level`]: newLevel,
+            [`/students/${uid}/lastLoginDate`]: today,
+            [`/students/${uid}/loginStreak`]: streak
+        });
     }
+    
+    await update(ref(db), updates);
+    if (lastLogin !== today) showToast(toastMessage);
 }
+
 // =======================================================
 //                  LOGIKA DASBOR SISWA
 // =======================================================
@@ -507,7 +630,8 @@ if(profileNavLink && profileNavLink.textContent === 'Profil'){
     onValue(studentRef, (snapshot) => {
         if(!snapshot.exists()) return;
         const studentData = snapshot.val();
-        const maxHp = (studentData.level || 1) * 100;
+         const maxHp = (studentData.level || 1) * 100;
+        const maxMp = 50 + ((studentData.level - 1) * 5); // Rumus Max MP baru
         document.getElementById('student-name').textContent = studentData.nama;
         document.getElementById('student-class-role').textContent = `${studentData.kelas} | ${studentData.peran} | Guild ${studentData.guild || ''}`;
 
@@ -516,6 +640,8 @@ if(profileNavLink && profileNavLink.textContent === 'Profil'){
         document.getElementById('student-avatar').src = studentData.fotoProfilBase64 || `https://placehold.co/128x128/e2e8f0/3d4852?text=${studentData.nama.charAt(0)}`;
         document.getElementById('hp-value').textContent = `${studentData.hp} / ${maxHp}`;
         document.getElementById('hp-bar').style.width = `${(studentData.hp / maxHp) * 100}%`;
+         document.getElementById('mp-value').textContent = `${studentData.mp} / ${maxMp}`;
+        document.getElementById('mp-bar').style.width = `${(studentData.mp / maxMp) * 100}%`;
         document.getElementById('level-value').textContent = studentData.level;
         document.getElementById('xp-value').textContent = `${studentData.xp} / 1000`;
         document.getElementById('xp-bar').style.width = `${(studentData.xp / 1000) * 100}%`;
@@ -586,6 +712,7 @@ for (const effectKey in studentData.statusEffects) {
             activeStatusEffectsContainer.innerHTML = '<p class="text-gray-500 text-sm">Tidak ada efek aktif saat ini.</p>';
         }
         // --- AKHIR MANTRA ---
+        renderActiveSkill(studentData, uid);
         setTimeout(() => document.getElementById('student-main-content').classList.remove('opacity-0'), 100);
         createLucideIcons();
     });
@@ -2231,18 +2358,19 @@ onValue(studentsRef, (snapshot) => {
         let remainingXp = totalXpInput % xpPerLevel;
         
         let studentData = {
-            nama: document.getElementById('nama').value,
-            nis: document.getElementById('nis').value,
-            kelas: document.getElementById('kelas').value,
-            peran: document.getElementById('peran').value,
-            guild: document.getElementById('guild').value,
-            jenisKelamin: document.getElementById('jenis-kelamin').value,
-            catatan: document.getElementById('catatan').value,
-            hp: parseInt(document.getElementById('hp').value),
-            coin: parseInt(document.getElementById('coin').value),
-            level: calculatedLevel,
-            xp: remainingXp,
-        };
+    nama: document.getElementById('nama').value,
+    nis: document.getElementById('nis').value,
+    kelas: document.getElementById('kelas').value,
+    peran: document.getElementById('peran').value,
+    guild: document.getElementById('guild').value,
+    jenisKelamin: document.getElementById('jenis-kelamin').value,
+    catatan: document.getElementById('catatan').value,
+    hp: parseInt(document.getElementById('hp').value),
+    coin: parseInt(document.getElementById('coin').value),
+    mp: parseInt(document.getElementById('mp').value), // Tambahkan ini
+    level: calculatedLevel,
+    xp: remainingXp,
+};
         
         try {
             if (fotoFile) {
@@ -2308,6 +2436,7 @@ onValue(studentsRef, (snapshot) => {
                 document.getElementById('catatan').value = student.catatan || '';
                 document.getElementById('xp').value = ((student.level - 1) * 1000) + student.xp;
                 document.getElementById('hp').value = student.hp;
+                document.getElementById('mp').value = student.mp || 50;
                 document.getElementById('coin').value = student.coin || 0;
                 if (student.fotoProfilBase64) {
                     imagePreview.src = student.fotoProfilBase64;
@@ -3668,9 +3797,23 @@ startButton.onclick = async () => {
         };
 
         const handleAnswer = async (isCorrect) => {
-            correctButton.disabled = true;
-            incorrectButton.disabled = true;
-            const currentPlayer = party[currentTurnIndex];
+    correctButton.disabled = true;
+    incorrectButton.disabled = true;
+    const currentPlayer = party[currentTurnIndex];
+    // Ambil data skill pasif dari Kitab
+    const skillIndex = Math.min(currentPlayer.level - 1, 4);
+    const passiveSkill = SKILL_BOOK[currentPlayer.peran].passive[skillIndex];
+
+    // Cek & kurangi MP untuk skill pasif
+    let passiveIsActive = false;
+    if (currentPlayer.mp >= passiveSkill.mpCost) {
+        currentPlayer.mp -= passiveSkill.mpCost;
+        passiveIsActive = true;
+        addLog(`✨ Skill Pasif [${passiveSkill.name}] aktif! (-${passiveSkill.mpCost} MP)`, 'heal');
+    } else {
+        addLog(`⚠️ MP tidak cukup! Skill Pasif tidak aktif.`, 'damage');
+    }
+    
 
             // --- DEBUGGING: Cek status efek pemain saat giliran mereka ---
             console.log(`Giliran ${currentPlayer.nama}. Status Efek:`, JSON.parse(JSON.stringify(currentPlayer.statusEffects)));
@@ -3699,9 +3842,8 @@ startButton.onclick = async () => {
             }
 
             if (isCorrect) {
-    addLog(`Jawaban BENAR! ${currentPlayer.nama} beraksi...`);
-    audioPlayer.xpGain();
-    await sleep(800); // Jeda sedikit biar dramatis
+        addLog(`Jawaban BENAR! ${currentPlayer.nama} bersiap menyerang...`);
+        await sleep(800);// Jeda sedikit biar dramatis
 
     // --- Logika untuk PRAJURIT ---
     if (currentPlayer.peran === 'Prajurit') {
@@ -3738,10 +3880,24 @@ startButton.onclick = async () => {
          addLog(`✨ ${currentPlayer.nama} merapal sihir, ${studentDamage} damage.`, 'normal');
         monster.currentHp = Math.max(0, monster.currentHp - studentDamage);
 
-        // Skill Aktif: Peluang meracuni monster 30%
-        if (Math.random() < 0.30) {
-            // Di sini kita bisa menambahkan efek ke monster jika ada sistemnya
-            addLog(`☠️ SIHIR KUTUKAN! ${monster.monsterName} terkena racun!`, 'damage');
+        // 50% kemungkinan serangan skill, 50% fisik
+        if (Math.random() > 0.5) {
+            // Serangan Skill (contoh sederhana)
+            let skillDamage = 30 + Math.floor(Math.random() * 15);
+            if(passiveIsActive && currentPlayer.peran === 'Penyihir' && Math.random() < 0.15) { // Cek critical
+                 skillDamage = Math.floor(skillDamage * 1.5);
+                 addLog(`✨ CRITICAL HIT!`, 'heal');
+            }
+            monster.currentHp = Math.max(0, monster.currentHp - skillDamage);
+            addLog(`🔮 ${currentPlayer.nama} menggunakan serangan skill, ${skillDamage} damage!`, 'heal');
+        } else {
+            // Serangan Fisik Biasa
+            let physicalDamage = 25 + Math.floor(Math.random() * 10);
+            if(passiveIsActive && currentPlayer.peran === 'Penyihir') {
+                 physicalDamage = Math.floor(physicalDamage * 1.05); // Bonus 5% dari skill
+            }
+            monster.currentHp = Math.max(0, monster.currentHp - physicalDamage);
+            addLog(`⚔️ ${currentPlayer.nama} menyerang secara fisik, ${physicalDamage} damage!`, 'heal');
         }
     }
 
@@ -3813,10 +3969,10 @@ startButton.onclick = async () => {
     // Fungsi bantuan untuk serangan fisik (biar nggak nulis kode 2x)
     function performPhysicalAttack() {
         let monsterDamage = 15 + Math.floor(Math.random() * 10);
-        if (currentPlayer.statusEffects.buff_defense) {
-            const blockedDamage = Math.ceil(monsterDamage * 0.5);
-            monsterDamage -= blockedDamage;
-            addLog(`🛡️ Pertahanan ${currentPlayer.nama} menguat, menahan ${blockedDamage} damage!`, 'heal');
+        if(passiveIsActive && currentPlayer.peran === 'Prajurit'){
+            const reduction = Math.floor(monsterDamage * (passiveSkill.name.includes("12%") ? 0.12 : 0.06));
+            monsterDamage -= reduction;
+            addLog(`🛡️ Skill Pasif [${passiveSkill.name}] mengurangi ${reduction} damage!`, 'heal');
         }
         currentPlayer.currentHp = Math.max(0, currentPlayer.currentHp - monsterDamage);
         addLog(`⚔️ ${monster.monsterName} menyerang secara fisik, ${monsterDamage} damage diterima!`, 'damage');
