@@ -1177,6 +1177,12 @@ async function handleUseItem(uid, itemIndex, itemData, closeModalCallback) {
             const currentHp = Number(studentData.hp) || 0;
             const healAmount = Number(itemData.effectValue) || 0;
             updates[`/students/${uid}/hp`] = Math.min(maxHp, currentHp + healAmount);
+            } else if (itemData.effect === 'HEAL_MP') {
+    const studentLevel = studentData.level || 1;
+    const maxMp = 50 + ((studentLevel - 1) * 5);
+    const currentMp = Number(studentData.mp) || 0;
+    const healAmount = Number(itemData.effectValue) || 0;
+    updates[`/students/${uid}/mp`] = Math.min(maxMp, currentMp + healAmount);
         } else if (itemData.effect === 'GAIN_XP') {
             const xpPerLevel = 1000;
             const currentTotalXp = ((studentData.level || 1) - 1) * xpPerLevel + (studentData.xp || 0);
@@ -2976,12 +2982,15 @@ async function handleGiveAdminReward(bountyId, bountyData, closeModalCallback) {
                         
                         let newValue = action.operation === 'add' ? currentValue + value : currentValue - value;
 
-                        if (stat === 'hp') {
-                            const maxHp = (studentData.level || 1) * 100;
-                            newValue = Math.max(0, Math.min(maxHp, newValue)); // Batasi HP sesuai level
-                        } else {
-                            newValue = Math.max(0, newValue); // Stat lain tidak boleh minus
-                        }
+                       if (stat === 'hp') {
+    const maxHp = (studentData.level || 1) * 100;
+    newValue = Math.max(0, Math.min(maxHp, newValue));
+} else if (stat === 'mp') { // Tambahkan kondisi ini
+    const maxMp = 50 + ((studentData.level - 1) * 5);
+    newValue = Math.max(0, Math.min(maxMp, newValue));
+} else {
+    newValue = Math.max(0, newValue);
+}
 
                         // Logika khusus untuk XP dan Level
                         if (stat === 'xp') {
