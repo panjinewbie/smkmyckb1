@@ -693,8 +693,8 @@ if(profileNavLink && profileNavLink.textContent === 'Profil'){
         if (studentData.statusEffects && Object.keys(studentData.statusEffects).length > 0) {
             const effectMap = {
                 racun: { icon: 'skull', text: 'Racun', color: 'red' },
-                diam: { icon: 'mic-off', text: 'Diam', color: 'gray' },
-                knock: { icon: 'dizzy', text: 'Knock', color: 'yellow' }
+                diam: { icon: 'thumbs-down', text: 'Diam', color: 'gray' },
+                knock: { icon: 'tornado', text: 'Knock', color: 'yellow' }
             };
 
             // --- GANTI BLOK for...in... YANG LAMA DENGAN INI ---
@@ -2330,7 +2330,7 @@ onValue(studentsRef, (snapshot) => {
 
                 let statusEffectsHtml = '';
                 if (student.statusEffects && Object.keys(student.statusEffects).length > 0) {
-                    const effectMap = { racun: { icon: 'skull', color: 'text-red-500', title: 'Racun' }, diam: { icon: 'mic-off', color: 'text-gray-500', title: 'Diam' }, knock: { icon: 'dizzy', color: 'text-yellow-500', title: 'Pusing' }};
+                    const effectMap = { racun: { icon: 'skull', color: 'text-red-500', title: 'Racun' }, diam: { icon: 'thumbs-down', color: 'text-gray-500', title: 'Diam' }, knock: { icon: 'tornado', color: 'text-yellow-500', title: 'Pusing' }};
                     statusEffectsHtml += '<div class="flex justify-left items-left gap-2">';
                     for (const effectKey in student.statusEffects) { if (effectMap[effectKey]) { const effect = effectMap[effectKey]; statusEffectsHtml += `<i data-lucide="${effect.icon}" class="w-4 h-4 ${effect.color}" title="${effect.title}"></i>`; } }
                     statusEffectsHtml += '</div>';
@@ -3088,9 +3088,11 @@ async function handleGiveAdminReward(bountyId, bountyData, closeModalCallback) {
 
                         if (action.operation === 'add') {
                             updates[`/students/${uid}/statusEffects/${effect}`] = { expires: expiryTimestamp };
-                            // Logika khusus saat memberikan efek racun, simpan waktu pengecekan awal
+                            // Logika khusus untuk efek tertentu
                             if (effect === 'racun') {
                                 updates[`/students/${uid}/lastPoisonCheck`] = Date.now();
+                            } else if (effect === 'knock') {
+                                updates[`/students/${uid}/hp`] = 10;
                             }
                             successMessage = `Memberikan efek ${effect} ke ${uids.length} siswa (durasi ${durationInDays} hari).`;
                         } else {
@@ -3785,8 +3787,8 @@ startButton.onclick = async () => {
                 const statusIcons = `
                     <div class="absolute top-0 right-0 flex gap-1 p-1">
                         ${p.statusEffects.racun ? '<i data-lucide="skull" class="w-4 h-4 text-red-500 bg-black bg-opacity-5 rounded-full p-0.5" title="Racun"></i>' : ''}
-                        ${p.statusEffects.knock ? '<i data-lucide="dizzy" class="w-4 h-4 text-yellow-400 bg-black bg-opacity-5 rounded-full p-0.5" title="Pusing"></i>' : ''}
-                        ${p.statusEffects.diam ? '<i data-lucide="mic-off" class="w-4 h-4 text-gray-400 bg-black bg-opacity-5 rounded-full p-0.5" title="Diam"></i>' : ''}
+                        ${p.statusEffects.knock ? '<i data-lucide="tornado" class="w-4 h-4 text-yellow-400 bg-black bg-opacity-5 rounded-full p-0.5" title="Pusing"></i>' : ''}
+                        ${p.statusEffects.diam ? '<i data-lucide="thumbs-down" class="w-4 h-4 text-gray-400 bg-black bg-opacity-5 rounded-full p-0.5" title="Diam"></i>' : ''}
                     </div>
                 `;
                 partyInfoDiv.innerHTML += `
@@ -4025,15 +4027,25 @@ startButton.onclick = async () => {
         const updates = {};
 
         switch (randomSkill) {
-            case 'racun':
-            case 'diam':
-            case 'knock':
+            case 'racun': // Grouping racun and diam as they have similar application logic
+            case 'diam': {
                 const durationInDays = 2;
                 const expiryTimestamp = Date.now() + (durationInDays * 24 * 60 * 60 * 1000);
                 updates[`/students/${currentPlayer.id}/statusEffects/${randomSkill}`] = { expires: expiryTimestamp };
                 await update(ref(db), updates);
                 addLog(`☠️ ${monster.monsterName} menggunakan skill ${randomSkill}! ${currentPlayer.nama} terkena kutukan!`, 'damage');
                 break;
+            }
+            case 'knock': {
+                const durationInDays = 2;
+                const expiryTimestamp = Date.now() + (durationInDays * 24 * 60 * 60 * 1000);
+                currentPlayer.currentHp = 10; // Langsung ubah HP di state battle
+                updates[`/students/${currentPlayer.id}/statusEffects/knock`] = { expires: expiryTimestamp };
+                updates[`/students/${currentPlayer.id}/hp`] = 10; // Simpan HP baru ke database
+                await update(ref(db), updates);
+                addLog(`😵 ${monster.monsterName} menggunakan skill Knock! HP ${currentPlayer.nama} menjadi 10!`, 'damage');
+                break;
+            }
 
             case 'mencuri':
                 const stolenCoins = Math.floor(Math.random() * 11) + 5; // Curi 5-15 koin
