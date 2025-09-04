@@ -293,8 +293,18 @@ async function checkAndApplyStatusEffects(uid) {
             const totalDamage = Math.floor(hoursPassed * damagePerHour);
 
             if (totalDamage > 0) {
-                updates[`/students/${uid}/hp`] = Math.max(0, studentData.hp - totalDamage);
+                const newHp = Math.max(0, studentData.hp - totalDamage);
+                updates[`/students/${uid}/hp`] = newHp;
                 updates[`/students/${uid}/lastPoisonCheck`] = now;
+
+                // Jika HP habis karena racun, beri kutukan Diam
+                if (newHp <= 0) {
+                    const durationInDays = 1; // Kutukan 1 hari
+                    const expiryTimestamp = Date.now() + (durationInDays * 24 * 60 * 60 * 1000);
+                    updates[`/students/${uid}/statusEffects/diam`] = { expires: expiryTimestamp };
+                    addNotification(`HP <strong>${studentData.nama}</strong> habis karena racun dan kini terkena kutukan Diam!`, 'curse_death', { studentId: uid });
+                    addNotification(`HP-mu habis karena racun! Kamu terkena kutukan Diam selama 1 hari dan tidak bisa masuk.`, 'curse_death', { studentId: uid }, uid);
+                }
             }
         }
         
@@ -2095,7 +2105,11 @@ function setupAdminDashboard() {
     listenForNotifications();
     setupNoiseDetector(); 
 
-    // --- AKHIR MANTRA ---
+    console.log("TIMER MANTRA: 'Detak Jantung' akan dimulai dalam 1 jam");
+setTimeout(() => {
+    gameTick(); // Panggil langsung sekali saat pertama kali buka
+    setInterval(gameTick, 3600000); // Lalu ulangi setiap 10 detik
+}, 5000); // kalau mau setiap hari, ganti jadi 86400000
 
     // --- ELEMEN UI ADMIN ---
     const adminDashboardMain = document.getElementById('admin-dashboard-main');
@@ -2454,7 +2468,62 @@ onValue(studentsRef, (snapshot) => {
             openMonsterSelectionModal(studentId);
         }
     });
+// =======================================================
+//          MANTRA BARU: DETAK JANTUNG DUNIA DREAMY
+// =======================================================
+async function gameTick() {
+    console.log("GAME TICK: Memeriksa kondisi seluruh siswa...");
+    const studentsRef = ref(db, 'students');
+    const snapshot = await get(studentsRef);
 
+    if (!snapshot.exists()) {
+        console.log("GAME TICK: Tidak ada siswa untuk diperiksa.");
+        return;
+    }
+
+    const allStudents = snapshot.val();
+    const updates = {};
+    const today = getLocalDateString(new Date()); // Kita butuh tanggal hari ini
+
+    for (const uid in allStudents) {
+        const student = allStudents[uid];
+        const lastCheck = student.lastHpPenaltyCheck || '';
+
+        // Cek jika HP di bawah 10 DAN hari ini belum dapat penalti
+        if (student.hp < 10 && lastCheck !== today) {
+            const currentXp = student.xp || 0;
+            const penaltyXp = 5; // Jumlah XP yang dikurangi
+            
+            // Kurangi XP, tapi jangan sampai minus ya, kasian
+            const newXp = Math.max(0, currentXp - penaltyXp);
+
+            updates[`/students/${uid}/xp`] = newXp;
+            updates[`/students/${uid}/lastHpPenaltyCheck`] = today; // Tandai sudah kena penalti hari ini
+
+            console.log(`PENALTI: HP ${student.nama} kritis. XP dikurangi ${penaltyXp}.`);
+            
+            // Kirim notifikasi ke siswa biar dia sadar!
+            addNotification(
+                `😥 Gawat! HP-mu kritis (kurang dari 10). XP-mu berkurang ${penaltyXp} hari ini. Segera pulihkan HP!`,
+                'hp_penalty',
+                { studentId: uid },
+                uid // Kirim notifikasi ini ke siswa yang bersangkutan
+            );
+        }
+    }
+
+    // Kalau ada data yang perlu di-update, kirim ke Firebase!
+    if (Object.keys(updates).length > 0) {
+        try {
+            await update(ref(db), updates);
+            console.log("GAME TICK: Penalti XP berhasil diterapkan pada siswa yang HP-nya kritis.");
+        } catch (error) {
+            console.error("GAME TICK: Gagal menerapkan penalti XP.", error);
+        }
+    } else {
+        console.log("GAME TICK: Tidak ada siswa yang perlu diberi penalti XP hari ini.");
+    }
+}
     // =======================================================
     //                  LOGIKA HALAMAN QUESTS
     // =======================================================
@@ -2983,14 +3052,19 @@ async function handleGiveAdminReward(bountyId, bountyData, closeModalCallback) {
                         let newValue = action.operation === 'add' ? currentValue + value : currentValue - value;
 
                        if (stat === 'hp') {
-    const maxHp = (studentData.level || 1) * 100;
-    newValue = Math.max(0, Math.min(maxHp, newValue));
-} else if (stat === 'mp') { // Tambahkan kondisi ini
-    const maxMp = 50 + ((studentData.level - 1) * 5);
-    newValue = Math.max(0, Math.min(maxMp, newValue));
-} else {
-    newValue = Math.max(0, newValue);
-}
+                            const maxHp = (studentData.level || 1) * 100;
+                            newValue = Math.max(0, Math.min(maxHp, newValue));
+                            if (newValue <= 0) {
+                                const durationInDays = 1;
+                                const expiryTimestamp = Date.now() + (durationInDays * 24 * 60 * 60 * 1000);
+                                updates[`/students/${uid}/statusEffects/diam`] = { expires: expiryTimestamp };
+                            }
+                        } else if (stat === 'mp') { // Tambahkan kondisi ini
+                            const maxMp = 50 + ((studentData.level - 1) * 5);
+                            newValue = Math.max(0, Math.min(maxMp, newValue));
+                        } else {
+                            newValue = Math.max(0, newValue);
+                        }
 
                         // Logika khusus untuk XP dan Level
                         if (stat === 'xp') {
@@ -3773,8 +3847,21 @@ startButton.onclick = async () => {
                         updates[`/students/${p.id}/level`] = Math.floor(newTotalXp / 1000) + 1;
                         updates[`/students/${p.id}/coin`] = (p.coin || 0) + coinReward;
                      }
-                     updates[`/students/${p.id}/hp`] = p.currentHp;
-                     updates[`/students/${p.id}/statusEffects`] = null; // Hapus semua efek status
+                    
+                    // Simpan HP final dan kelola status efek
+                    updates[`/students/${p.id}/hp`] = p.currentHp;
+                    const finalStatusEffects = p.statusEffects || {};
+                    // Hapus efek sementara dari monster
+                    delete finalStatusEffects.knock;
+                    delete finalStatusEffects.racun;
+                    // Jika siswa tumbang, beri kutukan Diam
+                    if (p.currentHp <= 0) {
+                        const durationInDays = 1;
+                        const expiryTimestamp = Date.now() + (durationInDays * 24 * 60 * 60 * 1000);
+                        finalStatusEffects.diam = { expires: expiryTimestamp };
+                        addLog(`☠️ ${p.nama} terkena kutukan Diam karena HP habis!`);
+                    }
+                    updates[`/students/${p.id}/statusEffects`] = finalStatusEffects;
                 });
                 
                 addLog(`Setiap anggota yang selamat mendapat ${xpReward} XP dan ${coinReward} Koin.`, 'heal');
@@ -3784,8 +3871,11 @@ startButton.onclick = async () => {
                 addLog(`☠️ Semua anggota party telah dikalahkan!`, 'damage');
                 questionText.textContent = "YAH, KALIAN KALAH...";
                 party.forEach(p => {
-                    updates[`/students/${p.id}/hp`] = p.currentHp;
-                    updates[`/students/${p.id}/statusEffects`] = null; // Hapus semua efek status
+                    updates[`/students/${p.id}/hp`] = p.currentHp; // Hanya update HP
+                    // Jika kalah, semua terkena kutukan Diam
+                    const durationInDays = 1;
+                    const expiryTimestamp = Date.now() + (durationInDays * 24 * 60 * 60 * 1000);
+                    updates[`/students/${p.id}/statusEffects/diam`] = { expires: expiryTimestamp };
                 });
                 audioPlayer.error();
             }
@@ -4079,6 +4169,9 @@ startButton.onclick = async () => {
         const xpPerLevel = 1000;
         
         let statUpdates = {};
+        let hpPenalty = 0;
+        let penaltyMessage = '';
+
         switch(action) {
             case 'hadir': {
                 const currentTotalXp = ((data.level || 1) - 1) * xpPerLevel + (data.xp || 0);
@@ -4090,26 +4183,22 @@ startButton.onclick = async () => {
                 audioPlayer.xpGain();
                 break;
             }
-            case 'sakit': {
-                statUpdates.hp = Math.max(0, (data.hp || 100) - 2);
-                checkAndNotifyCriticalHp(uid, statUpdates.hp, data.nama, data.hp); // Cek HP Kritis
-                message = `-2 HP untuk ${data.nama}. Cepat sembuh!`;
-                audioPlayer.hpLoss();
-                break;
-            }
-            case 'izin': {
-                statUpdates.hp = Math.max(0, (data.hp || 100) - 5);
-                checkAndNotifyCriticalHp(uid, statUpdates.hp, data.nama, data.hp); // Cek HP Kritis
-                message = `-5 HP untuk ${data.nama}.`;
-                audioPlayer.hpLoss();
-                break;
-            }
-            case 'alfa': {
-                statUpdates.hp = Math.max(0, (data.hp || 100) - 10);
-                checkAndNotifyCriticalHp(uid, statUpdates.hp, data.nama, data.hp); // Cek HP Kritis
-                message = `-10 HP untuk ${data.nama}. Jangan diulangi!`;
-                audioPlayer.hpLoss();
-                break;
+            case 'sakit': hpPenalty = 2; penaltyMessage = 'Cepat sembuh!'; break;
+            case 'izin': hpPenalty = 5; penaltyMessage = ''; break;
+            case 'alfa': hpPenalty = 10; penaltyMessage = 'Jangan diulangi!'; break;
+        }
+
+        if (hpPenalty > 0) {
+            statUpdates.hp = Math.max(0, (data.hp || 100) - hpPenalty);
+            message = `-${hpPenalty} HP untuk ${data.nama}. ${penaltyMessage}`;
+            audioPlayer.hpLoss();
+            checkAndNotifyCriticalHp(uid, statUpdates.hp, data.nama, data.hp);
+
+            if (statUpdates.hp <= 0) {
+                const durationInDays = 1;
+                const expiryTimestamp = Date.now() + (durationInDays * 24 * 60 * 60 * 1000);
+                allUpdates[`/students/${uid}/statusEffects/diam`] = { expires: expiryTimestamp };
+                message += ` HP habis, terkena kutukan Diam!`;
             }
         }
 
