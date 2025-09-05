@@ -46,11 +46,11 @@ const SKILL_BOOK = {
             { name: "Titik Lemah", desc: "Peluang 15% serangan jadi Critical.", mpCost: 2 }
         ],
         active: [
-            { name: "Bisikan Sihir", desc: "Minta 1 petunjuk untuk tugas/ice breaking.", mpCost: 15 },
-            { name: "Prediksi Jitu", desc: "Minta 1 kata kunci kisi-kisi kuis.", mpCost: 20 },
-            { name: "Mantra Penguat Diri", desc: "Aktifkan buff +20% Attack untuk diri sendiri (24 jam).", mpCost: 25 },
-            { name: "Ilusi Waktu", desc: "Minta tambahan waktu 5 menit untuk tugas.", mpCost: 35 },
-            { name: "Lingkaran Sihir", desc: "Aktifkan buff +10% Attack untuk seluruh Guild (24 jam).", mpCost: 40 }
+            { name: "Bisikan Sihir", desc: "Minta 1 petunjuk untuk tugas/ice breaking.", mpCost: 15 }, // Level 1
+            { name: "Mantra Penguat Diri", desc: "Aktifkan buff +20% Attack untuk diri sendiri (24 jam).", mpCost: 25 }, // Level 2
+            { name: "Lingkaran Sihir", desc: "Aktifkan buff +10% Attack untuk seluruh Guild (24 jam).", mpCost: 40 }, // Level 3
+            { name: "Kutukan Racun", desc: "Minta admin untuk memberikan kutukan Racun pada 1 siswa lain.", mpCost: 45 }, // Level 4
+            { name: "Kutukan Diam", desc: "Minta admin untuk memberikan kutukan Diam pada 1 siswa lain.", mpCost: 50 } // Level 5
         ]
     },
     Penyembuh: {
@@ -65,7 +65,7 @@ const SKILL_BOOK = {
             { name: "Ikatan Hati", desc: "Minta izin agar tim boleh saling bantu.", mpCost: 15 },
             { name: "Permohonan Keringanan", desc: "Minta admin batalkan -2 HP 'Sakit' teman.", mpCost: 20 },
             { name: "Aura Penyembuh Diri", desc: "Aktifkan buff Regen HP untuk diri sendiri (24 jam).", mpCost: 25 },
-            { name: "Kesempatan Kedua", desc: "Minta kesempatan revisi tugas harian.", mpCost: 35 },
+            { name: "Penawar Guild", desc: "Minta admin untuk menghilangkan 1 kutukan dari teman satu Guild.", mpCost: 35 },
             { name: "Mukjizat", desc: "Minta admin ubah 'Alfa' teman jadi 'Izin'.", mpCost: 60 }
         ]
     }
@@ -187,39 +187,199 @@ function renderActiveSkill(studentData, uid) {
         </div>
     `;
 
-    document.getElementById('use-active-skill-button').onclick = async () => {
-        if (!confirm(`Yakin mau menggunakan skill "${skill.name}"? Ini akan memakai ${skill.mpCost} MP.`)) return;
-
-        try {
-            const newMp = mp - skill.mpCost;
-            await update(ref(db, `students/${uid}`), { mp: newMp });
-            
-            let adminMessage = `Siswa <strong>${studentData.nama}</strong> (${peran} Lv. ${level}) menggunakan skill: <strong>${skill.name}</strong>.`;
-            
-            // Logika khusus untuk buff
-            if (skill.name.includes('Buff')) {
-                const buffType = skill.name.toLowerCase().includes('defense') ? 'buff_defense' : 'buff_attack';
-                const expiryTimestamp = Date.now() + (24 * 60 * 60 * 1000); // 24 jam
-
-                if (skill.name.includes('Guild')) {
-                    // Beri buff ke seluruh guild
-                    // (Logika ini kompleks, untuk sekarang kita kirim notif saja)
-                    adminMessage += ` Efek ini ditujukan untuk seluruh Guild ${studentData.guild}.`;
-                } else {
-                    // Beri buff ke diri sendiri
-                    await update(ref(db, `students/${uid}/statusEffects`), { [buffType]: { expires: expiryTimestamp } });
-                }
-            }
-            
-            addNotification(adminMessage, 'skill_usage', { studentId: uid });
-            showToast(`Skill "${skill.name}" berhasil digunakan!`);
-
-        } catch (error) {
-            showToast("Gagal menggunakan skill.", true);
-        }
-    };
+    document.getElementById('use-active-skill-button').onclick = () => handleUseActiveSkill(uid, studentData, skill);
 }
 
+// --- FUNGSI BARU: Logika Inti Penggunaan Skill Aktif ---
+async function handleUseActiveSkill(uid, studentData, skill) {
+    if (!confirm(`Yakin mau menggunakan skill "${skill.name}"? Ini akan memakai ${skill.mpCost} MP.`)) return;
+
+    const skillName = skill.name;
+    const updates = {};
+    const now = Date.now();
+    const expiryTimestamp = now + (24 * 60 * 60 * 1000); // Durasi buff/kutukan 24 jam
+
+    try {
+        // --- Logika untuk Self-Buffs ---
+        if (skillName === 'Mantra Penguat Diri' || skillName === 'Perisai Pelindung Diri' || skillName === 'Aura Penyembuh Diri') {
+            let buffType = 'buff_attack'; // Default untuk Penyihir
+            if (skillName.includes('Perisai')) buffType = 'buff_defense';
+            if (skillName.includes('Aura')) buffType = 'buff_hp_regen';
+
+            updates[`/students/${uid}/mp`] = studentData.mp - skill.mpCost;
+            updates[`/students/${uid}/statusEffects/${buffType}`] = { expires: expiryTimestamp, name: skill.name };
+            await update(ref(db), updates);
+            showToast(`Efek ${skill.name} aktif selama 24 jam!`);
+        }
+        // --- Logika untuk Guild-Buffs ---
+        else if (skillName === 'Lingkaran Sihir' || skillName === 'Sumpah Setia') {
+            const guildName = studentData.guild;
+            if (!guildName || guildName === 'Tanpa Guild') {
+                showToast("Kamu harus berada di dalam guild untuk menggunakan skill ini!", true);
+                return;
+            }
+            const buffType = skillName.includes('Sihir') ? 'buff_attack' : 'buff_defense';
+            updates[`/students/${uid}/mp`] = studentData.mp - skill.mpCost;
+
+            const studentsQuery = query(ref(db, 'students'), orderByChild('guild'), equalTo(guildName));
+            const guildSnaps = await get(studentsQuery);
+
+            if (guildSnaps.exists()) {
+                guildSnaps.forEach(memberSnap => {
+                    updates[`/students/${memberSnap.key}/statusEffects/${buffType}`] = { expires: expiryTimestamp, name: skill.name };
+                });
+            }
+            await update(ref(db), updates);
+            showToast(`Efek ${skill.name} aktif untuk seluruh guild selama 24 jam!`);
+        }
+        // --- Logika untuk Skill Bertarget (Kutukan & Penyembuhan) ---
+        else if (skillName.startsWith('Kutukan') || skillName === 'Penawar Guild') {
+            openSkillTargetModal(uid, studentData, skill);
+        }
+        // --- Logika Default (Skill yang butuh intervensi admin) ---
+        else {
+            updates[`/students/${uid}/mp`] = studentData.mp - skill.mpCost;
+            await update(ref(db), updates);
+            
+            const adminMessage = `Siswa <strong>${studentData.nama}</strong> (${studentData.peran} Lv. ${studentData.level}) menggunakan skill: <strong>${skill.name}</strong>.`;
+            addNotification(adminMessage, 'skill_usage', { studentId: uid });
+            showToast(`Skill "${skill.name}" berhasil digunakan! Permintaan dikirim ke admin.`);
+        }
+    } catch (error) {
+        showToast(`Gagal menggunakan skill: ${error.message}`, true);
+        console.error("Skill usage error:", error);
+    }
+}
+
+// --- FUNGSI BARU: Membuka Modal Pemilihan Target untuk Skill ---
+async function openSkillTargetModal(casterUid, casterData, skill) {
+    const modal = document.getElementById('target-student-modal');
+    const studentList = document.getElementById('target-student-list');
+    const modalTitle = document.getElementById('target-modal-title');
+    const closeButton = document.getElementById('close-target-modal-button');
+    
+    if (!modal || !studentList || !closeButton || !modalTitle) {
+        showToast("Elemen UI untuk memilih target tidak ditemukan!", true);
+        return;
+    }
+
+    const closeModal = () => {
+        modal.classList.add('opacity-0');
+        setTimeout(() => modal.classList.add('hidden'), 300);
+    };
+    
+    closeButton.onclick = closeModal;
+    studentList.innerHTML = '<p class="text-gray-400 p-4 text-center">Memuat daftar target...</p>';
+    modalTitle.textContent = `Pilih Target untuk: ${skill.name}`;
+
+    audioPlayer.openModal();
+    modal.classList.remove('hidden');
+    setTimeout(() => modal.classList.remove('opacity-0'), 10);
+
+    const studentsSnap = await get(ref(db, 'students'));
+    if (!studentsSnap.exists()) {
+        studentList.innerHTML = '<p class="text-gray-400 p-4 text-center">Tidak ada siswa lain di dunia ini.</p>';
+        return;
+    }
+
+    studentList.innerHTML = '';
+    let targetFound = false;
+    studentsSnap.forEach(childSnap => {
+        const targetStudent = childSnap.val();
+        const targetUid = childSnap.key;
+
+        let canBeTargeted = false;
+        if (skill.name.startsWith('Kutukan')) {
+            canBeTargeted = targetUid !== casterUid; // Tidak bisa mengutuk diri sendiri
+        } else if (skill.name === 'Penawar Guild') {
+            // Target harus satu guild dan bukan diri sendiri
+            canBeTargeted = targetStudent.guild === casterData.guild && targetUid !== casterUid;
+        }
+
+        if (canBeTargeted) {
+            targetFound = true;
+            const studentDiv = document.createElement('div');
+            studentDiv.className = 'flex items-center p-2 rounded-lg hover:bg-gray-100 cursor-pointer';
+            studentDiv.innerHTML = `
+                <img src="${targetStudent.fotoProfilBase64 || `https://placehold.co/40x40/e2e8f0/3d4852?text=${targetStudent.nama.charAt(0)}`}" class="w-10 h-10 rounded-full object-cover mr-3">
+                <div>
+                    <p class="font-semibold">${targetStudent.nama}</p>
+                    <p class="text-xs text-gray-500">Level ${targetStudent.level} | ${targetStudent.guild}</p>
+                </div>
+            `;
+            studentDiv.onclick = () => {
+                if (confirm(`Yakin ingin menggunakan "${skill.name}" pada ${targetStudent.nama}?`)) {
+                    handleSkillOnTarget(casterUid, targetUid, casterData, targetStudent, skill);
+                    closeModal();
+                }
+            };
+            studentList.appendChild(studentDiv);
+        }
+    });
+
+    if (!targetFound) {
+        studentList.innerHTML = '<p class="text-gray-400 p-4 text-center">Tidak ada target yang valid ditemukan.</p>';
+    }
+}
+
+// --- FUNGSI BARU: Mengeksekusi Skill pada Target yang Dipilih ---
+async function handleSkillOnTarget(casterUid, targetUid, casterData, targetData, skill) {
+    try {
+        const updates = {};
+        const now = Date.now();
+        const expiryTimestamp = now + (24 * 60 * 60 * 1000); // Durasi 24 jam
+
+        // 1. Kurangi MP si perapal sihir
+        updates[`/students/${casterUid}/mp`] = casterData.mp - skill.mpCost;
+
+        // 2. Terapkan efek ke target
+        let successMessage = '';
+        let targetNotificationMessage = '';
+
+        if (skill.name === 'Kutukan Racun') {
+            updates[`/students/${targetUid}/statusEffects/racun`] = { expires: expiryTimestamp, name: skill.name };
+            successMessage = `Berhasil memberikan Kutukan Racun pada ${targetData.nama}!`;
+            targetNotificationMessage = `Kamu telah dikutuk dengan <strong>Racun</strong> oleh <strong>${casterData.nama}</strong>!`;
+        } else if (skill.name === 'Kutukan Diam') {
+            updates[`/students/${targetUid}/statusEffects/diam`] = { expires: expiryTimestamp, name: skill.name };
+            successMessage = `Berhasil memberikan Kutukan Diam pada ${targetData.nama}!`;
+            targetNotificationMessage = `Kamu telah dikutuk dengan <strong>Diam</strong> oleh <strong>${casterData.nama}</strong>!`;
+        } else if (skill.name === 'Penawar Guild') {
+            const activeEffects = targetData.statusEffects || {};
+            const negativeEffects = ['racun', 'diam', 'knock'];
+            let curedEffect = null;
+            for (const effect of negativeEffects) {
+                if (activeEffects[effect]) {
+                    updates[`/students/${targetUid}/statusEffects/${effect}`] = null;
+                    curedEffect = effect;
+                    break; // Sembuhkan satu kutukan saja
+                }
+            }
+            if (curedEffect) {
+                successMessage = `Berhasil menghilangkan kutukan ${curedEffect} dari ${targetData.nama}!`;
+                targetNotificationMessage = `Kutukan <strong>${curedEffect}</strong>-mu telah dihilangkan oleh <strong>${casterData.nama}</strong>!`;
+            } else {
+                showToast(`${targetData.nama} tidak memiliki kutukan untuk dihilangkan. MP tetap terpakai.`, true);
+                // Tetap kurangi MP walau target tidak punya kutukan
+                await update(ref(db), { [`/students/${casterUid}/mp`]: casterData.mp - skill.mpCost });
+                return;
+            }
+        }
+
+        await update(ref(db), updates);
+        showToast(successMessage);
+        audioPlayer.success();
+
+        // 3. Kirim notifikasi ke target
+        if (targetNotificationMessage) {
+            addNotification(targetNotificationMessage, 'skill_effect', { casterId: casterUid }, targetUid);
+        }
+
+    } catch (error) {
+        showToast(`Gagal menggunakan skill: ${error.message}`, true);
+        audioPlayer.error();
+    }
+}
 
 // --- FUNGSI TAMPILAN & NOTIFIKASI (DENGAN SUARA) ---
 const showToast = (message, isError = false) => {
@@ -692,9 +852,12 @@ if(profileNavLink && profileNavLink.textContent === 'Profil'){
         
         if (studentData.statusEffects && Object.keys(studentData.statusEffects).length > 0) {
             const effectMap = {
-                racun: { icon: 'skull', text: 'Racun', color: 'red' },
-                diam: { icon: 'thumbs-down', text: 'Diam', color: 'gray' },
-                knock: { icon: 'tornado', text: 'Knock', color: 'yellow' }
+                racun: { icon: 'skull', text: 'Racun', color: 'red' }, // Efek Negatif
+                diam: { icon: 'thumbs-down', text: 'Diam', color: 'gray' }, // Efek Negatif
+                knock: { icon: 'tornado', text: 'Knock', color: 'yellow' }, // Efek Negatif
+                buff_attack: { icon: 'swords', text: 'Attack Up', color: 'orange' }, // Buff Positif
+                buff_defense: { icon: 'shield', text: 'Defense Up', color: 'blue' }, // Buff Positif
+                buff_hp_regen: { icon: 'heart-pulse', text: 'Regen HP', color: 'green' } // Buff Positif
             };
 
             // --- GANTI BLOK for...in... YANG LAMA DENGAN INI ---
@@ -2330,7 +2493,14 @@ onValue(studentsRef, (snapshot) => {
 
                 let statusEffectsHtml = '';
                 if (student.statusEffects && Object.keys(student.statusEffects).length > 0) {
-                    const effectMap = { racun: { icon: 'skull', color: 'text-red-500', title: 'Racun' }, diam: { icon: 'thumbs-down', color: 'text-gray-500', title: 'Diam' }, knock: { icon: 'tornado', color: 'text-yellow-500', title: 'Pusing' }};
+                    const effectMap = { 
+                        racun: { icon: 'skull', color: 'text-red-500', title: 'Racun' }, 
+                        diam: { icon: 'thumbs-down', color: 'text-gray-500', title: 'Diam' }, 
+                        knock: { icon: 'tornado', color: 'text-yellow-500', title: 'Pusing' },
+                        buff_attack: { icon: 'swords', color: 'text-orange-500', title: 'Attack Up' },
+                        buff_defense: { icon: 'shield', color: 'text-blue-500', title: 'Defense Up' },
+                        buff_hp_regen: { icon: 'heart-pulse', color: 'text-green-500', title: 'Regen HP' }
+                    };
                     statusEffectsHtml += '<div class="flex justify-left items-left gap-2">';
                     for (const effectKey in student.statusEffects) { if (effectMap[effectKey]) { const effect = effectMap[effectKey]; statusEffectsHtml += `<i data-lucide="${effect.icon}" class="w-4 h-4 ${effect.color}" title="${effect.title}"></i>`; } }
                     statusEffectsHtml += '</div>';
