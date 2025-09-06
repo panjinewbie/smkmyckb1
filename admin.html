@@ -77,7 +77,7 @@
                         </div>
                     </div>
                 </div>
-                <button class="p-2 rounded-full hover:bg-gray-100"><i data-lucide="help-circle" class="w-5 h-5 text-gray-600"></i></button><button id="admin-logout-button" class="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg"><span class="hidden md:inline">Logout</span><i data-lucide="log-out" class="w-5 h-5"></i></button></div></div></div>
+                <button class="p-2 rounded-full hover:bg-gray-100"><i data-lucide="settings" class="w-5 h-5 text-gray-600"></i></button><button id="admin-logout-button" class="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg"><span class="hidden md:inline">Logout</span><i data-lucide="log-out" class="w-5 h-5"></i></button></div></div></div>
             <nav class="border-t border-gray-200"><div class="container mx-auto px-4"><div id="admin-nav-links" class="flex items-center space-x-4 md:space-x-6 overflow-x-auto">
                 <a href="#dashboard" class="nav-link active flex items-center px-2 py-4 text-sm font-semibold border-b-2"><i data-lucide="layout-dashboard" class="w-4 h-4 mr-2"></i>Dashboard</a>
                 <a href="#attendance" class="nav-link text-gray-500 hover:text-blue-600 flex items-center px-2 py-4 text-sm font-semibold border-b-2 border-transparent"><i data-lucide="calendar-check" class="w-4 h-4 mr-2"></i>Attendance</a>
@@ -129,6 +129,9 @@
         <th scope="col" class="px-6 py-3 text-center">HP</th>
         <th scope="col" class="px-6 py-3 text-center">Koin</th>
         <th scope="col" class="px-6 py-3 text-center">Aksi</th></tr></thead><tbody id="student-table-body"><tr><td colspan="5" class="text-center p-8 text-gray-400">Memuat data...</td></tr></tbody></table></div>
+                <div id="pagination-controls" class="p-4 flex justify-between items-center border-t">
+                    <!-- Kontrol pagination akan dibuat oleh JavaScript di sini -->
+                </div>
                 </div>
             </div>
 
@@ -159,34 +162,42 @@
                     </div>
                 </div>
             </div>
-
-            <div id="quests-page" class="hidden">
-                <div class="bg-white rounded-lg shadow-md">
+<div id="quests-page" class="flex gap-[20px] flex-wrap flex-row hidden ">
+    <div class="bg-white rounded-lg shadow-md">
                     <div class="p-6 border-b border-gray-200 flex flex-wrap gap-4 justify-between items-center">
                         <div>
-                            <h2 class="text-xl font-semibold">Manajemen Monster Quest</h2>
-                            <p class="text-sm text-gray-500 mt-1">Buat dan atur monster untuk dilawan siswa.</p>
+                            <h2 class="text-xl font-semibold">Manajemen Quest</h2>
+                            <p class="text-sm text-gray-500 mt-1">Buat Quest party battle, misi, dan uji keheningan.</p>
                         </div>
-                        <div class="flex gap-2">
-                             <button id="party-battle-button" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg flex items-center"><i data-lucide="users" class="w-4 h-4 mr-2"></i>Party Battle</button>
-                            <button id="add-quest-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg flex items-center"><i data-lucide="plus-circle" class="w-4 h-4 mr-2"></i>Buat Monster</button>
-<button id="add-admin-bounty-button" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg flex items-center"><i data-lucide="plus-circle" class="w-4 h-4 mr-2"></i>Buat Misi Admin</button>
-<button id="open-noise-detector-button" class="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded-lg flex items-center"><i data-lucide="gauge-circle" class="w-4 h-4 mr-2"></i>Uji Keheningan</button>
-                        </div>
-                    </div>
-                    <div id="quest-list-container" class="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+  <div class="flex justify-between gap-x-4 grow"><button id="party-battle-button" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg flex items-center"><i data-lucide="users" class="w-4 h-4 mr-2"></i>Party Battle</button><button id="open-noise-detector-button" class="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded-lg flex items-center"><i data-lucide="gauge-circle" class="w-4 h-4 mr-2"></i>Uji Keheningan</button>
+</div>
+  <div class="flex justify-between gap-x-4 grow"> <button id="add-quest-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg flex items-center"><i data-lucide="plus-circle" class="w-4 h-4 mr-2"></i>Buat Monster</button>
+                            <button id="add-admin-bounty-button" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg flex items-center"><i data-lucide="plus-circle" class="w-4 h-4 mr-2"></i>Buat Misi Admin</button>
+</div></div></div>
+
+  <div class="grow bg-white rounded-lg shadow-md">
+                        <div class="p-6 border-gray-200 flex-wrap gap-4 justify-between items-center">
+                        <div>
+                            <h2 class="text-xl font-semibold">Manajemen Monster</h2>
+                            <p class="text-sm text-gray-500 mt-1">Jika anda punya nyali lawan para monster berpengetahuan</p>
+                       
+     <div id="quest-list-container" class="flex  gap-6">
                         <p class="text-center text-gray-400 col-span-full">Memuat data monster...</p>
-                    </div>
-               
-   
- <!-- Tambahkan ini di dalam <div id="quests-page"> di admin.html -->
-<div class="mt-8 pt-6 border-t">
-   
+                    </div> </div>
+</div></div>
+  <div class="grow bg-white rounded-lg shadow-md"> 
+    <div class="p-6 border-b border-gray-200 flex flex-wrap gap-4 justify-between items-center">
+        <div>
+                            <h2 class="text-xl font-semibold">Manajemen Bonty Board</h2>
+                            <p class="text-sm text-gray-500 mt-1">Atur Bonty Board untuk admin</p><!-- Tambahkan ini di dalam <div id="quests-page"> di admin.html -->
+   </div>
     <!-- Container BARU untuk daftar misi admin -->
     <div id="admin-bounty-list-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <!-- Daftar misi dari admin akan dimuat di sini oleh JavaScript -->
     </div>
 </div>
+            
 
 <!-- Modal BARU untuk membuat misi admin (letakkan di dekat modal lainnya) -->
 <div id="admin-bounty-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40 hidden opacity-0 transition-opacity duration-300">
