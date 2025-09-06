@@ -855,7 +855,7 @@ if(profileNavLink && profileNavLink.textContent === 'Profil'){
                 racun: { icon: 'skull', text: 'Racun', color: 'red' }, // Efek Negatif
                 diam: { icon: 'thumbs-down', text: 'Diam', color: 'gray' }, // Efek Negatif
                 knock: { icon: 'tornado', text: 'Knock', color: 'yellow' }, // Efek Negatif
-                buff_attack: { icon: 'swords', text: 'Attack Up', color: 'orange' }, // Buff Positif
+                buff_attack: { icon: 'arrow-big-up-dash', text: 'Attack Up', color: 'orange' }, // Buff Positif
                 buff_defense: { icon: 'shield', text: 'Defense Up', color: 'blue' }, // Buff Positif
                 buff_hp_regen: { icon: 'heart-pulse', text: 'Regen HP', color: 'green' } // Buff Positif
             };
@@ -2434,38 +2434,76 @@ if (scanQrMagicButton) {
     });
 }
     // --- FUNGSI DATA SISWA (ADMIN) ---
-   // --- GANTI KODE onValue(studentsRef, ...) YANG LAMA DENGAN KODE BARU INI ---
-const studentsRef = ref(db, 'students');
-onValue(studentsRef, (snapshot) => {
-    const studentTableBody = document.getElementById('student-table-body');
-    const filterKelas = document.getElementById('dashboard-filter-kelas');
-    const filterGuild = document.getElementById('dashboard-filter-guild');
-    let allStudents = [];
+    // --- GANTI KODE onValue(studentsRef, ...) YANG LAMA DENGAN KODE BARU INI ---
+    const studentsRef = ref(db, 'students');
+    onValue(studentsRef, (snapshot) => {
+        const studentTableBody = document.getElementById('student-table-body');
+        const filterKelas = document.getElementById('dashboard-filter-kelas');
+        const filterGuild = document.getElementById('dashboard-filter-guild');
+        const paginationControls = document.getElementById('pagination-controls');
+        let allStudents = [];
 
-    if (snapshot.exists()) {
-        allStudents = Object.entries(snapshot.val());
-    }
+        // --- MANTRA PAGINATION BARU ---
+        let currentPage = 1;
+        const itemsPerPage = 10; // 10 siswa per halaman
 
-    // --- MANTRA BARU: Mengisi pilihan filter ---
-    const uniqueKelas = [...new Set(allStudents.map(([_, student]) => student.kelas))];
-    const uniqueGuilds = [...new Set(allStudents.map(([_, student]) => student.guild || 'No Guild'))];
+        if (snapshot.exists()) {
+            // Urutkan siswa berdasarkan nama secara default
+            allStudents = Object.entries(snapshot.val()).sort((a, b) => a[1].nama.localeCompare(b[1].nama));
+        }
 
-    // Simpan nilai filter yang sedang aktif
-    const activeKelas = filterKelas.value;
-    const activeGuild = filterGuild.value;
+        // --- MANTRA BARU: Mengisi pilihan filter ---
+        const uniqueKelas = [...new Set(allStudents.map(([_, student]) => student.kelas))];
+        const uniqueGuilds = [...new Set(allStudents.map(([_, student]) => student.guild || 'No Guild'))];
 
-    filterKelas.innerHTML = '<option value="semua">Semua Kelas</option>';
-    uniqueKelas.sort().forEach(kelas => {
-        filterKelas.innerHTML += `<option value="${kelas}" ${kelas === activeKelas ? 'selected' : ''}>${kelas}</option>`;
-    });
+        const activeKelas = filterKelas.value;
+        const activeGuild = filterGuild.value;
 
-    filterGuild.innerHTML = '<option value="semua">Semua Guild</option>';
-    uniqueGuilds.sort().forEach(guild => {
-        filterGuild.innerHTML += `<option value="${guild}" ${guild === activeGuild ? 'selected' : ''}>${guild}</option>`;
-    });
+        filterKelas.innerHTML = '<option value="semua">Semua Kelas</option>';
+        uniqueKelas.sort().forEach(kelas => {
+            filterKelas.innerHTML += `<option value="${kelas}" ${kelas === activeKelas ? 'selected' : ''}>${kelas}</option>`;
+        });
 
-    // --- MANTRA BARU: Fungsi untuk render tabel ---
-    const renderTable = () => {
+        filterGuild.innerHTML = '<option value="semua">Semua Guild</option>';
+        uniqueGuilds.sort().forEach(guild => {
+            filterGuild.innerHTML += `<option value="${guild}" ${guild === activeGuild ? 'selected' : ''}>${guild}</option>`;
+        });
+
+        // --- MANTRA BARU: Fungsi untuk render kontrol pagination ---
+        const renderPaginationControls = (totalItems) => {
+            paginationControls.innerHTML = '';
+            const totalPages = Math.ceil(totalItems / itemsPerPage);
+            if (totalPages <= 1) return;
+
+            const startItem = (currentPage - 1) * itemsPerPage + 1;
+            const endItem = Math.min(currentPage * itemsPerPage, totalItems);
+
+            let buttonsHtml = '';
+            // Tombol Sebelumnya
+            buttonsHtml += `<button class="pagination-btn px-3 py-1 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50" data-page="${currentPage - 1}" ${currentPage === 1 ? 'disabled' : ''}>Sebelumnya</button>`;
+
+            // Tombol Berikutnya
+            buttonsHtml += `<button class="pagination-btn px-3 py-1 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50" data-page="${currentPage + 1}" ${currentPage === totalPages ? 'disabled' : ''}>Berikutnya</button>`;
+
+            paginationControls.innerHTML = `
+                <p class="text-sm text-gray-700">
+                    Menampilkan <span class="font-medium">${startItem}</span> - <span class="font-medium">${endItem}</span> dari <span class="font-medium">${totalItems}</span> hasil
+                </p>
+                <div class="flex gap-2">
+                    ${buttonsHtml}
+                </div>
+            `;
+
+            paginationControls.querySelectorAll('.pagination-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    currentPage = parseInt(e.target.dataset.page);
+                    renderTable();
+                });
+            });
+        };
+
+        // --- MANTRA BARU: Fungsi untuk render tabel (dengan pagination) ---
+        const renderTable = () => {
         const selectedKelas = filterKelas.value;
         const selectedGuild = filterGuild.value;
 
@@ -2475,13 +2513,18 @@ onValue(studentsRef, (snapshot) => {
             return kelasMatch && guildMatch;
         });
 
+            // --- Logika Pagination ---
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const paginatedStudents = filteredStudents.slice(startIndex, endIndex);
+
         studentTableBody.innerHTML = '';
         let totalStudents = 0, totalLevel = 0, totalCoins = 0;
 
-        if (filteredStudents.length === 0) {
+            if (paginatedStudents.length === 0) {
             studentTableBody.innerHTML = '<tr><td colspan="7" class="text-center p-8 text-gray-400">Tidak ada siswa yang cocok.</td></tr>';
         } else {
-            filteredStudents.forEach(([key, student]) => {
+                paginatedStudents.forEach(([key, student]) => {
                 // --- (Kode untuk membuat baris tabel tetap sama, tidak perlu diubah) ---
                 const studentRow = document.createElement('tr');
                 const maxHp = (student.level || 1) * 100;
@@ -2497,7 +2540,7 @@ onValue(studentsRef, (snapshot) => {
                         racun: { icon: 'skull', color: 'text-red-500', title: 'Racun' }, 
                         diam: { icon: 'thumbs-down', color: 'text-gray-500', title: 'Diam' }, 
                         knock: { icon: 'tornado', color: 'text-yellow-500', title: 'Pusing' },
-                        buff_attack: { icon: 'swords', color: 'text-orange-500', title: 'Attack Up' },
+                        buff_attack: { icon: 'arrow-big-up-dash', color: 'text-orange-500', title: 'Attack Up' },
                         buff_defense: { icon: 'shield', color: 'text-blue-500', title: 'Defense Up' },
                         buff_hp_regen: { icon: 'heart-pulse', color: 'text-green-500', title: 'Regen HP' }
                     };
@@ -2519,22 +2562,28 @@ onValue(studentsRef, (snapshot) => {
                         <button class="delete-btn p-2 bg-gray-100 text-gray-600 hover:bg-gray-200 rounded-lg" data-id="${key}" title="Hapus Siswa"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                     </td>`;
                 studentTableBody.appendChild(studentRow);
+            });
+        }
+
+            // Update summary stats berdasarkan SEMUA siswa yang terfilter, bukan hanya yang di halaman ini
+            filteredStudents.forEach(([_, student]) => {
                 totalStudents++;
                 totalLevel += (student.level || 1);
                 totalCoins += (student.coin || 0);
             });
-        }
+
         document.getElementById('total-students').textContent = totalStudents;
         document.getElementById('average-level').textContent = totalStudents > 0 ? (totalLevel / totalStudents).toFixed(1) : '0';
         document.getElementById('total-coins').textContent = totalCoins;
         createLucideIcons();
+            renderPaginationControls(filteredStudents.length); // Render kontrol berdasarkan jumlah total item yang terfilter
     };
 
-    // Pasang pendengar di filter dan panggil renderTable pertama kali
-    filterKelas.onchange = renderTable;
-    filterGuild.onchange = renderTable;
-    renderTable();
-});
+        // Pasang pendengar di filter dan panggil renderTable pertama kali
+        filterKelas.onchange = () => { currentPage = 1; renderTable(); }; // Reset ke halaman 1 saat filter berubah
+        filterGuild.onchange = () => { currentPage = 1; renderTable(); }; // Reset ke halaman 1 saat filter berubah
+        renderTable();
+    });
 
     studentForm.addEventListener('submit', async (e) => {
         e.preventDefault();
