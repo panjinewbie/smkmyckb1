@@ -162,7 +162,7 @@ function renderActiveSkill(studentData, uid) {
     const { peran, level, mp } = studentData;
 
     if (!peran || !level || !SKILL_BOOK[peran]) {
-        container.innerHTML = '<p class="text-center text-gray-400">Peran tidak valid.</p>';
+        container.innerHTML = '<p class="text-center text-gray-400 font-sans">Peran tidak valid.</p>';
         return;
     }
 
@@ -170,7 +170,7 @@ function renderActiveSkill(studentData, uid) {
     const skill = SKILL_BOOK[peran].active[skillIndex];
 
     if (!skill) {
-        container.innerHTML = '<p class="text-center text-gray-400">Skill belum terbuka.</p>';
+        container.innerHTML = '<p class="text-center text-gray-400 font-sans">Skill belum terbuka.</p>';
         return;
     }
 
@@ -178,8 +178,8 @@ function renderActiveSkill(studentData, uid) {
     container.innerHTML = `
         <div class="flex flex-col sm:flex-row items-center gap-4">
             <div class="flex-grow">
-                <h4 class="font-bold text-lg">${skill.name} <span class="text-sm font-normal text-gray-500">(Lv. ${level})</span></h4>
-                <p class="text-sm text-gray-600 mt-1">${skill.desc}</p>
+                <h4 class="font-bold text-lg font-sans">${skill.name} <span class="text-sm font-normal text-gray-500 font-sans">(Lv. ${level})</span></h4>
+                <p class="text-sm py-2 font-mono text-gray-600 mt-1">${skill.desc}</p>
             </div>
             <button id="use-active-skill-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg flex-shrink-0 disabled:bg-gray-400 disabled:cursor-not-allowed" ${!hasEnoughMp ? 'disabled' : ''}>
                 Gunakan (MP: ${skill.mpCost})
@@ -1128,8 +1128,8 @@ async function setupStudentShopPage(uid) {
                 card.className = 'bg-white p-3 rounded-lg shadow flex flex-col border hover:shadow-lg transition-shadow';
                 card.innerHTML = `
                     <img src="${item.imageBase64 || 'https://placehold.co/300x200/e2e8f0/3d4852?text=Item'}" class="w-full h-24 object-cover rounded-md mb-2">
-                    <h4 class="text-md font-bold">${item.name}</h4>
-                    <p class="text-xs text-gray-600 flex-grow mb-2">${item.description}</p>
+                    <h4 class="text-md font-bold font-sans">${item.name}</h4>
+                    <p class="text-sm py-2 font-mono text-gray-600 flex-grow mb-2">${item.description}</p>
                     <div class="flex justify-between items-center mt-2 text-sm">
                         <span class="font-semibold text-yellow-600 flex items-center"><i data-lucide="coins" class="w-4 h-4 mr-1"></i>${item.price}</span>
                         <span class="text-gray-500 text-xs">Stok: ${item.stock}</span>
@@ -1968,9 +1968,9 @@ function setupBountyBoardPage(uid) {
             card.className = 'bg-white p-4 rounded-lg shadow-lg flex flex-col';
             card.innerHTML = `
                 <img src="${bounty.imageUrl || 'https://placehold.co/300x200/e2e8f0/3d4852?text=Misi'}" class="w-full h-32 object-cover rounded-md mb-4">
-                <h4 class="text-lg font-bold">${bounty.title}</h4>
-                <p class="text-xs text-gray-500 mb-2">Oleh: ${bounty.creatorName}</p>
-                <p class="text-sm text-gray-600 flex-grow mb-2">${bounty.description}</p>
+                <h4 class="text-lg font-bold font-sans">${bounty.title}</h4>
+                <p class="text-xs text-gray-500 mb-2 font-sans">Oleh: ${bounty.creatorName}</p>
+                <p class="text-sm py-2 font-mono text-gray-600 flex-grow mb-2">${bounty.description}</p>
                 <div class="flex justify-between items-center mt-2 text-sm">
                     <div class="flex items-center gap-3">${rewardHtml}</div>
                     <span class="text-gray-500 text-xs">Slot: ${takersCount} / ${bounty.takerLimit}</span>
