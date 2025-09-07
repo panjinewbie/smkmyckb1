@@ -2920,7 +2920,7 @@ async function gameTick() {
             const questsData = snapshot.val();
             Object.entries(questsData).forEach(([questId, quest]) => {
                 const card = document.createElement('div');
-                card.className = 'bg-white p-4 rounded-lg shadow-lg flex flex-col';
+                card.className = 'bg-white p-4 rounded-lg shadow-lg flex flex-col transform transition duration-300 hover:scale-110 hover:shadow-xl';
                 card.innerHTML = `
                     <img src="${quest.monsterImageBase64 || 'https://placehold.co/300x200/a0aec0/ffffff?text=Monster'}" class="w-full h-32 object-cover rounded-md mb-4">
                     <h4 class="text-lg font-bold">${quest.monsterName}</h4>
