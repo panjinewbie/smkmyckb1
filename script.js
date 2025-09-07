@@ -70,6 +70,16 @@ const SKILL_BOOK = {
         ]
     }
 };
+// --- MANTRA BARU: Konfigurasi AI Quiz Battle ---
+const AI_QUIZ_PRIZES = [
+    { xp: 10, coin: 5 }, { xp: 20, coin: 10 }, { xp: 30, coin: 15 }, { xp: 50, coin: 20 }, { xp: 75, coin: 25 }, // Level 1-5
+    { xp: 100, coin: 30 }, { xp: 125, coin: 35 }, { xp: 150, coin: 40 }, { xp: 200, coin: 50 }, { xp: 250, coin: 60 }, // Level 6-10
+    { xp: 300, coin: 75 }, { xp: 400, coin: 100 }, { xp: 500, coin: 125 }, { xp: 750, coin: 150 }, { xp: 1000, coin: 200 } // Level 11-15
+];
+const AI_QUIZ_SAFE_HAVENS = [4, 9, 14]; // Indeks dari array AI_QUIZ_PRIZES (soal ke-5, 10, 15)
+const LIFELINE_COSTS = { '5050': 15, 'phone': 20, 'audience': 25 };
+let currentAiQuizState = {}; // Menyimpan state quiz yang sedang berjalan
+
 // --- MANTRA BARU: Audio Player dengan Tone.js (VERSI DIPERBARUI) ---
 const audioPlayer = {
     isReady: false,
@@ -1081,6 +1091,353 @@ INFORMASI PENTING TENTANG SISWA YANG SEDANG KAMU AJAK BICARA (GUNAKAN UNTUK KONT
 }
 
 // =======================================================
+//          MANTRA BARU: AI QUIZ BATTLE
+// =======================================================
+async function openStudentSelectionForAiQuiz() {
+    // Kita bisa pakai ulang modal monster selection, tapi isinya siswa
+    const selectionModal = document.getElementById('monster-selection-modal');
+    const listDiv = document.getElementById('monster-selection-list');
+    const closeButton = document.getElementById('close-monster-selection-modal-button');
+    const modalTitle = selectionModal.querySelector('h3');
+
+    if (!selectionModal || !listDiv || !closeButton || !modalTitle) {
+        showToast("Elemen UI untuk seleksi siswa tidak ditemukan!", true);
+        return;
+    }
+
+    modalTitle.textContent = 'Pilih Siswa untuk AI Quiz Battle';
+    listDiv.innerHTML = '<p class="text-center text-gray-400">Memuat data siswa...</p>';
+    
+    audioPlayer.openModal();
+    selectionModal.classList.remove('hidden');
+    setTimeout(() => selectionModal.classList.remove('opacity-0'), 10);
+
+    const studentsSnap = await get(ref(db, 'students'));
+    if (!studentsSnap.exists()) {
+        listDiv.innerHTML = '<p class="text-center text-gray-400">Tidak ada siswa yang tersedia.</p>';
+        return;
+    }
+
+    listDiv.innerHTML = ''; // Hapus teks loading
+    const studentsData = studentsSnap.val();
+    Object.entries(studentsData).forEach(([uid, student]) => {
+        const studentCard = document.createElement('div');
+        studentCard.className = 'flex items-center p-4 border rounded-lg hover:bg-gray-100 cursor-pointer transition-colors';
+        studentCard.dataset.id = uid;
+        studentCard.innerHTML = `
+            <img src="${student.fotoProfilBase64 || `https://placehold.co/64x64/e2e8f0/3d4852?text=${student.nama.charAt(0)}`}" class="w-16 h-16 object-cover rounded-md mr-4">
+            <div>
+                <h4 class="font-bold text-lg">${student.nama}</h4>
+                <p class="text-sm text-gray-600">Level ${student.level} | ${student.kelas}</p>
+            </div>
+        `;
+        listDiv.appendChild(studentCard);
+    });
+
+    const closeModal = () => {
+        audioPlayer.closeModal();
+        selectionModal.classList.add('opacity-0');
+        setTimeout(() => selectionModal.classList.add('hidden'), 300);
+        listDiv.onclick = null; // Hapus listener untuk mencegah memory leak
+    };
+
+    closeButton.onclick = closeModal;
+
+    listDiv.onclick = (e) => {
+        const selectedCard = e.target.closest('[data-id]');
+        if (selectedCard && selectedCard.dataset.id) {
+            const studentId = selectedCard.dataset.id;
+            closeModal();
+            startAiQuizBattle(studentId);
+        }
+    };
+}
+
+async function startAiQuizBattle(studentId) {
+    const [studentSnap, configSnap] = await Promise.all([
+        get(ref(db, `students/${studentId}`)),
+        get(ref(db, 'config/ivySettings'))
+    ]);
+
+    if (!studentSnap.exists() || !configSnap.exists()) {
+        showToast("Data siswa atau konfigurasi Ivy tidak ditemukan!", true);
+        return;
+    }
+
+    const studentData = studentSnap.val();
+    const ivySettings = configSnap.val();
+
+    if (!ivySettings.apiKey || !ivySettings.aiQuizPrompt) {
+        showToast("API Key atau Prompt AI Quiz belum diatur di Pengaturan Ivy!", true);
+        return;
+    }
+
+    currentAiQuizState = {
+        studentId: studentId,
+        studentData: studentData,
+        ivySettings: ivySettings,
+        questionIndex: 0,
+        isAnswerLocked: false,
+        lifelines: { '5050': false, 'phone': false, 'audience': false },
+        currentQuestionData: null
+    };
+
+    const modal = document.getElementById('ai-quiz-modal');
+    const prizeLadder = document.getElementById('ai-quiz-prize-ladder');
+    const closeButton = document.getElementById('close-ai-quiz-modal-button');
+
+    // Build prize ladder
+    prizeLadder.innerHTML = '';
+    AI_QUIZ_PRIZES.slice().reverse().forEach((prize, index) => {
+        const originalIndex = AI_QUIZ_PRIZES.length - 1 - index;
+        const li = document.createElement('li');
+        li.textContent = `${originalIndex + 1}. ${prize.xp} XP`;
+        li.dataset.index = originalIndex;
+        if (AI_QUIZ_SAFE_HAVENS.includes(originalIndex)) {
+            li.classList.add('safe-haven');
+        }
+        prizeLadder.appendChild(li);
+    });
+
+    // Setup lifelines
+    modal.querySelectorAll('.lifeline').forEach(el => {
+        el.classList.remove('used');
+        el.onclick = () => handleAiQuizLifeline(el.id.replace('lifeline-', ''));
+    });
+
+    closeButton.onclick = () => {
+        if (confirm("Yakin ingin keluar? Semua progres akan hilang.")) {
+            modal.classList.add('opacity-0');
+            setTimeout(() => modal.classList.add('hidden'), 300);
+        }
+    };
+
+    audioPlayer.openModal();
+    modal.classList.remove('hidden');
+    setTimeout(() => modal.classList.remove('opacity-0'), 10);
+    createLucideIcons();
+
+    loadAiQuizQuestion();
+}
+
+async function loadAiQuizQuestion() {
+    currentAiQuizState.isAnswerLocked = false;
+    const questionTextEl = document.getElementById('ai-quiz-question-text');
+    const optionsContainer = document.getElementById('ai-quiz-options-container');
+    
+    optionsContainer.innerHTML = '';
+    questionTextEl.innerHTML = '<div class="w-10 h-10 border-4 border-dashed rounded-full animate-spin border-yellow-400 mx-auto"></div><p class="mt-4 text-white">AI sedang meracik soal...</p>';
+    
+    // Update prize ladder highlight
+    document.querySelectorAll('#ai-quiz-prize-ladder li').forEach(li => {
+        li.classList.remove('current');
+        if (parseInt(li.dataset.index) === currentAiQuizState.questionIndex) {
+            li.classList.add('current');
+        }
+    });
+
+    const difficulty = currentAiQuizState.questionIndex < 5 ? "sangat mudah" : currentAiQuizState.questionIndex < 10 ? "mudah" : "sedang";
+    const basePrompt = currentAiQuizState.ivySettings.aiQuizPrompt;
+    const finalPrompt = basePrompt
+        .replace(/\[TOPIK\]/gi, "konsep dasar algoritma dan pemrograman") // Default topic
+        .replace(/\[KESULITAN\]/gi, difficulty);
+
+    const payload = {
+        contents: [{ parts: [{ text: finalPrompt }] }],
+        generationConfig: {
+            responseMimeType: "application/json",
+            responseSchema: {
+                type: "OBJECT",
+                properties: {
+                    story: { type: "STRING" },
+                    question: { type: "STRING" },
+                    options: { type: "ARRAY", items: { type: "STRING" } },
+                    answerIndex: { type: "INTEGER" },
+                    explanation: { type: "STRING" }
+                },
+                required: ["story", "question", "options", "answerIndex", "explanation"]
+            }
+        }
+    };
+
+    try {
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${currentAiQuizState.ivySettings.apiKey}`;
+        const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        const result = await response.json();
+        const jsonText = result.candidates[0].content.parts[0].text;
+        currentAiQuizState.currentQuestionData = JSON.parse(jsonText);
+
+        const data = currentAiQuizState.currentQuestionData;
+        questionTextEl.innerHTML = `<p class="text-lg mb-4">${data.story}</p><p class="text-2xl font-bold">${data.question}</p>`;
+        
+        data.options.forEach((option, index) => {
+            const button = document.createElement('button');
+            button.className = 'option';
+            button.innerHTML = `<span class="font-bold text-yellow-400 mr-4">${String.fromCharCode(65 + index)}:</span> ${option}`;
+            button.dataset.index = index;
+            button.onclick = () => handleAiQuizAnswer(index);
+            optionsContainer.appendChild(button);
+        });
+
+    } catch (error) {
+        console.error("Gagal mengambil soal dari Gemini:", error);
+        questionTextEl.innerHTML = `<p class="text-red-400">Gagal memuat soal dari AI. Cek API Key atau coba lagi nanti.</p>`;
+    }
+}
+
+function handleAiQuizAnswer(selectedIndex) {
+    if (currentAiQuizState.isAnswerLocked) return;
+    currentAiQuizState.isAnswerLocked = true;
+
+    const options = document.querySelectorAll('#ai-quiz-options-container .option');
+    const selectedButton = options[selectedIndex];
+    const correctAnswerIndex = currentAiQuizState.currentQuestionData.answerIndex;
+
+    selectedButton.classList.add('selected');
+    audioPlayer.click();
+
+    setTimeout(() => {
+        options.forEach(btn => btn.classList.add('disabled'));
+
+        if (selectedIndex === correctAnswerIndex) {
+            selectedButton.classList.remove('selected');
+            selectedButton.classList.add('correct');
+            audioPlayer.success();
+            
+            setTimeout(() => {
+                currentAiQuizState.questionIndex++;
+                if (currentAiQuizState.questionIndex >= AI_QUIZ_PRIZES.length) {
+                    endAiQuiz(true); // Player wins the grand prize
+                } else {
+                    loadAiQuizQuestion();
+                }
+            }, 2000);
+        } else {
+            selectedButton.classList.remove('selected');
+            selectedButton.classList.add('incorrect');
+            options[correctAnswerIndex].classList.add('correct');
+            audioPlayer.error();
+            setTimeout(() => endAiQuiz(false), 3000);
+        }
+    }, 1500);
+}
+
+async function endAiQuiz(isWinner) {
+    const questionContainer = document.getElementById('ai-quiz-question-container');
+    let prizeWon = { xp: 0, coin: 0 };
+    let message = '';
+
+    if (isWinner) {
+        prizeWon = AI_QUIZ_PRIZES[AI_QUIZ_PRIZES.length - 1];
+        message = `🎉 SELAMAT! Kamu berhasil menjawab semua soal dan memenangkan hadiah utama: ${prizeWon.xp} XP & ${prizeWon.coin} Koin!`;
+    } else {
+        let lastSafeHavenIndex = -1;
+        for (const havenIndex of AI_QUIZ_SAFE_HAVENS) {
+            if (currentAiQuizState.questionIndex > havenIndex) {
+                lastSafeHavenIndex = havenIndex;
+            }
+        }
+        if (lastSafeHavenIndex !== -1) {
+            prizeWon = AI_QUIZ_PRIZES[lastSafeHavenIndex];
+        }
+        message = `Yah, jawabanmu salah. Kamu pulang dengan hadiah dari titik aman: ${prizeWon.xp} XP & ${prizeWon.coin} Koin.`;
+    }
+
+    questionContainer.innerHTML = `<h2 class="text-2xl font-bold text-yellow-400">${message}</h2>`;
+
+    // Update data siswa di Firebase
+    if (prizeWon.xp > 0 || prizeWon.coin > 0) {
+        const studentRef = ref(db, `students/${currentAiQuizState.studentId}`);
+        const studentData = (await get(studentRef)).val();
+        
+        const xpPerLevel = 1000;
+        const currentTotalXp = ((studentData.level || 1) - 1) * xpPerLevel + (studentData.xp || 0);
+        const newTotalXp = currentTotalXp + prizeWon.xp;
+        
+        const updates = {
+            level: Math.floor(newTotalXp / xpPerLevel) + 1,
+            xp: newTotalXp % xpPerLevel,
+            coin: (studentData.coin || 0) + prizeWon.coin
+        };
+        await update(studentRef, updates);
+    }
+
+    setTimeout(() => {
+        const modal = document.getElementById('ai-quiz-modal');
+        modal.classList.add('opacity-0');
+        setTimeout(() => modal.classList.add('hidden'), 300);
+    }, 5000);
+}
+
+async function handleAiQuizLifeline(type) {
+    if (currentAiQuizState.isAnswerLocked || currentAiQuizState.lifelines[type]) return;
+
+    const cost = LIFELINE_COSTS[type];
+    const studentRef = ref(db, `students/${currentAiQuizState.studentId}`);
+    const studentSnap = await get(studentRef);
+    const studentData = studentSnap.val();
+
+    if ((studentData.mp || 0) < cost) {
+        showToast(`MP tidak cukup! Butuh ${cost} MP.`, true);
+        return;
+    }
+
+    if (!confirm(`Gunakan lifeline ini dengan biaya ${cost} MP?`)) return;
+
+    // Deduct MP
+    await update(studentRef, { mp: studentData.mp - cost });
+    showToast(`-${cost} MP. Lifeline ${type} digunakan!`);
+    
+    currentAiQuizState.lifelines[type] = true;
+    document.getElementById(`lifeline-${type}`).classList.add('used');
+
+    const options = document.querySelectorAll('#ai-quiz-options-container .option');
+    const correctAnswerIndex = currentAiQuizState.currentQuestionData.answerIndex;
+
+    switch (type) {
+        case '5050':
+            let removedCount = 0;
+            const indicesToRemove = [];
+            while (removedCount < 2) {
+                const randomIndex = Math.floor(Math.random() * options.length);
+                if (randomIndex !== correctAnswerIndex && !indicesToRemove.includes(randomIndex)) {
+                    indicesToRemove.push(randomIndex);
+                    removedCount++;
+                }
+            }
+            indicesToRemove.forEach(i => {
+                options[i].classList.add('disabled', 'opacity-25');
+                options[i].onclick = null;
+            });
+            break;
+        case 'phone':
+            // Simple hint: just highlight the correct answer for a moment
+            options[correctAnswerIndex].classList.add('selected');
+            setTimeout(() => options[correctAnswerIndex].classList.remove('selected'), 1000);
+            break;
+        case 'audience':
+            // Simulate audience poll
+            const pollResults = [0, 0, 0, 0];
+            pollResults[correctAnswerIndex] = Math.floor(Math.random() * 40) + 50; // 50-89% for correct
+            let remainingPercent = 100 - pollResults[correctAnswerIndex];
+            for (let i = 0; i < 4; i++) {
+                if (i !== correctAnswerIndex) {
+                    const vote = Math.floor(Math.random() * remainingPercent);
+                    pollResults[i] = vote;
+                    remainingPercent -= vote;
+                }
+            }
+            pollResults[pollResults.findIndex(p => p === 0)] += remainingPercent; // Give remainder to one
+            alert(`Hasil polling penonton:\nA: ${pollResults[0]}%\nB: ${pollResults[1]}%\nC: ${pollResults[2]}%\nD: ${pollResults[3]}%`);
+            break;
+    }
+}
+// =======================================================
 //                  LOGIKA TOKO SISWA
 // =======================================================
 async function setupStudentShopPage(uid) {
@@ -1650,6 +2007,7 @@ function setupIvySettings() {
     const infoInput = document.getElementById('ivy-info');
     const gossipToggle = document.getElementById('ivy-gossip-toggle');
     const gossipInput = document.getElementById('ivy-gossip');
+    const aiQuizPromptInput = document.getElementById('ivy-ai-quiz-prompt'); // <-- ADD THIS
 
     const configRef = ref(db, 'config/ivySettings');
 
@@ -1665,6 +2023,7 @@ function setupIvySettings() {
             infoInput.value = settings.info || '';
             gossipInput.value = settings.gossip || '';
             gossipToggle.checked = settings.gossipEnabled || false;
+            aiQuizPromptInput.value = settings.aiQuizPrompt || ''; // <-- ADD THIS
         }
         
         updateGossipInputState();
@@ -1698,7 +2057,8 @@ function setupIvySettings() {
                 personality: personalityInput.value.trim(),
                 info: infoInput.value.trim(),
                 gossip: gossipInput.value.trim(),
-                gossipEnabled: gossipToggle.checked
+                gossipEnabled: gossipToggle.checked,
+                aiQuizPrompt: aiQuizPromptInput.value.trim() // <-- ADD THIS
             };
             await set(configRef, newSettings);
             showToast("Pengaturan Ivy berhasil disimpan!");
@@ -2340,6 +2700,7 @@ setTimeout(() => {
     const closeModalButton = document.getElementById('close-modal-button');
     const cancelButton = document.getElementById('cancel-button');
     const submitButton = document.getElementById('submit-button');
+    const aiQuizBattleButton = document.getElementById('ai-quiz-battle-button'); // <-- ADD THIS
     const partyBattleButton = document.getElementById('party-battle-button');
 
 
@@ -2411,6 +2772,7 @@ setTimeout(() => {
     cancelButton.onclick = closeModal;
     addQuestButton.onclick = () => openQuestModal();
     partyBattleButton.onclick = () => openPartyBattleModal();
+    aiQuizBattleButton.onclick = () => openStudentSelectionForAiQuiz(); // <-- ADD THIS
     document.getElementById('print-recap-button').addEventListener('click', handlePrintRecap);
     fotoInput.addEventListener('change', function() {
         if (this.files && this.files[0]) {
