@@ -192,63 +192,65 @@ function renderActiveSkill(studentData, uid) {
 
 // --- FUNGSI BARU: Logika Inti Penggunaan Skill Aktif ---
 async function handleUseActiveSkill(uid, studentData, skill) {
-    if (!confirm(`Yakin mau menggunakan skill "${skill.name}"? Ini akan memakai ${skill.mpCost} MP.`)) return;
+    const confirmationMessage = `Yakin mau menggunakan skill "${skill.name}"? Ini akan memakai ${skill.mpCost} MP.`;
 
-    const skillName = skill.name;
-    const updates = {};
-    const now = Date.now();
-    const expiryTimestamp = now + (24 * 60 * 60 * 1000); // Durasi buff/kutukan 24 jam
+    showConfirmationModal(confirmationMessage, async () => {
+        const skillName = skill.name;
+        const updates = {};
+        const now = Date.now();
+        const expiryTimestamp = now + (24 * 60 * 60 * 1000); // Durasi buff/kutukan 24 jam
 
-    try {
-        // --- Logika untuk Self-Buffs ---
-        if (skillName === 'Mantra Penguat Diri' || skillName === 'Perisai Pelindung Diri' || skillName === 'Aura Penyembuh Diri') {
-            let buffType = 'buff_attack'; // Default untuk Penyihir
-            if (skillName.includes('Perisai')) buffType = 'buff_defense';
-            if (skillName.includes('Aura')) buffType = 'buff_hp_regen';
+        try {
+            // --- Logika untuk Self-Buffs ---
+            if (skillName === 'Mantra Penguat Diri' || skillName === 'Perisai Pelindung Diri' || skillName === 'Aura Penyembuh Diri') {
+                let buffType = 'buff_attack'; // Default untuk Penyihir
+                if (skillName.includes('Perisai')) buffType = 'buff_defense';
+                if (skillName.includes('Aura')) buffType = 'buff_hp_regen';
 
-            updates[`/students/${uid}/mp`] = studentData.mp - skill.mpCost;
-            updates[`/students/${uid}/statusEffects/${buffType}`] = { expires: expiryTimestamp, name: skill.name };
-            await update(ref(db), updates);
-            showToast(`Efek ${skill.name} aktif selama 24 jam!`);
-        }
-        // --- Logika untuk Guild-Buffs ---
-        else if (skillName === 'Lingkaran Sihir' || skillName === 'Sumpah Setia') {
-            const guildName = studentData.guild;
-            if (!guildName || guildName === 'Tanpa Guild') {
-                showToast("Kamu harus berada di dalam guild untuk menggunakan skill ini!", true);
-                return;
+                updates[`/students/${uid}/mp`] = studentData.mp - skill.mpCost;
+                updates[`/students/${uid}/statusEffects/${buffType}`] = { expires: expiryTimestamp, name: skill.name };
+                await update(ref(db), updates);
+                showToast(`Efek ${skill.name} aktif selama 24 jam!`);
             }
-            const buffType = skillName.includes('Sihir') ? 'buff_attack' : 'buff_defense';
-            updates[`/students/${uid}/mp`] = studentData.mp - skill.mpCost;
+            // --- Logika untuk Guild-Buffs ---
+            else if (skillName === 'Lingkaran Sihir' || skillName === 'Sumpah Setia') {
+                const guildName = studentData.guild;
+                if (!guildName || guildName === 'Tanpa Guild') {
+                    showToast("Kamu harus berada di dalam guild untuk menggunakan skill ini!", true);
+                    return;
+                }
+                const buffType = skillName.includes('Sihir') ? 'buff_attack' : 'buff_defense';
+                updates[`/students/${uid}/mp`] = studentData.mp - skill.mpCost;
 
-            const studentsQuery = query(ref(db, 'students'), orderByChild('guild'), equalTo(guildName));
-            const guildSnaps = await get(studentsQuery);
+                const studentsQuery = query(ref(db, 'students'), orderByChild('guild'), equalTo(guildName));
+                const guildSnaps = await get(studentsQuery);
 
-            if (guildSnaps.exists()) {
-                guildSnaps.forEach(memberSnap => {
-                    updates[`/students/${memberSnap.key}/statusEffects/${buffType}`] = { expires: expiryTimestamp, name: skill.name };
-                });
+                if (guildSnaps.exists()) {
+                    guildSnaps.forEach(memberSnap => {
+                        updates[`/students/${memberSnap.key}/statusEffects/${buffType}`] = { expires: expiryTimestamp, name: skill.name };
+                    });
+                }
+                await update(ref(db), updates);
+                showToast(`Efek ${skill.name} aktif untuk seluruh guild selama 24 jam!`);
             }
-            await update(ref(db), updates);
-            showToast(`Efek ${skill.name} aktif untuk seluruh guild selama 24 jam!`);
+            // --- Logika untuk Skill Bertarget (Kutukan & Penyembuhan) ---
+            else if (skillName.startsWith('Kutukan') || skillName === 'Penawar Guild') {
+                openSkillTargetModal(uid, studentData, skill);
+            }
+            // --- Logika Default (Skill yang butuh intervensi admin) ---
+            else {
+                updates[`/students/${uid}/mp`] = studentData.mp - skill.mpCost;
+                await update(ref(db), updates);
+                
+                const adminMessage = `Siswa <strong>${studentData.nama}</strong> (${studentData.peran} Lv. ${studentData.level}) menggunakan skill: <strong>${skill.name}</strong>.`;
+                addNotification(adminMessage, 'skill_usage', { studentId: uid });
+                showToast(`Skill "${skill.name}" berhasil digunakan! Permintaan dikirim ke admin.`);
+            }
+        } catch (error) {
+            showToast(`Gagal menggunakan skill: ${error.message}`, true);
+            console.error("Skill usage error:", error);
         }
-        // --- Logika untuk Skill Bertarget (Kutukan & Penyembuhan) ---
-        else if (skillName.startsWith('Kutukan') || skillName === 'Penawar Guild') {
-            openSkillTargetModal(uid, studentData, skill);
-        }
-        // --- Logika Default (Skill yang butuh intervensi admin) ---
-        else {
-            updates[`/students/${uid}/mp`] = studentData.mp - skill.mpCost;
-            await update(ref(db), updates);
-            
-            const adminMessage = `Siswa <strong>${studentData.nama}</strong> (${studentData.peran} Lv. ${studentData.level}) menggunakan skill: <strong>${skill.name}</strong>.`;
-            addNotification(adminMessage, 'skill_usage', { studentId: uid });
-            showToast(`Skill "${skill.name}" berhasil digunakan! Permintaan dikirim ke admin.`);
-        }
-    } catch (error) {
-        showToast(`Gagal menggunakan skill: ${error.message}`, true);
-        console.error("Skill usage error:", error);
-    }
+    });
 }
 
 // --- FUNGSI BARU: Membuka Modal Pemilihan Target untuk Skill ---
@@ -398,6 +400,37 @@ const showToast = (message, isError = false) => {
     }
 };
 
+// --- FUNGSI BARU: Modal Konfirmasi Umum (PENGGANTI POPUP) ---
+function showConfirmationModal(message, onConfirm) {
+    const modal = document.getElementById('confirmation-modal');
+    const messageEl = document.getElementById('confirmation-message');
+    const okButton = document.getElementById('confirm-ok-button');
+    const cancelButton = document.getElementById('confirm-cancel-button');
+
+    if (!modal || !messageEl || !okButton || !cancelButton) {
+        console.error("Elemen modal konfirmasi tidak ditemukan! Menggunakan popup bawaan.");
+        if (confirm(message)) {
+            onConfirm();
+        }
+        return;
+    }
+
+    messageEl.textContent = message;
+
+    const closeModal = () => {
+        modal.classList.add('opacity-0');
+        setTimeout(() => modal.classList.add('hidden'), 300);
+        okButton.onclick = null;
+        cancelButton.onclick = null;
+    };
+
+    okButton.onclick = () => { onConfirm(); closeModal(); };
+    cancelButton.onclick = closeModal;
+
+    modal.classList.remove('hidden');
+    setTimeout(() => modal.classList.remove('opacity-0'), 10);
+    createLucideIcons(); // Render ikon di dalam modal
+}
 // --- FUNGSI BARU: Logika Inti untuk Efek Status ---
 // --- GANTI FUNGSI LAMA DENGAN VERSI BARU YANG LEBIH SAKTI INI ---
 // --- GANTI FUNGSI LAMA DENGAN VERSI SEMPURNA INI ---
@@ -1714,34 +1747,35 @@ function appendChatMessage(message, sender, isLoading = false) {
 //          LOGIKA INVENTORI GUILD (BARU)
 // =======================================================
 async function handleGuildInventoryClick(uid, studentData, guildItemIndex, itemData) {
-    if (!confirm(`Ambil item "${itemData.name}" dari Peti Guild?`)) return;
-
-    try {
-        const inventory = studentData.inventory || [];
-        const inventorySize = 2 + ((studentData.level - 1) * 1);
-        let emptySlotIndex = -1;
-        for (let i = 0; i < inventorySize; i++) {
-            if (!inventory[i]) {
-                emptySlotIndex = i;
-                break;
+    const confirmationMessage = `Ambil item "${itemData.name}" dari Peti Guild?`;
+    showConfirmationModal(confirmationMessage, async () => {
+        try {
+            const inventory = studentData.inventory || [];
+            const inventorySize = 2 + ((studentData.level - 1) * 1);
+            let emptySlotIndex = -1;
+            for (let i = 0; i < inventorySize; i++) {
+                if (!inventory[i]) {
+                    emptySlotIndex = i;
+                    break;
+                }
             }
+
+            if (emptySlotIndex === -1) throw new Error("Inventaris pribadimu penuh!");
+
+            const guildName = studentData.guild;
+            const updates = {};
+            updates[`/guilds/${guildName}/inventory/${guildItemIndex}`] = null;
+            updates[`/students/${uid}/inventory/${emptySlotIndex}`] = itemData;
+
+            await update(ref(db), updates);
+            showToast(`Berhasil mengambil ${itemData.name}!`);
+            audioPlayer.success();
+
+        } catch (error) {
+            showToast(error.message, true);
+            audioPlayer.error();
         }
-
-        if (emptySlotIndex === -1) throw new Error("Inventaris pribadimu penuh!");
-
-        const guildName = studentData.guild;
-        const updates = {};
-        updates[`/guilds/${guildName}/inventory/${guildItemIndex}`] = null;
-        updates[`/students/${uid}/inventory/${emptySlotIndex}`] = itemData;
-
-        await update(ref(db), updates);
-        showToast(`Berhasil mengambil ${itemData.name}!`);
-        audioPlayer.success();
-
-    } catch (error) {
-        showToast(error.message, true);
-        audioPlayer.error();
-    }
+    });
 }
 
 async function depositItemToGuild(uid, studentData, itemIndex, itemData, closeModalCallback) {
