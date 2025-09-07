@@ -40,6 +40,47 @@
             font-size: 1.2em;
             font-weight: bold;
         }
+        /* Gaya untuk Modal AI Quiz */
+        #ai-quiz-modal .lifeline {
+            width: 50px; height: 50px; border: 2px solid #f0f0f0; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; font-size: 1.2rem;
+            cursor: pointer; transition: all 0.3s ease; color: white;
+        }
+        #ai-quiz-modal .lifeline:hover:not(.used) { background-color: #ff8e00; }
+        #ai-quiz-modal .lifeline.used {
+            background-color: #555; color: #888; cursor: not-allowed;
+            border-color: #555; text-decoration: line-through;
+        }
+        #ai-quiz-modal .option {
+            background: linear-gradient(45deg, #000428, #004e92); border: 2px solid #f0f0f0;
+            border-radius: 12px; padding: 1rem; cursor: pointer; transition: all 0.3s ease;
+            text-align: left; color: white;
+        }
+        #ai-quiz-modal .option:hover:not(.disabled) { background: linear-gradient(45deg, #004e92, #0077b6); }
+        #ai-quiz-modal .option.selected { background: #ff8e00; border-color: #ff8e00; }
+        #ai-quiz-modal .option.correct { background: #22c55e; border-color: #22c55e; }
+        #ai-quiz-modal .option.incorrect { background: #ef4444; border-color: #ef4444; }
+        #ai-quiz-modal .option.disabled { opacity: 0.5; cursor: not-allowed; }
+        #ai-quiz-prize-ladder li {
+            padding: 0.25rem 0.5rem; border-radius: 8px; transition: all 0.3s ease;
+            font-size: 0.9rem; color: white;
+        }
+        #ai-quiz-prize-ladder li.current {
+            background-color: #ff8e00; color: #020230; font-weight: bold; transform: scale(1.05);
+        }
+        #ai-quiz-prize-ladder li.safe-haven { font-weight: bold; color: #a7f3d0; }
+        /* Gaya untuk Opsi Jawaban di Party Battle */
+        #battle-options-container .option {
+            background: linear-gradient(45deg, #e0e7ff, #c7d2fe); border: 2px solid #a5b4fc;
+            border-radius: 12px; padding: 1rem; cursor: pointer; transition: all 0.3s ease;
+            text-align: left; color: #3730a3; font-weight: 500;
+        }
+        #battle-options-container .option:hover:not(.disabled) { background: linear-gradient(45deg, #c7d2fe, #a5b4fc); }
+        #battle-options-container .option.selected { background: #f97316; border-color: #f97316; color: white; }
+        #battle-options-container .option.correct { background: #22c55e; border-color: #22c55e; color: white; }
+        #battle-options-container .option.incorrect { background: #ef4444; border-color: #ef4444; color: white; }
+        #battle-options-container .option.disabled { opacity: 0.6; cursor: not-allowed; }
+
     </style>
     <script src="https://cdn.lordicon.com/lordicon.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -181,7 +222,7 @@
                             <p class="text-sm text-gray-500 mt-1">Buat Quest party battle, misi, dan uji keheningan.</p>
                         </div>
 
-  <div class="flex justify-between gap-x-4 grow"><button id="party-battle-button" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg flex items-center"><i data-lucide="users" class="w-4 h-4 mr-2"></i>Party Battle</button><button id="open-noise-detector-button" class="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded-lg flex items-center"><i data-lucide="gauge-circle" class="w-4 h-4 mr-2"></i>Uji Keheningan</button>
+  <div class="flex justify-between gap-x-4 grow"><button id="party-battle-button" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg flex items-center"><i data-lucide="users" class="w-4 h-4 mr-2"></i>Party Battle (AI)</button><button id="admin-question-battle-button" class="bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2 px-4 rounded-lg flex items-center"><i data-lucide="edit-3" class="w-4 h-4 mr-2"></i>Party Battle (Soal Admin)</button><button id="ai-quiz-battle-button" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg flex items-center"><i data-lucide="brain-circuit" class="w-4 h-4 mr-2"></i>AI Quiz Battle</button><button id="open-noise-detector-button" class="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded-lg flex items-center"><i data-lucide="gauge-circle" class="w-4 h-4 mr-2"></i>Uji Keheningan</button>
 </div>
   <div class="flex justify-between gap-x-4 grow"> <button id="add-quest-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg flex items-center"><i data-lucide="plus-circle" class="w-4 h-4 mr-2"></i>Buat Monster</button>
                             <button id="add-admin-bounty-button" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg flex items-center"><i data-lucide="plus-circle" class="w-4 h-4 mr-2"></i>Buat Misi Admin</button>
@@ -408,6 +449,13 @@
                         <option value="Topi Toga">🎓 Topi Toga</option>
                     </select>
                 </div>
+                <div class="mt-4 pt-4 border-t">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Atau, Pilih Siswa Secara Manual (Akan menimpa pilihan Kelas/Guild):</label>
+                    <input type="text" id="party-student-search" class="w-full p-2 border border-gray-300 rounded-md mb-2" placeholder="Cari nama siswa...">
+                    <div id="party-manual-student-selection-list" class="space-y-1 max-h-48 overflow-y-auto border rounded-md p-2 bg-gray-50">
+                        <p class="text-center text-gray-400 text-sm">Memuat siswa...</p>
+                    </div>
+                </div>
                  <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Pilih Monster yang akan Dilawan:</label>
                     <div id="party-monster-selection-list" class="space-y-2 max-h-48 overflow-y-auto border rounded-md p-2">
@@ -437,12 +485,22 @@
                     <div id="battle-monster-info" class="text-center"></div>
                 </div>
                 <hr>
-                <div id="battle-question-area" class="text-center p-4 bg-blue-50 rounded-lg space-y-4">
-                    <p class="font-bold text-blue-600" id="turn-indicator">Giliran: [Nama Siswa]</p>
-                    <p id="battle-question-text" class="text-lg font-semibold text-gray-800">Memuat pertanyaan...</p>
-                    <div class="flex justify-center gap-4">
-                        <button id="answer-correct-button" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-6 rounded-lg">Benar</button>
-                        <button id="answer-incorrect-button" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-6 rounded-lg">Salah</button>
+                <div id="battle-question-area" class="p-4 space-y-4">
+                    <p class="font-bold text-center text-blue-600" id="turn-indicator">Giliran: [Nama Siswa]</p>
+                    <!-- Container untuk Pertanyaan AI -->
+                    <div id="ai-battle-question-container">
+                        <div id="battle-question-text-container" class="bg-blue-50 rounded-lg p-4 text-center min-h-[100px] flex items-center justify-center"><p id="battle-question-text" class="text-lg font-semibold text-gray-800">Memuat pertanyaan AI...</p></div>
+                        <div id="battle-options-container" class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                            <!-- Opsi dari AI akan muncul di sini -->
+                        </div>
+                    </div>
+                    <!-- Container untuk Pertanyaan Admin -->
+                    <div id="admin-battle-question-container" class="hidden">
+                        <textarea id="admin-question-input" class="w-full p-2 border border-gray-300 rounded-md" rows="3" placeholder="Ketik pertanyaan di sini..."></textarea>
+                        <div class="flex justify-center gap-4 mt-4">
+                            <button id="admin-answer-correct-button" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-6 rounded-lg">Benar</button>
+                            <button id="admin-answer-incorrect-button" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-6 rounded-lg">Salah</button>
+                        </div>
                     </div>
                 </div>
                 <div id="battle-log" class="h-24 bg-gray-800 text-white font-mono text-sm p-2 rounded-md overflow-y-auto"></div>
@@ -716,6 +774,10 @@
                 <label for="ivy-info" class="block text-sm font-medium text-gray-700">Informasi Platform & Sekolah</label>
                 <textarea id="ivy-info" rows="4" class="mt-1 w-full p-2 border border-gray-300 rounded-md" placeholder="Tulis semua fakta penting yang harus Ivy ketahui..."></textarea>
             </div>
+            <div>
+                <label for="ivy-ai-quiz-prompt" class="block text-sm font-medium text-gray-700">Prompt Dasar AI Quiz</label>
+                <textarea id="ivy-ai-quiz-prompt" rows="4" class="mt-1 w-full p-2 border border-gray-300 rounded-md" placeholder="Contoh: Buatkan satu soal kuis pilihan ganda (4 opsi) tentang [TOPIK]. Tingkat kesulitan: [KESULITAN]. Format soal dalam cerita pendek. Berikan penjelasan singkat. Pastikan jawaban benar ada di salah satu opsi."></textarea>
+            </div>
             
             <div class="p-4 border rounded-md space-y-3">
                 <div class="flex justify-between items-center">
@@ -735,6 +797,33 @@
         </div>
     </div>
 </div>
+    <!-- Modal AI Quiz Battle -->
+    <div id="ai-quiz-modal" class="fixed inset-0 bg-black bg-opacity-80 flex-col items-center justify-center p-4 z-50 hidden opacity-0 transition-opacity duration-300">
+        <div class="w-full max-w-5xl h-full flex flex-col-reverse lg:flex-row bg-[#020230] rounded-lg shadow-2xl border-2 border-yellow-400">
+            <!-- Game Area -->
+            <div class="flex-grow flex flex-col justify-around p-4 relative">
+                <div id="ai-quiz-question-container" class="bg-gradient-to-br from-[#000428] to-[#004e92] p-6 rounded-lg text-center border-2 border-gray-400 min-h-[150px] flex items-center justify-center">
+                    <h2 id="ai-quiz-question-text" class="text-xl lg:text-2xl text-white">Pertanyaan dari AI akan muncul di sini...</h2>
+                </div>
+                <div id="ai-quiz-options-container" class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                    <!-- Options will be generated here -->
+                </div>
+            </div>
+            <!-- Sidebar -->
+            <div class="w-full lg:w-80 flex-shrink-0 p-4 flex flex-col justify-between bg-black bg-opacity-20">
+                <div>
+                    <img src="https://placehold.co/300x100/020230/FFFF00?text=AI+Quiz+Battle" alt="Logo" class="mx-auto mb-4 rounded-lg">
+                    <div class="flex justify-around my-4">
+                        <div id="lifeline-5050" class="lifeline" title="50:50 (15 MP)">50:50</div>
+                        <div id="lifeline-phone" class="lifeline" title="Tanya AI Lain (20 MP)"><i data-lucide="phone" class="w-6 h-6"></i></div>
+                        <div id="lifeline-audience" class="lifeline" title="Tanya Penonton (25 MP)"><i data-lucide="users" class="w-6 h-6"></i></div>
+                    </div>
+                </div>
+                <ul id="ai-quiz-prize-ladder" class="text-right space-y-1"></ul>
+                <button id="close-ai-quiz-modal-button" class="mt-4 w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg">Keluar</button>
+            </div>
+        </div>
+    </div>
     <script type="module" src="script.js"></script>
 </body>
 </html>
