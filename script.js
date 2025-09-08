@@ -23,11 +23,11 @@ const auth = getAuth(app);
 const SKILL_BOOK = {
     Prajurit: {
         passive: [
-            { name: "Dasar Pertahanan", desc: "Mengurangi 3% damage fisik.", mpCost: 1 },
-            { name: "Fokus Bertahan", desc: "Pengurangan damage jadi 6%.", mpCost: 1 },
-            { name: "Tekad Baja", desc: "Damage -6%, tahan 10% dari skill Knock.", mpCost: 2 },
-            { name: "Pancingan Halus", desc: "Sedikit meningkatkan kemungkinan diserang.", mpCost: 2 },
-            { name: "Kulit Keras", desc: "Pengurangan damage fisik jadi 12%.", mpCost: 2 }
+            { name: "Dasar Pertahanan", desc: "Mengurangi 3% damage fisik.", mpCost: 3 },
+            { name: "Fokus Bertahan", desc: "Pengurangan damage jadi 6%.", mpCost: 5 },
+            { name: "Tekad Baja", desc: "Damage -6%, tahan 10% dari skill Knock.", mpCost: 10 },
+            { name: "Pancingan Halus", desc: "Sedikit meningkatkan kemungkinan diserang.", mpCost: 10 },
+            { name: "Kulit Keras", desc: "Pengurangan damage fisik jadi 12%.", mpCost: 10 }
         ],
         active: [
             { name: "Tanggung Jawab Ksatria", desc: "Minta admin agar hukuman teman ditimpakan padamu.", mpCost: 15 },
@@ -39,11 +39,11 @@ const SKILL_BOOK = {
     },
     Penyihir: {
         passive: [
-            { name: "Insting Tajam", desc: "Meningkatkan 5% damage fisik.", mpCost: 1 },
-            { name: "Mata Elang", desc: "Peluang dapat koin ekstra setelah menang.", mpCost: 1 },
-            { name: "Analisis Cepat", desc: "Peluang 10% melihat HP monster.", mpCost: 2 },
-            { name: "Studi Efisien", desc: "Meningkatkan perolehan XP sebesar 8%.", mpCost: 2 },
-            { name: "Titik Lemah", desc: "Peluang 15% serangan jadi Critical.", mpCost: 2 }
+            { name: "Insting Tajam", desc: "Meningkatkan 5% damage fisik.", mpCost: 5 },
+            { name: "Mata Elang", desc: "Peluang dapat koin ekstra setelah menang.", mpCost: 5 },
+            { name: "Analisis Cepat", desc: "Peluang 10% melihat HP monster.", mpCost: 5 },
+            { name: "Studi Efisien", desc: "Meningkatkan perolehan XP sebesar 8%.", mpCost: 5 },
+            { name: "Titik Lemah", desc: "Peluang 15% serangan jadi Critical.", mpCost: 10 }
         ],
         active: [
             { name: "Bisikan Sihir", desc: "Minta 1 petunjuk untuk tugas/ice breaking.", mpCost: 15 }, // Level 1
@@ -55,11 +55,11 @@ const SKILL_BOOK = {
     },
     Penyembuh: {
         passive: [
-            { name: "Meditasi Ringan", desc: "Memulihkan 1 HP setiap giliran.", mpCost: 1 },
-            { name: "Tangan Penolong", desc: "Efektivitas item penyembuh +15%.", mpCost: 1 },
-            { name: "Kekebalan Alami", desc: "Memberikan 25% ketahanan dari kutukan Racun.", mpCost: 2 },
-            { name: "Penawar Stres", desc: "Regenerasi MP harian +2.", mpCost: 2 },
-            { name: "Hati yang Murni", desc: "10% penyembuhan diri juga diterima teman.", mpCost: 2 }
+            { name: "Meditasi Ringan", desc: "Memulihkan 1 HP setiap giliran.", mpCost: 5 },
+            { name: "Tangan Penolong", desc: "Efektivitas item penyembuh +15%.", mpCost: 7 },
+            { name: "Kekebalan Alami", desc: "Memberikan 25% ketahanan dari kutukan Racun.", mpCost: 5 },
+            { name: "Penawar Stres", desc: "Regenerasi MP harian +2.", mpCost: 5 },
+            { name: "Hati yang Murni", desc: "10% penyembuhan diri juga diterima teman.", mpCost: 10 }
         ],
         active: [
             { name: "Ikatan Hati", desc: "Minta izin agar tim boleh saling bantu.", mpCost: 15 },
