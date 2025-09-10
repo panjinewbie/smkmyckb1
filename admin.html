@@ -187,30 +187,42 @@
                 </div>
             </div>
 
-            <div id="attendance-page" class="hidden">
-                 <div class="bg-white rounded-lg shadow-md p-6">
+            <div id="attendance-page" class="hidden space-y-6">
+                <!-- Card untuk Aksi Absensi -->
+                <div class="bg-white rounded-lg shadow-md p-6">
                     <div class="flex flex-wrap justify-between items-center gap-4 mb-6">
                         <div>
-                            <h2 class="text-xl font-semibold">Manajemen Absensi</h2>
-                            <p class="text-sm text-gray-500 mt-1">Pilih status kehadiran setiap siswa.</p>
+                            <h2 class="text-xl font-semibold">Aksi Absensi Harian</h2>
+                            <p class="text-sm text-gray-500 mt-1">Pilih tanggal, lalu tandai kehadiran siswa.</p>
                         </div>
-                        <div class="flex items-center gap-4">
-                            <button id="scan-qr-button" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg flex items-center"><i data-lucide="scan-line" class="w-4 h-4 mr-2"></i>Scan QR</button>
-                            <button id="print-recap-button" class="bg-gray-700 hover:bg-gray-800 text-white font-bold py-2 px-4 rounded-lg flex items-center"><i data-lucide="printer" class="w-4 h-4 mr-2"></i>Cetak Rekap</button>
-                        </div>
+                        <button id="scan-qr-button" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg flex items-center"><i data-lucide="scan-line" class="w-4 h-4 mr-2"></i>Scan QR Hadir</button>
                     </div>
-                     <div class="flex flex-wrap gap-4 mb-6">
-                        <div>
-                            <label for="start-date" class="block text-sm font-medium text-gray-700">Mulai Tanggal</label>
-                            <input type="date" id="start-date" class="mt-1 p-2 border border-gray-300 rounded-md">
+                    <div class="flex flex-col sm:flex-row items-end gap-4">
+                        <div class="flex-grow">
+                            <label for="attendance-date" class="block text-sm font-medium text-gray-700">Tanggal Absensi</label>
+                            <input type="date" id="attendance-date" class="mt-1 p-2 border border-gray-300 rounded-md w-full">
                         </div>
-                        <div>
-                            <label for="end-date" class="block text-sm font-medium text-gray-700">Sampai Tanggal</label>
-                            <input type="date" id="end-date" class="mt-1 p-2 border border-gray-300 rounded-md">
-                        </div>
+                        <button id="load-attendance-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg w-full sm:w-auto">Tampilkan Absensi</button>
                     </div>
-                    <div id="attendance-container" class="space-y-8">
-                        <p class="text-center text-gray-400">Memuat data siswa...</p>
+                </div>
+
+                <!-- Container untuk daftar siswa -->
+                <div id="attendance-container" class="space-y-8">
+                    <div class="bg-white rounded-lg shadow-md p-10 text-center text-gray-500">
+                        <i data-lucide="calendar-search" class="w-12 h-12 mx-auto mb-4 text-gray-300"></i>
+                        <p>Pilih tanggal dan klik "Tampilkan Absensi" untuk memulai.</p>
+                    </div>
+                </div>
+
+                <!-- Card untuk Rekap -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex flex-wrap justify-between items-center gap-4 mb-6">
+                        <div><h2 class="text-xl font-semibold">Rekapitulasi & Cetak</h2><p class="text-sm text-gray-500 mt-1">Pilih rentang tanggal untuk mencetak rekap.</p></div>
+                        <button id="print-recap-button" class="bg-gray-700 hover:bg-gray-800 text-white font-bold py-2 px-4 rounded-lg flex items-center"><i data-lucide="printer" class="w-4 h-4 mr-2"></i>Cetak Rekap</button>
+                    </div>
+                    <div class="flex flex-wrap gap-4">
+                        <div><label for="start-date" class="block text-sm font-medium text-gray-700">Mulai Tanggal</label><input type="date" id="start-date" class="mt-1 p-2 border border-gray-300 rounded-md"></div>
+                        <div><label for="end-date" class="block text-sm font-medium text-gray-700">Sampai Tanggal</label><input type="date" id="end-date" class="mt-1 p-2 border border-gray-300 rounded-md"></div>
                     </div>
                 </div>
             </div>
