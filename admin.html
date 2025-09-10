@@ -95,7 +95,7 @@
     <script type="module" src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js"></script>
     <script type="module" src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js"></script>
     <link rel="stylesheet" href="style.css">
-    <link rel="icon" href="data:;base64,iVBORw0KGgo=">
+<link rel="icon" href="https://blogger.googleusercontent.com/img/a/AVvXsEiYeuamAA-439_rhfNSWoNA_HXYwDHMShHq_QTJsf3NORXy4xNu1v6ETybToshBjOPfVmTTrMpuIBXeFlc1d7YZja9G12s1olc2vzXTEI0og4p7qu1E6gn9HEbo6K473PlSZIAl46TADoe352csCDbViUKp7TnUSlYnNB7kC-sn6cXe8y5YsOTpH1srOT4">
 </head>
 <body class="min-h-screen admin-bg">
 
@@ -214,85 +214,87 @@
                     </div>
                 </div>
             </div>
-<div id="quests-page" class="flex gap-[20px] flex-wrap flex-row hidden ">
-    <div class="bg-white rounded-lg shadow-md">
-                    <div class="p-6 border-b border-gray-200 flex flex-wrap gap-4 justify-between items-center">
-                        <div>
-                            <h2 class="text-xl font-semibold">Manajemen Quest</h2>
-                            <p class="text-sm text-gray-500 mt-1">Buat Quest party battle, misi, dan uji keheningan.</p>
-                        </div>
+            <div id="quests-page" class="hidden space-y-6">
+                <!-- Card 1: Quest Controls -->
+                <div class="bg-white rounded-lg shadow-md">
+                    <div class="p-6 border-b border-gray-200">
+                        <h2 class="text-xl font-semibold">Manajemen Quest</h2>
+                        <p class="text-sm text-gray-500 mt-1">Buat Quest party battle, misi, dan uji keheningan.</p>
+                    </div>
+                    <div class="p-6 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+                        <button id="party-battle-button" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center text-center"><i data-lucide="users" class="w-4 h-4 mr-2"></i>Party Battle (AI)</button>
+                        <button id="admin-question-battle-button" class="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center text-center"><i data-lucide="edit-3" class="w-4 h-4 mr-2"></i>Party Battle (Admin)</button>
+                        <button id="ai-quiz-battle-button" class="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center text-center"><i data-lucide="brain-circuit" class="w-4 h-4 mr-2"></i>AI Quiz Battle</button>
+                        <button id="open-noise-detector-button" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center text-center"><i data-lucide="gauge-circle" class="w-4 h-4 mr-2"></i>Uji Keheningan</button>
+                        <button id="add-quest-button" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center text-center"><i data-lucide="plus-circle" class="w-4 h-4 mr-2"></i>Buat Monster</button>
+                        <button id="add-admin-bounty-button" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center text-center"><i data-lucide="plus-circle" class="w-4 h-4 mr-2"></i>Buat Misi Admin</button>
+                    </div>
+                </div>
 
-  <div class="flex justify-between gap-x-4 grow"><button id="party-battle-button" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg flex items-center"><i data-lucide="users" class="w-4 h-4 mr-2"></i>Party Battle (AI)</button><button id="admin-question-battle-button" class="bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2 px-4 rounded-lg flex items-center"><i data-lucide="edit-3" class="w-4 h-4 mr-2"></i>Party Battle (Soal Admin)</button><button id="ai-quiz-battle-button" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg flex items-center"><i data-lucide="brain-circuit" class="w-4 h-4 mr-2"></i>AI Quiz Battle</button><button id="open-noise-detector-button" class="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded-lg flex items-center"><i data-lucide="gauge-circle" class="w-4 h-4 mr-2"></i>Uji Keheningan</button>
-</div>
-  <div class="flex justify-between gap-x-4 grow"> <button id="add-quest-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg flex items-center"><i data-lucide="plus-circle" class="w-4 h-4 mr-2"></i>Buat Monster</button>
-                            <button id="add-admin-bounty-button" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg flex items-center"><i data-lucide="plus-circle" class="w-4 h-4 mr-2"></i>Buat Misi Admin</button>
-</div></div></div>
-
-  <div class="grow bg-white rounded-lg shadow-md">
-                        <div class="p-6 border-gray-200 flex-wrap gap-4 justify-between items-center">
-                        <div>
-                            <h2 class="text-xl font-semibold">Manajemen Monster</h2>
-                            <p class="text-sm text-gray-500 mt-1">Jika anda punya nyali lawan para monster berpengetahuan</p>
-                       
-     <div id="quest-list-container" class="flex gap-6 grid grid-cols-3 md:grid-cols-4 lg:grid-cols-7 ">
+                <!-- Card 2: Monster Management -->
+                <div class="bg-white rounded-lg shadow-md">
+                    <div class="p-6 border-b border-gray-200">
+                        <h2 class="text-xl font-semibold">Manajemen Monster</h2>
+                        <p class="text-sm text-gray-500 mt-1">Jika anda punya nyali lawan para monster berpengetahuan.</p>
+                    </div>
+                    <div id="quest-list-container" class="p-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
                         <p class="text-center text-gray-400 col-span-full">Memuat data monster...</p>
-                    </div> </div>
-</div></div>
-  <div class="grow bg-white rounded-lg shadow-md"> 
-    <div class="p-6 border-b border-gray-200 flex flex-wrap gap-4 justify-between items-center">
-        <div>
-                            <h2 class="text-xl font-semibold">Manajemen Bonty Board</h2>
-                            <p class="text-sm text-gray-500 mt-1">Atur Bonty Board untuk admin</p><!-- Tambahkan ini di dalam <div id="quests-page"> di admin.html -->
-   </div>
-    <!-- Container BARU untuk daftar misi admin -->
-    <div id="admin-bounty-list-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <!-- Daftar misi dari admin akan dimuat di sini oleh JavaScript -->
-    </div>
-</div>
-            
+                    </div>
+                </div>
 
-<!-- Modal BARU untuk membuat misi admin (letakkan di dekat modal lainnya) -->
-<div id="admin-bounty-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40 hidden opacity-0 transition-opacity duration-300">
-    <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl m-4 transform scale-95 transition-transform duration-300 max-h-[90vh] flex flex-col">
-        <div class="p-6 border-b flex justify-between items-center">
-            <h3 id="admin-bounty-modal-title" class="text-xl font-semibold">Buat Misi Bounty Baru</h3>
-            <button id="close-admin-bounty-modal-button" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
-        </div>
-        <form id="admin-bounty-form" class="p-6 space-y-4 overflow-y-auto">
-            <div>
-                <label for="admin-bounty-title" class="block text-sm font-medium text-gray-700">Judul Misi</label>
-                <input type="text" id="admin-bounty-title" required class="mt-1 w-full p-2 border border-gray-300 rounded-md">
-            </div>
-            <div>
-                <label for="admin-bounty-description" class="block text-sm font-medium text-gray-700">Deskripsi Misi</label>
-                <textarea id="admin-bounty-description" rows="3" required class="mt-1 w-full p-2 border border-gray-300 rounded-md"></textarea>
-            </div>
-            <div>
-                <label for="admin-bounty-image" class="block text-sm font-medium text-gray-700">Gambar Misi (Opsional)</label>
-                <input type="file" id="admin-bounty-image" accept="image/*" class="mt-1 w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100">
-                <img id="admin-bounty-image-preview" class="mt-2 h-24 w-24 object-cover rounded-md hidden border">
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                    <label for="admin-bounty-reward-xp" class="block text-sm font-medium text-gray-700">Hadiah XP</label>
-                    <input type="number" id="admin-bounty-reward-xp" required class="mt-1 w-full p-2 border border-gray-300 rounded-md" value="50">
-                </div>
-                <div>
-                    <label for="admin-bounty-reward-coin" class="block text-sm font-medium text-gray-700">Hadiah Koin</label>
-                    <input type="number" id="admin-bounty-reward-coin" required class="mt-1 w-full p-2 border border-gray-300 rounded-md" value="25">
-                </div>
-                 <div>
-                    <label for="admin-bounty-taker-limit" class="block text-sm font-medium text-gray-700">Batas Pengambil</label>
-                    <input type="number" id="admin-bounty-taker-limit" required class="mt-1 w-full p-2 border border-gray-300 rounded-md" value="10">
+                <!-- Card 3: Admin Bounty Board -->
+                <div class="bg-white rounded-lg shadow-md">
+                    <div class="p-6 border-b border-gray-200">
+                        <h2 class="text-xl font-semibold">Manajemen Bounty Board</h2>
+                        <p class="text-sm text-gray-500 mt-1">Atur Bounty Board untuk admin.</p>
+                    </div>
+                    <div id="admin-bounty-list-container" class="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <!-- Daftar misi dari admin akan dimuat di sini oleh JavaScript -->
+                    </div>
                 </div>
             </div>
-            <div class="pt-4 flex justify-end space-x-2">
-                <button type="button" id="cancel-admin-bounty-button" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg">Batal</button>
-                <button type="submit" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg">Publikasikan Misi</button>
-            </div>
-        </form>
-    </div>
-</div> </div>
+
+            <!-- Modal BARU untuk membuat misi admin (letakkan di dekat modal lainnya) -->
+            <div id="admin-bounty-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40 hidden opacity-0 transition-opacity duration-300">
+                <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl m-4 transform scale-95 transition-transform duration-300 max-h-[90vh] flex flex-col">
+                    <div class="p-6 border-b flex justify-between items-center">
+                        <h3 id="admin-bounty-modal-title" class="text-xl font-semibold">Buat Misi Bounty Baru</h3>
+                        <button id="close-admin-bounty-modal-button" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+                    </div>
+                    <form id="admin-bounty-form" class="p-6 space-y-4 overflow-y-auto">
+                        <div>
+                            <label for="admin-bounty-title" class="block text-sm font-medium text-gray-700">Judul Misi</label>
+                            <input type="text" id="admin-bounty-title" required class="mt-1 w-full p-2 border border-gray-300 rounded-md">
+                        </div>
+                        <div>
+                            <label for="admin-bounty-description" class="block text-sm font-medium text-gray-700">Deskripsi Misi</label>
+                            <textarea id="admin-bounty-description" rows="3" required class="mt-1 w-full p-2 border border-gray-300 rounded-md"></textarea>
+                        </div>
+                        <div>
+                            <label for="admin-bounty-image" class="block text-sm font-medium text-gray-700">Gambar Misi (Opsional)</label>
+                            <input type="file" id="admin-bounty-image" accept="image/*" class="mt-1 w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100">
+                            <img id="admin-bounty-image-preview" class="mt-2 h-24 w-24 object-cover rounded-md hidden border">
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label for="admin-bounty-reward-xp" class="block text-sm font-medium text-gray-700">Hadiah XP</label>
+                                <input type="number" id="admin-bounty-reward-xp" required class="mt-1 w-full p-2 border border-gray-300 rounded-md" value="50">
+                            </div>
+                            <div>
+                                <label for="admin-bounty-reward-coin" class="block text-sm font-medium text-gray-700">Hadiah Koin</label>
+                                <input type="number" id="admin-bounty-reward-coin" required class="mt-1 w-full p-2 border border-gray-300 rounded-md" value="25">
+                            </div>
+                             <div>
+                                <label for="admin-bounty-taker-limit" class="block text-sm font-medium text-gray-700">Batas Pengambil</label>
+                                <input type="number" id="admin-bounty-taker-limit" required class="mt-1 w-full p-2 border border-gray-300 rounded-md" value="10">
+                            </div>
+                        </div>
+                        <div class="pt-4 flex justify-end space-x-2">
+                            <button type="button" id="cancel-admin-bounty-button" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg">Batal</button>
+                            <button type="submit" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg">Publikasikan Misi</button>
+                        </div>
+                    </form>
+                </div>
             </div>
             <div id="grade-bounty-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden opacity-0 transition-opacity duration-300">
     <div class="bg-white rounded-lg shadow-xl w-full max-w-lg m-4 max-h-[80vh] flex flex-col">
