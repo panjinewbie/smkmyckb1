@@ -180,8 +180,16 @@
         <th scope="col" class="px-6 py-3 text-center">XP</th>
         <th scope="col" class="px-6 py-3 text-center">HP</th>
         <th scope="col" class="px-6 py-3 text-center">Koin</th>
-        <th scope="col" class="px-6 py-3 text-center">Aksi</th></tr></thead><tbody id="student-table-body"><tr><td colspan="5" class="text-center p-8 text-gray-400">Memuat data...</td></tr></tbody></table></div>
-                <div id="pagination-controls" class="p-4 flex justify-between items-center border-t">
+        <th scope="col" class="px-6 py-3 text-center">Aksi</th></tr>
+        </thead>
+        <tbody id="student-table-body">
+                    <tr><td colspan="6">
+                         <div class="loading-container"><div class="loader"></div><p class="loading-text">Memuat data siswa...</p></div>
+                    </td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div id="pagination-controls" class="p-4 flex justify-between items-center border-t">
                     <!-- Kontrol pagination akan dibuat oleh JavaScript di sini -->
                 </div>
                 </div>
@@ -250,7 +258,7 @@
                         <p class="text-sm text-gray-500 mt-1">Jika anda punya nyali lawan para monster berpengetahuan.</p>
                     </div>
                     <div id="quest-list-container" class="p-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-                        <p class="text-center text-gray-400 col-span-full">Memuat data monster...</p>
+                        <div class="loading-container col-span-full"><div class="loader"></div><p class="loading-text">Memuat data monster...</p></div>
                     </div>
                 </div>
 
@@ -261,7 +269,7 @@
                         <p class="text-sm text-gray-500 mt-1">Atur Bounty Board untuk admin.</p>
                     </div>
                     <div id="admin-bounty-list-container" class="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        <!-- Daftar misi dari admin akan dimuat di sini oleh JavaScript -->
+                        <div class="loading-container col-span-full"><div class="loader"></div><p class="loading-text">Memuat misi admin...</p></div>
                     </div>
                 </div>
             </div>
@@ -318,7 +326,7 @@
             <button id="close-grade-bounty-modal-button" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
         </div>
         <div id="grade-bounty-student-list" class="p-6 space-y-3 overflow-y-auto">
-            <p class="text-center text-gray-400">Memuat data peserta...</p>
+            <div class="loading-container"><div class="loader"></div><p class="loading-text">Memuat data peserta...</p></div>
         </div>
         <div class="p-6 bg-gray-50 border-t mt-auto">
             <button id="confirm-grade-bounty-button" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center">
@@ -340,8 +348,7 @@
                         </button>
                     </div>
                     <div id="shop-item-list" class="selection:bg-fuchsia-300 selection:text-fuchsia-900 p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                        <!-- Daftar item akan dimuat di sini oleh JavaScript -->
-                        <p class="text-center text-gray-400 col-span-full">Memuat item toko...</p>
+                        <div class="loading-container col-span-full"><div class="loader"></div><p class="loading-text">Memuat item toko...</p></div>
                     </div>
                 </div>
             </div>
@@ -429,7 +436,7 @@
     </div>
 </div>
     <div id="magic-student-list-container" class="space-y-2 max-h-96 overflow-y-auto pr-2">
-         <p class="text-center text-gray-400">Memuat data siswa...</p>
+         <div class="loading-container"><div class="loader"></div><p class="loading-text">Memuat data siswa...</p></div>
     </div>
 </div>
                 </div>
@@ -468,13 +475,13 @@
                     <label class="block text-sm font-medium text-gray-700 mb-2">Atau, Pilih Siswa Secara Manual (Akan menimpa pilihan Kelas/Guild):</label>
                     <input type="text" id="party-student-search" class="w-full p-2 border border-gray-300 rounded-md mb-2" placeholder="Cari nama siswa...">
                     <div id="party-manual-student-selection-list" class="space-y-1 max-h-48 overflow-y-auto border rounded-md p-2 bg-gray-50">
-                        <p class="text-center text-gray-400 text-sm">Memuat siswa...</p>
+                        <div class="loading-container"><div class="loader"></div><p class="loading-text text-sm">Memuat siswa...</p></div>
                     </div>
                 </div>
                  <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Pilih Monster yang akan Dilawan:</label>
                     <div id="party-monster-selection-list" class="space-y-2 max-h-48 overflow-y-auto border rounded-md p-2">
-                        <p class="text-center text-gray-400">Memuat monster...</p>
+                        <div class="loading-container"><div class="loader"></div><p class="loading-text text-sm">Memuat monster...</p></div>
                     </div>
                 </div>
             </div>
@@ -530,7 +537,7 @@
                 <button id="close-monster-selection-modal-button" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
             </div>
             <div id="monster-selection-list" class="p-6 space-y-4 overflow-y-auto">
-                <p class="text-center text-gray-400">Memuat data monster...</p>
+                <div class="loading-container"><div class="loader"></div><p class="loading-text">Memuat data monster...</p></div>
             </div>
         </div>
     </div>
