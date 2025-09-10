@@ -42,3 +42,85 @@ button:disabled { opacity: 0.7; cursor: not-allowed; }
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px); /* Untuk kompatibilitas Safari */
 }
+
+/* --- MANTRA BARU: Animasi untuk Tombol Edit --- */
+/* Menambahkan transisi halus untuk tombol itu sendiri (untuk efek :active) */
+.edit-btn,
+.edit-quest-btn,
+.edit-item-btn {
+    transition: transform 0.2s ease-in-out;
+}
+
+/* Menargetkan ikon di dalam tombol untuk animasi */
+.edit-btn > i,
+.edit-quest-btn > i,
+.edit-item-btn > i {
+    transition: transform 0.3s ease-in-out;
+}
+
+/* Efek "wiggle" atau rotasi saat kursor di atas tombol */
+.edit-btn:hover > i,
+.edit-quest-btn:hover > i,
+.edit-item-btn:hover > i {
+    transform: rotate(15deg);
+}
+
+/* Efek "ditekan" saat tombol diklik */
+.edit-btn:active,
+.edit-quest-btn:active,
+.edit-item-btn:active {
+    transform: scale(0.95);
+}
+
+/* --- MANTRA BARU: Animasi Loading Honeycomb --- */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
+  min-height: 150px; /* Beri tinggi minimum agar loader terlihat bagus */
+  width: 100%;
+  grid-column: 1 / -1; /* Agar span di semua kolom grid */
+  color: #6b7280; /* text-gray-500 */
+}
+
+.loading-text {
+  margin-top: 2.5rem; /* Beri jarak dari animasi */
+  font-weight: 500;
+}
+
+.loader {
+  width: 50px;
+  aspect-ratio: 1.154;
+  position: relative;
+  background: conic-gradient(from 120deg at 50% 64%,#0000, #4f46e5 1deg 120deg,#0000 121deg); /* Ganti warna jadi indigo */
+  animation: l27-0 1.5s infinite cubic-bezier(0.3,1,0,1);
+}
+
+.loader:before,
+.loader:after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: inherit;
+  transform-origin: 50% 66%;
+  animation: l27-1 1.5s infinite;
+}
+
+.loader:after {
+  --s: -1;
+}
+
+@keyframes l27-0 {
+  0%,30% { transform: rotate(0) }
+  70% { transform: rotate(120deg) }
+  70.01%,100% { transform: rotate(360deg) }
+}
+
+@keyframes l27-1 {
+  0% { transform: rotate(calc(var(--s,1)*120deg)) translate(0) }
+  30%,70% { transform: rotate(calc(var(--s,1)*120deg)) translate(calc(var(--s,1)*-5px),10px) }
+  100% { transform: rotate(calc(var(--s,1)*120deg)) translate(0) }
+  }
+
