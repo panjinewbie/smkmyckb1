@@ -661,68 +661,72 @@ if(loginForm) {
 // =======================================================
 //          LOGIKA BONUS LOGIN HARIAN
 // =======================================================
+// --- PERBAIKAN BESAR: Logika Inti Bonus Login Harian ---
 async function handleDailyLogin(uid) {
     const today = getLocalDateString(new Date());
     const studentRef = ref(db, `students/${uid}`);
     const studentSnap = await get(studentRef);
 
-    if (!studentSnap.exists()) return; // Kalo data siswa gak ada, ya udah
+    if (!studentSnap.exists()) return;
 
     const studentData = studentSnap.val();
     const lastLogin = studentData.lastLoginDate || null;
-    let streak = studentData.loginStreak || 0;
-    // Regenerasi MP setiap hari
+
+    // Siapkan satu objek update untuk semua perubahan
+    const updates = {};
+    let toastMessage = ''; // Pesan akan dibuat jika ada bonus
+
+    // 1. Regenerasi MP setiap hari, terlepas dari login streak
     const maxMp = 50 + ((studentData.level - 1) * 5);
-    let currentMp = studentData.mp || 50;
-    currentMp = Math.min(maxMp, currentMp + 10); // Tambah 10 MP, jangan lebihi max
+    const currentMp = studentData.mp || 50;
+    const newMp = Math.min(maxMp, currentMp + 10);
+    if (newMp !== currentMp) {
+        updates[`/students/${uid}/mp`] = newMp;
+    }
 
-    const updates = { [`/students/${uid}/mp`]: currentMp }; // Siapkan update MP
-
-    // Kalo hari ini belum login...
+    // 2. Cek jika hari ini belum login untuk memberikan bonus
     if (lastLogin !== today) {
+        let streak = studentData.loginStreak || 0;
         const yesterday = getLocalDateString(new Date(Date.now() - 86400000));
 
-        // Cek apakah kemarin login? Kalo iya, streak nambah!
         if (lastLogin === yesterday) {
             streak++;
         } else {
-            // Kalo bolos, ya reset lagi dari 1
-            streak = 1;
+            streak = 1; // Reset streak
         }
 
         let bonusCoin = 5;
-        let bonusXp = 5;
-        let toastMessage = `Selamat Datang Kembali! Kamu dapat +${bonusCoin} Koin dan +${bonusXp} XP.`;
+        let bonusXp = 10;
+        toastMessage = `Selamat Datang! Kamu dapat bonus +${bonusCoin} Koin, +${bonusXp} XP, dan regenerasi MP.`;
 
-        // Kalau streak mencapai 7 hari, kasih bonus GEDE!
         if (streak >= 7) {
-            bonusCoin += 50; // Bonus tambahan
-            bonusXp += 50;   // Bonus tambahan
-            toastMessage = `🔥 WOW! Login 7 hari beruntun! Kamu dapat bonus besar: +${bonusCoin} Koin dan +${bonusXp} XP!`;
-            streak = 0; // Reset streak biar mulai dari awal lagi besok
-            audioPlayer.success(); // Suara spesial buat bonus gede
+            bonusCoin += 50;
+            bonusXp += 50;
+            toastMessage = `🔥 WOW! Login 7 hari beruntun! Bonus besar: +${bonusCoin} Koin & +${bonusXp} XP!`;
+            streak = 0; // Reset streak
+            audioPlayer.success();
         }
 
-        // Siapin data baru buat di-update ke database
-        const updates = {};
+        // Kalkulasi dan tambahkan bonus ke objek updates
         const currentCoin = studentData.coin || 0;
-        const currentXp = studentData.xp || 0;
         const xpPerLevel = 1000;
-        const currentLevel = studentData.level || 1;
+        const currentTotalXp = ((studentData.level || 1) - 1) * xpPerLevel + (studentData.xp || 0);
+        const newTotalXp = currentTotalXp + bonusXp;
 
-        const newTotalXp = (currentLevel - 1) * xpPerLevel + currentXp + bonusXp;
-
-        Object.assign(updates, {
-            [`/students/${uid}/coin`]: newCoin,
-            [`/students/${uid}/xp`]: newXp,
-            [`/students/${uid}/level`]: newLevel,
-            [`/students/${uid}/lastLoginDate`]: today,
-            [`/students/${uid}/loginStreak`]: streak
-        });
+        updates[`/students/${uid}/coin`] = currentCoin + bonusCoin;
+        updates[`/students/${uid}/level`] = Math.floor(newTotalXp / xpPerLevel) + 1;
+        updates[`/students/${uid}/xp`] = newTotalXp % xpPerLevel;
+        updates[`/students/${uid}/lastLoginDate`] = today;
+        updates[`/students/${uid}/loginStreak`] = streak;
     }
     
-    await update(ref(db), updates);
-    if (lastLogin !== today) showToast(toastMessage);
+    // 3. Terapkan semua update ke database jika ada
+    if (Object.keys(updates).length > 0) {
+        await update(ref(db), updates);
+        if (toastMessage) { // Hanya tampilkan toast jika ada bonus login harian
+            showToast(toastMessage);
+        }
+    }
 }
 
 // =======================================================
@@ -893,19 +897,23 @@ if(profileNavLink && profileNavLink.textContent === 'Profil'){
         const activeStatusEffectsContainer = document.getElementById('active-status-effects');
         activeStatusEffectsContainer.innerHTML = ''; // Kosongkan dulu
         
-        if (studentData.statusEffects && Object.keys(studentData.statusEffects).length > 0) {
+         // --- MANTRA BARU: Cek apakah objek statusEffects ada dan tidak kosong ---
+        const activeEffects = studentData.statusEffects ? 
+            Object.fromEntries(Object.entries(studentData.statusEffects).filter(([_, val]) => val !== null)) 
+            : {};
+
+        if (Object.keys(activeEffects).length > 0) {
             const effectMap = {
                 racun: { icon: 'skull', text: 'Racun', color: 'red' }, // Efek Negatif
                 diam: { icon: 'thumbs-down', text: 'Diam', color: 'gray' }, // Efek Negatif
                 knock: { icon: 'tornado', text: 'Knock', color: 'yellow' }, // Efek Negatif
-                buff_attack: { icon: 'arrow-big-up-dash', text: 'Attack Up', color: 'orange' }, // Buff Positif
-                buff_defense: { icon: 'shield', text: 'Defense Up', color: 'blue' }, // Buff Positif
-                buff_hp_regen: { icon: 'heart-pulse', text: 'Regen HP', color: 'green' } // Buff Positif
+                buff_admin_key: { icon: 'key-round', text: 'Kunci Admin', color: 'yellow' } // Buff Kunci
+                
             };
 
             // --- GANTI BLOK for...in... YANG LAMA DENGAN INI ---
-for (const effectKey in studentData.statusEffects) {
-    const effectData = studentData.statusEffects[effectKey];
+for (const effectKey in activeEffects) {
+    const effectData = activeEffects[effectKey];
     if (effectData && effectMap[effectKey]) {
         const effectInfo = effectMap[effectKey];
 
@@ -2235,7 +2243,10 @@ function setupBountyBoardPage(uid) {
         const description = document.getElementById('bounty-description').value;
         const takerLimit = parseInt(document.getElementById('bounty-taker-limit').value);
         const rewardCoin = parseInt(document.getElementById('bounty-reward-coin').value);
-
+        // --- MANTRA BARU: Validasi Upah Minimum ---
+            if (rewardCoin < 10) {
+                throw new Error("Hadiah minimal untuk misi adalah 10 Koin!");
+            }
         try {
             const studentRef = ref(db, `students/${uid}`);
             const studentSnap = await get(studentRef);
@@ -2278,9 +2289,13 @@ function setupBountyBoardPage(uid) {
         }
     };
 
-    // Memuat dan menampilkan semua bounty
+     // --- PERUBAHAN BESAR: Memuat bounty dengan data siswa untuk cek buff ---
     const bountiesRef = ref(db, 'bounties');
-    onValue(bountiesRef, (snapshot) => {
+    const studentRef = ref(db, `students/${uid}`);
+    
+    onValue(bountiesRef, async (snapshot) => { // Jadikan callback ini async
+        const studentSnap = await get(studentRef); // Ambil data siswa TERBARU setiap kali bounty berubah
+        const studentData = studentSnap.exists() ? studentSnap.val() : null;
         bountyListContainer.innerHTML = '';
         if (!snapshot.exists()) {
             bountyListContainer.innerHTML = '<p class="text-center text-gray-400 col-span-full">Belum ada misi di papan bounty.</p>';
@@ -2301,7 +2316,9 @@ function setupBountyBoardPage(uid) {
             const isTakenByCurrentUser = bounty.takers && bounty.takers[uid];
             const isFull = takersCount >= bounty.takerLimit;
             const isCreator = bounty.creatorId === uid;
-            
+            // --- MANTRA BARU: Cek apakah siswa punya kunci admin ---
+            const now = Date.now();
+            const hasAdminKey = studentData?.statusEffects?.buff_admin_key && studentData.statusEffects.buff_admin_key.expires > now;
             let rewardHtml = '';
             if (bounty.isAdminBounty) {
                 rewardHtml = `
@@ -2314,18 +2331,25 @@ function setupBountyBoardPage(uid) {
 
 
             let buttonHtml = '';
-            if (isCreator) {
-                 buttonHtml = `<button data-id="${bountyId}" class="manage-bounty-btn w-full p-2 rounded-lg text-white font-bold text-sm bg-purple-600 hover:bg-purple-700">Kelola Misi</button>`;
-            } else if (isTakenByCurrentUser) {
-                buttonHtml = `<button disabled class="w-full p-2 rounded-lg text-white font-bold text-sm bg-blue-400 cursor-not-allowed">Sudah Diambil</button>`;
-            } else if (isFull) {
-                buttonHtml = `<button disabled class="w-full p-2 rounded-lg text-white font-bold text-sm bg-red-400 cursor-not-allowed">Penuh</button>`;
+            if (bounty.isAdminBounty) {
+                if (hasAdminKey) {
+                    if (isTakenByCurrentUser) buttonHtml = `<button disabled class="w-full p-2 rounded-lg text-white font-bold text-sm bg-blue-400 cursor-not-allowed">Sudah Diambil</button>`;
+                    else if (isFull) buttonHtml = `<button disabled class="w-full p-2 rounded-lg text-white font-bold text-sm bg-red-400 cursor-not-allowed">Penuh</button>`;
+                    else buttonHtml = `<button data-id="${bountyId}" class="take-bounty-btn w-full p-2 rounded-lg text-white font-bold text-sm bg-green-500 hover:bg-green-600">Ambil Misi</button>`;
+                } else {
+                    buttonHtml = `<button disabled class="w-full p-2 rounded-lg text-white font-bold text-sm bg-gray-400 cursor-not-allowed flex items-center justify-center"><i data-lucide="lock" class="w-4 h-4 mr-2"></i>Butuh Kunci Admin</button>`;
+                }
             } else {
-                buttonHtml = `<button data-id="${bountyId}" class="take-bounty-btn w-full p-2 rounded-lg text-white font-bold text-sm bg-green-500 hover:bg-green-600">Ambil Misi</button>`;
+                if (isCreator) buttonHtml = `<button data-id="${bountyId}" class="manage-bounty-btn w-full p-2 rounded-lg text-white font-bold text-sm bg-purple-600 hover:bg-purple-700">Kelola Misi</button>`;
+                else if (isTakenByCurrentUser) buttonHtml = `<button disabled class="w-full p-2 rounded-lg text-white font-bold text-sm bg-blue-400 cursor-not-allowed">Sudah Diambil</button>`;
+                else if (isFull) buttonHtml = `<button disabled class="w-full p-2 rounded-lg text-white font-bold text-sm bg-red-400 cursor-not-allowed">Penuh</button>`;
+                else buttonHtml = `<button data-id="${bountyId}" class="take-bounty-btn w-full p-2 rounded-lg text-white font-bold text-sm bg-green-500 hover:bg-green-600">Ambil Misi</button>`;
             }
 
             const card = document.createElement('div');
-            card.className = 'bg-white p-4 rounded-lg shadow-lg flex flex-col';
+           // --- MANTRA BARU: Beri border khusus untuk misi admin ---
+            const cardClasses = bounty.isAdminBounty ? 'border-2 border-indigo-400' : '';
+            card.className = `bg-white p-4 rounded-lg shadow-lg flex flex-col ${cardClasses}`;
             card.innerHTML = `
                 <img src="${bounty.imageUrl || 'https://placehold.co/300x200/e2e8f0/3d4852?text=Misi'}" class="w-full h-32 object-cover rounded-md mb-4">
                 <h4 class="text-lg font-bold font-sans">${bounty.title}</h4>
@@ -2946,7 +2970,8 @@ if (scanQrMagicButton) {
                         buff_attack: { icon: 'arrow-big-up-dash', color: 'text-orange-500', title: 'Attack Up' },
                         buff_defense: { icon: 'shield', color: 'text-blue-500', title: 'Defense Up' },
                         buff_hp_regen: { icon: 'heart-pulse', color: 'text-green-500', title: 'Regen HP' }
-                    };
+                    , buff_admin_key: { icon: 'key-round', text: 'Kunci Admin', color: 'text-yellow-500' } // Buff Kunci
+                     };
                     statusEffectsHtml += '<div class="flex justify-left items-left gap-2">';
                     for (const effectKey in student.statusEffects) { if (effectMap[effectKey]) { const effect = effectMap[effectKey]; statusEffectsHtml += `<i data-lucide="${effect.icon}" class="w-4 h-4 ${effect.color}" title="${effect.title}"></i>`; } }
                     statusEffectsHtml += '</div>';
@@ -3704,8 +3729,11 @@ async function handleGiveAdminReward(bountyId, bountyData, closeModalCallback) {
                     } else if (action.type === 'effect') {
                         const effect = document.getElementById('effect-type').value;
                         
-                        // Efek akan berlaku selama 3 hari dari sekarang
-                        const durationInDays = 3;
+                        // --- MANTRA BARU: Durasi buff kunci lebih lama ---
+                        let durationInDays = 3; // Durasi default
+                        if (effect === 'buff_admin_key') {
+                            durationInDays = 30; // Kunci Admin berlaku 30 hari
+                        }
                         const expiryTimestamp = Date.now() + (durationInDays * 24 * 60 * 60 * 1000);
 
                         if (action.operation === 'add') {
