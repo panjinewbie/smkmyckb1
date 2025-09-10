@@ -2750,7 +2750,7 @@ setTimeout(() => {
     };
 
     // --- PERBAIKAN: Logika QR Scanner yang lebih aman dan andal ---
-    const openQrModal = () => {
+    const openQrModal = (onSuccessCallback) => {
         audioPlayer.openModal();
         // Reset pesan hasil scan setiap kali modal dibuka
         const scanResultElement = document.getElementById('scan-result');
@@ -2759,7 +2759,7 @@ setTimeout(() => {
         qrScannerModal.classList.remove('hidden');
         setTimeout(() => {
             qrScannerModal.classList.remove('opacity-0');
-            startQrScanner(); // Mulai scanner setelah modal terlihat
+            startQrScanner(onSuccessCallback); // Mulai scanner dengan callback yang diberikan setelah modal terlihat
         }, 50);
     };
 
@@ -2768,26 +2768,28 @@ setTimeout(() => {
         audioPlayer.closeModal();
         qrScannerModal.classList.add('opacity-0');
 
-        // Hanya hentikan scanner jika ditutup manual (bukan karena scan berhasil)
-        // Ini mencegah error karena mencoba menghentikan scanner yang sudah berhenti.
+        const finalCleanup = () => {
+            setTimeout(() => {
+                qrScannerModal.classList.add('hidden');
+                const qrReaderElement = document.getElementById('qr-reader');
+                if (qrReaderElement) {
+                    qrReaderElement.innerHTML = ""; // Hapus sisa elemen video
+                }
+                html5QrCode = null; // Reset instance
+            }, 300); // Tunggu animasi fade-out selesai
+        };
+
+        // Jika scanner sedang berjalan dan modal ditutup manual, hentikan dulu
         if (!fromScanSuccess && html5QrCode && html5QrCode.isScanning) {
             html5QrCode.stop()
-                .then(() => console.log("QR Scanner dihentikan secara manual."))
-                .catch(err => console.error("Gagal stop scanner saat tutup manual.", err));
+                .catch(err => console.error("Gagal menghentikan scanner, tapi tetap melanjutkan cleanup.", err))
+                .finally(() => {
+                    finalCleanup();
+                });
+        } else {
+            // Jika scanner sudah berhenti (dari onScanSuccess) atau tidak pernah jalan
+            finalCleanup();
         }
-
-        setTimeout(() => {
-            qrScannerModal.classList.add('hidden');
-            // Bersihkan elemen video agar tidak ada sisa stream kamera
-            const qrReaderElement = document.getElementById('qr-reader');
-            if (qrReaderElement) {
-                qrReaderElement.innerHTML = "";
-            }
-            // Reset instance scanner
-            if (html5QrCode) {
-                html5QrCode = null;
-            }
-        }, 300);
     };
 
     // --- EVENT LISTENER MODAL & NAVIGASI ---
@@ -2835,31 +2837,6 @@ setTimeout(() => {
         if (pageId === 'magic') setupMagicControlsPage();
     });
 // --- TAMBAHKAN BLOK KODE INI DI DALAM setupMagicControlsPage() ---
-const scanQrMagicButton = document.getElementById('scan-qr-magic-button');
-if (scanQrMagicButton) {
-    // Fungsi khusus untuk memilih siswa dari hasil scan
-    const selectStudentByNis = async (nis) => {
-        const snapshot = await get(query(ref(db, 'students'), orderByChild('nis'), equalTo(nis)));
-        if (snapshot.exists()) {
-            const [uid, student] = Object.entries(snapshot.val())[0];
-            const checkbox = document.querySelector(`#magic-student-list-container input[data-uid="${uid}"]`);
-            if (checkbox) {
-                checkbox.checked = true;
-                showToast(`${student.nama} berhasil dipilih sebagai target!`);
-            } else {
-                showToast(`${student.nama} tidak ada di daftar filter saat ini.`, true);
-            }
-        } else {
-            showToast(`Siswa dengan NIS ${nis} tidak ditemukan!`, true);
-        }
-    };
-
-    // Pasang event listener ke tombol baru kita
-    scanQrMagicButton.addEventListener('click', () => {
-        openQrModal();
-        startQrScanner(selectStudentByNis); // Beri perintah untuk memilih target
-    });
-}
     // --- FUNGSI DATA SISWA (ADMIN) ---
     // --- GANTI KODE onValue(studentsRef, ...) YANG LAMA DENGAN KODE BARU INI ---
     const studentsRef = ref(db, 'students');
@@ -3668,6 +3645,35 @@ async function handleGiveAdminReward(bountyId, bountyData, closeModalCallback) {
 
     // Tampilkan semua siswa saat pertama kali halaman dibuka
     renderFilteredStudents();
+
+    // --- MANTRA BARU: Event listener untuk Scan QR di halaman Magic ---
+    // Diletakkan di sini agar listener di-refresh setiap kali halaman dibuka,
+    // dan memiliki akses ke fungsi-fungsi di dalam scope setupAdminDashboard.
+    const scanQrMagicButton = document.getElementById('scan-qr-magic-button');
+    if (scanQrMagicButton) {
+        // Fungsi khusus untuk memilih siswa dari hasil scan
+        const selectStudentByNis = async (nis) => {
+            const snapshot = await get(query(ref(db, 'students'), orderByChild('nis'), equalTo(nis)));
+            if (snapshot.exists()) {
+                const [uid, student] = Object.entries(snapshot.val())[0];
+                const checkbox = document.querySelector(`#magic-student-list-container input[data-uid="${uid}"]`);
+                if (checkbox) {
+                    checkbox.checked = true; // Ceklis kotak siswa yang ditemukan
+                    showToast(`${student.nama} berhasil dipilih sebagai target!`);
+                } else {
+                    showToast(`${student.nama} tidak ada di daftar filter saat ini.`, true);
+                }
+            } else {
+                showToast(`Siswa dengan NIS ${nis} tidak ditemukan!`, true);
+            }
+        };
+
+        // Menggunakan .onclick untuk memastikan hanya ada satu listener aktif,
+        // mencegah penumpukan listener jika tab diklik berulang kali.
+        scanQrMagicButton.onclick = () => {
+            openQrModal(selectStudentByNis); // Buka modal dan langsung jalankan scanner dengan callback
+        };
+    }
 }
 
     async function applyMagicToSelectedStudents(action) {
@@ -4926,16 +4932,40 @@ classSelect.innerHTML = '<option value="SEMUA_KELAS">Semua Kelas</option>'; // O
 
     
     // --- LOGIKA HALAMAN ATTENDANCE ---
-    async function setupAttendancePage() {
-        const attendanceContainer = document.getElementById('attendance-container');
-        const snapshot = await get(ref(db, 'students'));
-        if (!snapshot.exists()) {
-            attendanceContainer.innerHTML = '<p class="text-center text-gray-400">Belum ada siswa.</p>';
+async function setupAttendancePage() {
+    const attendanceContainer = document.getElementById('attendance-container');
+    const attendanceDateInput = document.getElementById('attendance-date');
+    const loadAttendanceButton = document.getElementById('load-attendance-button');
+
+    // Set tanggal hari ini sebagai default
+    if (attendanceDateInput) {
+        attendanceDateInput.value = getLocalDateString(new Date());
+    }
+
+    const renderAttendanceList = async () => {
+        const selectedDate = attendanceDateInput.value;
+        if (!selectedDate) {
+            showToast('Silakan pilih tanggal terlebih dahulu!', true);
             return;
         }
 
+        attendanceContainer.innerHTML = '<div class="bg-white rounded-lg shadow-md p-10 text-center text-gray-500"><p>Memuat data siswa dan absensi...</p></div>';
+
+        const [studentsSnap, attendanceSnap] = await Promise.all([
+            get(ref(db, 'students')),
+            get(ref(db, `attendance/${selectedDate}`))
+        ]);
+
+        if (!studentsSnap.exists()) {
+            attendanceContainer.innerHTML = '<div class="bg-white rounded-lg shadow-md p-10 text-center text-gray-500"><p>Belum ada siswa terdaftar.</p></div>';
+            return;
+        }
+
+        const studentsData = studentsSnap.val();
+        const dailyAttendance = attendanceSnap.exists() ? attendanceSnap.val() : {};
+        
         const studentsByClass = {};
-        Object.entries(snapshot.val()).forEach(([uid, student]) => {
+        Object.entries(studentsData).forEach(([uid, student]) => {
             if (!studentsByClass[student.kelas]) studentsByClass[student.kelas] = [];
             studentsByClass[student.kelas].push({ uid, ...student });
         });
@@ -4943,16 +4973,30 @@ classSelect.innerHTML = '<option value="SEMUA_KELAS">Semua Kelas</option>'; // O
         attendanceContainer.innerHTML = '';
         for (const kelas in studentsByClass) {
             const classSection = document.createElement('div');
-            classSection.innerHTML = `<h3 class="text-lg font-bold border-b-2 border-blue-200 pb-2 mb-4">${kelas}</h3>`;
+            classSection.className = 'bg-white rounded-lg shadow-md';
+            classSection.innerHTML = `<h3 class="text-lg font-bold border-b-2 border-blue-200 p-4">${kelas}</h3>`;
             const studentGrid = document.createElement('div');
-            studentGrid.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4';
+            studentGrid.className = 'p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4';
             
             studentsByClass[kelas].forEach(student => {
+                const studentStatus = dailyAttendance[student.uid]?.status;
                 const avatar = student.fotoProfilBase64 ? 
                     `<img src="${student.fotoProfilBase64}" alt="${student.nama}" class="w-16 h-16 rounded-full object-cover">` : 
                     `<div class="w-16 h-16 bg-gray-700 text-white flex items-center justify-center rounded-full font-bold text-2xl">${student.nama.charAt(0)}</div>`;
+                
+                const buttonHtml = ['hadir', 'sakit', 'izin', 'alfa'].map(action => {
+                    const colors = {
+                        hadir: 'bg-blue-500 hover:bg-blue-600',
+                        sakit: 'bg-yellow-500 hover:bg-yellow-600',
+                        izin: 'bg-orange-500 hover:bg-orange-600',
+                        alfa: 'bg-red-500 hover:bg-red-600'
+                    };
+                    const activeClass = studentStatus === action ? 'ring-4 ring-offset-2 ring-green-400' : '';
+                    return `<button data-uid="${student.uid}" data-action="${action}" class="attendance-btn ${colors[action]} text-white text-xs font-bold py-2 px-2 rounded ${activeClass}">${action.charAt(0).toUpperCase() + action.slice(1)}</button>`;
+                }).join('');
+
                 studentGrid.innerHTML += `
-                    <div class="bg-gray-50 p-4 rounded-lg shadow flex flex-col gap-4">
+                    <div class="bg-gray-50 p-4 rounded-lg shadow-inner flex flex-col gap-4">
                         <div class="flex items-center gap-4">
                             ${avatar}
                             <div>
@@ -4961,20 +5005,23 @@ classSelect.innerHTML = '<option value="SEMUA_KELAS">Semua Kelas</option>'; // O
                             </div>
                         </div>
                         <div class="grid grid-cols-4 gap-2">
-                            <button data-uid="${student.uid}" data-action="hadir" class="attendance-btn bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold py-2 px-2 rounded">Hadir</button>
-                            <button data-uid="${student.uid}" data-action="sakit" class="attendance-btn bg-yellow-500 hover:bg-yellow-600 text-white text-xs font-bold py-2 px-2 rounded">Sakit</button>
-                            <button data-uid="${student.uid}" data-action="izin" class="attendance-btn bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold py-2 px-2 rounded">Izin</button>
-                            <button data-uid="${student.uid}" data-action="alfa" class="attendance-btn bg-red-500 hover:bg-red-600 text-white text-xs font-bold py-2 px-2 rounded">Alfa</button>
+                            ${buttonHtml}
                         </div>
                     </div>`;
             });
             classSection.appendChild(studentGrid);
             attendanceContainer.appendChild(classSection);
         }
+    };
+
+    if (loadAttendanceButton) {
+        loadAttendanceButton.onclick = renderAttendanceList;
+        // Secara otomatis memuat absensi untuk hari ini saat halaman pertama kali dibuka
+        renderAttendanceList();
     }
-    
+}
     // --- FUNGSI UPDATE STATS & LOG ABSENSI (DENGAN SUARA) ---
-    async function updateStudentStats(uid, action, studentData = null) {
+    async function updateStudentStats(uid, action, studentData = null, attendanceDate) {
         const studentRef = ref(db, `students/${uid}`);
         const data = studentData || (await get(studentRef)).val();
         if (!data) return;
@@ -4982,6 +5029,12 @@ classSelect.innerHTML = '<option value="SEMUA_KELAS">Semua Kelas</option>'; // O
         const allUpdates = {};
         let message = '';
         const xpPerLevel = 1000;
+
+        // Validasi tanggal
+        if (!attendanceDate) {
+            showToast('Tanggal absensi tidak valid!', true);
+            return;
+        }
         
         let statUpdates = {};
         let hpPenalty = 0;
@@ -5021,8 +5074,7 @@ classSelect.innerHTML = '<option value="SEMUA_KELAS">Semua Kelas</option>'; // O
         for (const key in statUpdates) {
             allUpdates[`/students/${uid}/${key}`] = statUpdates[key];
         }
-        const today = getLocalDateString(); // PERBAIKAN: Gunakan tanggal lokal untuk menghindari bug timezone
-        allUpdates[`/attendance/${today}/${uid}`] = { status: action, timestamp: Date.now() };
+        allUpdates[`/attendance/${attendanceDate}/${uid}`] = { status: action, timestamp: Date.now() };
 
         try {
             await update(ref(db), allUpdates);
@@ -5050,14 +5102,22 @@ classSelect.innerHTML = '<option value="SEMUA_KELAS">Semua Kelas</option>'; // O
     
     document.getElementById('attendance-container').addEventListener('click', (e) => {
         const target = e.target.closest('.attendance-btn');
-        if (target) updateStudentStats(target.dataset.uid, target.dataset.action);
+        if (target) {
+            const selectedDate = document.getElementById('attendance-date').value;
+            if (!selectedDate) {
+                showToast('Kesalahan: Tanggal tidak ditemukan. Silakan muat ulang absensi.', true);
+                return;
+            }
+            // Disable all buttons for this student to prevent double-clicking
+            target.parentElement.querySelectorAll('.attendance-btn').forEach(btn => btn.disabled = true);
+            updateStudentStats(target.dataset.uid, target.dataset.action, null, selectedDate);
+        }
     });
     
     // --- LOGIKA QR CODE SCANNER ---
     // Event listener untuk tombol utama "Scan QR"
     document.getElementById('scan-qr-button').addEventListener('click', () => {
-    openQrModal();
-    startQrScanner(findStudentByNisAndMarkPresent); // Beri perintah untuk absensi
+    openQrModal(findStudentByNisAndMarkPresent); // Buka modal dan langsung jalankan scanner dengan callback absensi
 });
     // PERBAIKAN: Menggunakan ID yang benar dari HTML (`close-qr-scanner-modal-button`)
     document.getElementById('close-qr-scanner-modal-button').addEventListener('click', () => closeQrModal(false));
@@ -5098,10 +5158,16 @@ const startQrScanner = (onSuccessCallback) => {
 };
     
     async function findStudentByNisAndMarkPresent(nis) {
+        const selectedDate = document.getElementById('attendance-date').value;
+        if (!selectedDate) {
+            showToast('Pilih tanggal absensi terlebih dahulu sebelum memindai QR!', true);
+            closeQrModal(true); // Tutup modal jika tanggal belum dipilih
+            return;
+        }
         const snapshot = await get(query(ref(db, 'students'), orderByChild('nis'), equalTo(nis)));
         if (snapshot.exists()) {
             const [uid, student] = Object.entries(snapshot.val())[0];
-            updateStudentStats(uid, 'hadir', student);
+            updateStudentStats(uid, 'hadir', student, selectedDate);
         } else {
             showToast(`Siswa dengan NIS ${nis} tidak ditemukan!`, true);
         }
