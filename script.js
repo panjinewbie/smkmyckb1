@@ -17,6 +17,13 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 const auth = getAuth(app);
+
+// --- MANTRA BARU: Loader HTML ---
+const LOADER_HTML = `
+<div class="loading-container">
+    <div class="loader"></div>
+    <p class="loading-text">Memuat data...</p>
+</div>`;
 // =======================================================
 //          KITAB AGUNG SEMUA SKILL
 // =======================================================
@@ -269,7 +276,7 @@ async function openSkillTargetModal(casterUid, casterData, skill) {
     const studentList = document.getElementById('target-student-list');
     const modalTitle = document.getElementById('target-modal-title');
     const closeButton = document.getElementById('close-target-modal-button');
-    
+
     if (!modal || !studentList || !closeButton || !modalTitle) {
         showToast("Elemen UI untuk memilih target tidak ditemukan!", true);
         return;
@@ -279,9 +286,9 @@ async function openSkillTargetModal(casterUid, casterData, skill) {
         modal.classList.add('opacity-0');
         setTimeout(() => modal.classList.add('hidden'), 300);
     };
-    
+
     closeButton.onclick = closeModal;
-    studentList.innerHTML = '<p class="text-gray-400 p-4 text-center">Memuat daftar target...</p>';
+    studentList.innerHTML = LOADER_HTML;
     modalTitle.textContent = `Pilih Target untuk: ${skill.name}`;
 
     audioPlayer.openModal();
@@ -1114,7 +1121,7 @@ async function openStudentSelectionForAiQuiz() {
     }
 
     modalTitle.textContent = 'Pilih Siswa untuk AI Quiz Battle';
-    listDiv.innerHTML = '<p class="text-center text-gray-400">Memuat data siswa...</p>';
+    listDiv.innerHTML = LOADER_HTML;
     
     audioPlayer.openModal();
     selectionModal.classList.remove('hidden');
@@ -3278,7 +3285,7 @@ async function gameTick() {
     function setupQuestsPage() {
         const questsRef = ref(db, 'quests');
         onValue(questsRef, (snapshot) => {
-            questListContainer.innerHTML = '';
+            questListContainer.innerHTML = ''; // Hapus loader
             if (!snapshot.exists()) {
                 questListContainer.innerHTML = '<p class="text-center text-gray-400 col-span-full">Belum ada monster quest.</p>';
                 return;
@@ -3383,7 +3390,7 @@ if (addAdminBountyButton && adminBountyModal && adminBountyForm && adminBountyLi
 
         const adminBountiesQuery = query(ref(db, 'bounties'), orderByChild('isAdminBounty'), equalTo(true));
         onValue(adminBountiesQuery, (snapshot) => {
-            adminBountyListContainer.innerHTML = '';
+            adminBountyListContainer.innerHTML = ''; // Hapus loader
             if (!snapshot.exists()) {
                 adminBountyListContainer.innerHTML = '<p class="text-center text-gray-400 col-span-full">Belum ada misi dari admin.</p>';
                 return;
@@ -3459,7 +3466,7 @@ async function openGradeBountyModal(bountyId) {
     if (!modal) return;
 
     // Reset dan tampilkan modal
-    studentListEl.innerHTML = '<p class="text-center text-gray-400">Memuat data peserta...</p>';
+    studentListEl.innerHTML = LOADER_HTML;
     audioPlayer.openModal();
     modal.classList.remove('hidden');
     setTimeout(() => modal.classList.remove('opacity-0'), 10);
@@ -3577,7 +3584,7 @@ async function handleGiveAdminReward(bountyId, bountyData, closeModalCallback) {
     const filterGuild = document.getElementById('magic-filter-guild');
          if (!container || !filterKelas || !filterGuild) return;
 
-        container.innerHTML = '<p class="text-center text-gray-400">Memuat data siswa...</p>';
+        container.innerHTML = LOADER_HTML;
 
         const studentsSnap = await get(ref(db, 'students'));
         if (!studentsSnap.exists()) {
@@ -3881,7 +3888,7 @@ async function handleGiveAdminReward(bountyId, bountyData, closeModalCallback) {
     function setupShopPage() {
         const shopItemsRef = ref(db, 'shopItems');
         onValue(shopItemsRef, (snapshot) => {
-            shopItemList.innerHTML = '';
+            shopItemList.innerHTML = ''; // Hapus loader
             if (!snapshot.exists()) {
                 shopItemList.innerHTML = '<p class="text-center text-gray-400 col-span-full">Toko masih kosong. Tambahkan item baru!</p>';
                 return;
@@ -4170,7 +4177,7 @@ function setupNoiseDetector() {
         const monsterListDiv = document.getElementById('monster-selection-list');
         const closeButton = document.getElementById('close-monster-selection-modal-button');
 
-        monsterListDiv.innerHTML = '<p class="text-center text-gray-400">Memuat data monster...</p>';
+        monsterListDiv.innerHTML = LOADER_HTML;
         
         audioPlayer.openModal();
         monsterSelectionModal.classList.remove('hidden');
@@ -4257,7 +4264,7 @@ function setupNoiseDetector() {
         const searchInput = document.getElementById('party-student-search');
 
         // --- LOGIKA BARU: Mengisi daftar siswa untuk seleksi manual ---
-        studentListDiv.innerHTML = '<p class="text-center text-gray-400 text-sm">Memuat siswa...</p>';
+        studentListDiv.innerHTML = LOADER_HTML;
         const allStudentsSnap = await get(ref(db, 'students'));
         let allStudentsForSelection = [];
         if (allStudentsSnap.exists()) {
@@ -4330,7 +4337,7 @@ classSelect.innerHTML = '<option value="SEMUA_KELAS">Semua Kelas</option>'; // O
             guildSelect.innerHTML = '<option value="">Gagal memuat guild</option>';
         }
 
-        monsterListDiv.innerHTML = '<p class="text-center text-gray-400">Memuat monster...</p>';
+        monsterListDiv.innerHTML = LOADER_HTML;
         audioPlayer.openModal();
         partyBattleModal.classList.remove('hidden');
         setTimeout(() => partyBattleModal.classList.remove('opacity-0'), 10);
@@ -4949,7 +4956,7 @@ async function setupAttendancePage() {
             return;
         }
 
-        attendanceContainer.innerHTML = '<div class="bg-white rounded-lg shadow-md p-10 text-center text-gray-500"><p>Memuat data siswa dan absensi...</p></div>';
+        attendanceContainer.innerHTML = LOADER_HTML;
 
         const [studentsSnap, attendanceSnap] = await Promise.all([
             get(ref(db, 'students')),
