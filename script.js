@@ -2838,10 +2838,12 @@ setTimeout(() => {
         attendancePage.classList.toggle('hidden', pageId !== 'attendance');
         magicControlsPage.classList.toggle('hidden', pageId !== 'magic');
 
+        document.getElementById('journal-page').classList.toggle('hidden', pageId !== 'journal'); // New line
         if (pageId === 'quests') setupQuestsPage();
         if (pageId === 'attendance') setupAttendancePage();
         if (pageId === 'shop') setupShopPage();
         if (pageId === 'magic') setupMagicControlsPage();
+        if (pageId === 'journal') setupJournalPage(); // New line
     });
 // --- TAMBAHKAN BLOK KODE INI DI DALAM setupMagicControlsPage() ---
     // --- FUNGSI DATA SISWA (ADMIN) ---
@@ -5260,12 +5262,180 @@ const startQrScanner = (onSuccessCallback) => {
         const printWindow = window.open('', '_blank');
         printWindow.document.write(html);
         printWindow.document.close();
-        printWindow.focus();
-        printWindow.print();
-        printWindow.close();
+        // PERBAIKAN: Tunda pencetakan untuk menghindari konflik audio dan tutup otomatis setelah cetak.
+        setTimeout(() => {
+            printWindow.focus();
+            printWindow.print();
+            printWindow.onafterprint = () => printWindow.close();
+        }, 200);
     }
 
     createLucideIcons();
+}
+
+// =======================================================
+//          LOGIKA BARU: JURNAL REFLEKSI
+// =======================================================
+function setupJournalPage() {
+    const addJournalButton = document.getElementById('add-journal-button');
+    const journalModal = document.getElementById('journal-modal');
+    const closeJournalModalButton = document.getElementById('close-journal-modal-button');
+    const cancelJournalButton = document.getElementById('cancel-journal-button');
+    const journalForm = document.getElementById('journal-form');
+    const journalListContainer = document.getElementById('journal-list-container');
+    const filterStartDate = document.getElementById('journal-filter-start-date');
+    const filterEndDate = document.getElementById('journal-filter-end-date');
+    const printButton = document.getElementById('print-journal-button');
+    const journalDateInput = document.getElementById('journal-date');
+    const journalDayNameInput = document.getElementById('journal-day-name');
+
+    const updateDayName = () => {
+        if (!journalDateInput.value) {
+            journalDayNameInput.value = '';
+            return;
+        }
+        const date = new Date(journalDateInput.value + 'T00:00:00'); // Ensure local timezone
+        const dayName = date.toLocaleDateString('id-ID', { weekday: 'long' });
+        journalDayNameInput.value = dayName;
+    };
+
+    journalDateInput.onchange = updateDayName;
+
+    const openModal = async () => {
+        journalForm.reset();
+        document.getElementById('journal-id').value = '';
+        document.getElementById('journal-modal-title').textContent = 'Tambah Jurnal Refleksi Baru';
+        journalDateInput.value = getLocalDateString(new Date());
+        updateDayName(); // Set day name for today
+        
+        const checkedRadio = document.querySelector('.journal-selector input:checked');
+        if (checkedRadio) checkedRadio.checked = false;
+
+        journalModal.classList.remove('hidden');
+        setTimeout(() => journalModal.classList.remove('opacity-0'), 10);
+        audioPlayer.openModal();
+    };
+
+    const closeModal = () => {
+        journalModal.classList.add('opacity-0');
+        setTimeout(() => journalModal.classList.add('hidden'), 300);
+        audioPlayer.closeModal();
+    };
+
+    const setupSelectors = () => {
+        const weather = { 'Cerah': 'sun', 'Berawan': 'cloud', 'Hujan': 'cloud-rain', 'Badai': 'cloud-lightning' };
+        const feelings = { 'Senang': 'smile', 'Biasa': 'meh', 'Sedih': 'frown', 'Marah': 'angry' };
+        
+        const weatherContainer = document.getElementById('journal-weather-selector');
+        const feelingContainer = document.getElementById('journal-feeling-selector');
+
+        weatherContainer.innerHTML = Object.entries(weather).map(([name, icon]) => `<div class="journal-selector"><input type="radio" name="weather" id="weather-${name}" value="${name}"><label for="weather-${name}"><i data-lucide="${icon}" class="icon text-yellow-500"></i><span class="text">${name}</span></label></div>`).join('');
+        feelingContainer.innerHTML = Object.entries(feelings).map(([name, icon]) => `<div class="journal-selector"><input type="radio" name="feeling" id="feeling-${name}" value="${name}"><label for="feeling-${name}"><i data-lucide="${icon}" class="icon text-blue-500"></i><span class="text">${name}</span></label></div>`).join('');
+        createLucideIcons();
+    };
+
+    journalForm.onsubmit = async (e) => {
+        e.preventDefault();
+        const submitButton = document.getElementById('submit-journal-button');
+        submitButton.disabled = true;
+        submitButton.textContent = 'Menyimpan...';
+
+        try {
+            const journalData = {
+                author: auth.currentUser.uid,
+                kelas: document.getElementById('journal-class').value,
+                date: document.getElementById('journal-date').value, subject: document.getElementById('journal-subject').value,
+                day: document.getElementById('journal-day-name').value,
+                weather: document.querySelector('input[name="weather"]:checked')?.value || '',
+                feeling: document.querySelector('input[name="feeling"]:checked')?.value || '',
+                tasks: document.getElementById('journal-tasks').value, achievements: document.getElementById('journal-achievements').value,
+                notes: document.getElementById('journal-notes').value, tomorrowPlan: document.getElementById('journal-tomorrow-plan').value,
+                createdAt: new Date().toISOString()
+            };
+
+            await push(ref(db, 'reflectionJournals'), journalData);
+            showToast('Jurnal refleksi berhasil disimpan!');
+            closeModal();
+
+        } catch (error) {
+            showToast(error.message, true);
+        } finally {
+            submitButton.disabled = false;
+            submitButton.textContent = 'Simpan Jurnal';
+        }
+    };
+
+    const renderJournals = () => {
+        const journalsRef = query(ref(db, 'reflectionJournals'), orderByChild('date'));
+        onValue(journalsRef, async (snapshot) => {
+            journalListContainer.innerHTML = LOADER_HTML;
+
+            if (!snapshot.exists()) {
+                journalListContainer.innerHTML = '<div class="bg-white rounded-lg shadow-md p-10 text-center text-gray-500"><p>Belum ada jurnal refleksi yang dibuat.</p></div>';
+                return;
+            }
+
+            const allJournals = [];
+            snapshot.forEach(childSnap => allJournals.push({ id: childSnap.key, ...childSnap.val() }));
+            allJournals.reverse();
+
+            const startDate = filterStartDate.value, endDate = filterEndDate.value;
+            const filteredJournals = allJournals.filter(j => (!startDate || j.date >= startDate) && (!endDate || j.date <= endDate));
+
+            if (filteredJournals.length === 0) {
+                journalListContainer.innerHTML = '<div class="bg-white rounded-lg shadow-md p-10 text-center text-gray-500"><p>Tidak ada jurnal yang cocok dengan filter.</p></div>';
+                return;
+            }
+
+            journalListContainer.innerHTML = '';
+            filteredJournals.forEach(j => {
+                const card = document.createElement('div');
+                card.className = 'bg-white p-5 rounded-lg shadow-md border-l-4 border-emerald-500 relative';
+                card.innerHTML = `<div class="flex justify-between items-start mb-3"><div><h4 class="font-bold text-lg">${j.subject}</h4><p class="text-sm text-gray-600">${j.kelas} | ${j.date} - ${j.day}</p></div><div class="flex gap-3 text-gray-500"><i data-lucide="${{ 'Cerah': 'sun', 'Berawan': 'cloud', 'Hujan': 'cloud-rain', 'Badai': 'cloud-lightning' }[j.weather] || 'sun'}" title="Cuaca: ${j.weather}"></i><i data-lucide="${{ 'Senang': 'smile', 'Biasa': 'meh', 'Sedih': 'frown', 'Marah': 'angry' }[j.feeling] || 'smile'}" title="Perasaan: ${j.feeling}"></i></div></div><div class="space-y-3 text-sm">${j.achievements ? `<p><strong>Pencapaian:</strong> ${j.achievements.replace(/\n/g, '<br>')}</p>` : ''}${j.notes ? `<p><strong>Catatan:</strong> ${j.notes.replace(/\n/g, '<br>')}</p>` : ''}${j.tomorrowPlan ? `<p><strong>Rencana Besok:</strong> ${j.tomorrowPlan.replace(/\n/g, '<br>')}</p>` : ''}</div><button data-id="${j.id}" class="delete-journal-btn text-red-500 hover:text-red-700 text-xs absolute top-3 right-3"><i data-lucide="trash-2" class="w-4 h-4"></i></button>`;
+                journalListContainer.appendChild(card);
+            });
+            createLucideIcons();
+        });
+    };
+    
+    const handlePrint = async () => {
+        const startDate = filterStartDate.value, endDate = filterEndDate.value;
+        if (!startDate || !endDate) { showToast('Pilih rentang tanggal untuk mencetak!', true); return; }
+        showToast('Mempersiapkan jurnal untuk dicetak...');
+        const journalsSnap = await get(query(ref(db, 'reflectionJournals'), orderByChild('date')));
+        if (!journalsSnap.exists()) { showToast('Tidak ada jurnal ditemukan untuk siswa ini.', true); return; }
+        const journalsToPrint = [];
+        journalsSnap.forEach(childSnap => { const j = childSnap.val(); if (j.date >= startDate && j.date <= endDate) journalsToPrint.push(j); });
+        if (journalsToPrint.length === 0) { showToast('Tidak ada jurnal pada rentang tanggal yang dipilih.', true); return; }
+        let html = `<!DOCTYPE html><html><head><title>Jurnal Refleksi Guru</title><style>body{font-family:'Segoe UI',sans-serif;line-height:1.6}.journal-entry{border:1px solid #ccc;border-radius:8px;padding:15px;margin-bottom:20px;page-break-inside:avoid}h1,h2,h3{color:#333}h3{border-bottom:2px solid #eee;padding-bottom:5px}p{margin:5px 0}strong{color:#555}</style></head><body><h1>Jurnal Refleksi Guru</h1><h2>Nama: Mas Panji Purnomo</h2><p>Periode: ${startDate} s/d ${endDate}</p><hr>`;
+        journalsToPrint.forEach(j => { html += `<div class="journal-entry"><h3>${j.kelas} | ${j.date} - ${j.day} (${j.subject})</h3><p><strong>Cuaca:</strong> ${j.weather} | <strong>Perasaan:</strong> ${j.feeling}</p><p><strong>Tugas:</strong><br>${j.tasks.replace(/\n/g, '<br>')||'-'}</p><p><strong>Pencapaian:</strong><br>${j.achievements.replace(/\n/g, '<br>')||'-'}</p><p><strong>Catatan:</strong><br>${j.notes.replace(/\n/g, '<br>')||'-'}</p><p><strong>Rencana Besok:</strong><br>${j.tomorrowPlan.replace(/\n/g, '<br>')||'-'}</p></div>`; });
+        html += `</body></html>`;
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(html);
+        printWindow.document.close();
+        // PERBAIKAN: Tunda pencetakan untuk menghindari konflik audio.
+        setTimeout(() => {
+            printWindow.focus();
+            printWindow.print();
+        }, 200);
+    };
+
+    addJournalButton.onclick = openModal;
+    closeJournalModalButton.onclick = closeModal;
+    cancelJournalButton.onclick = closeModal;
+    filterStartDate.onchange = renderJournals;
+    filterEndDate.onchange = renderJournals;
+    printButton.onclick = handlePrint;
+    journalListContainer.addEventListener('click', async e => {
+        const deleteBtn = e.target.closest('.delete-journal-btn');
+        if (deleteBtn && confirm('Yakin ingin menghapus jurnal ini?')) {
+            await remove(ref(db, `reflectionJournals/${deleteBtn.dataset.id}`));
+            showToast('Jurnal berhasil dihapus.');
+        }
+    });
+
+    setupSelectors();
+    renderJournals();
 }
 
 // Panggil lucide.createIcons() secara global sekali untuk halaman login & student
