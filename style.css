@@ -124,3 +124,43 @@ button:disabled { opacity: 0.7; cursor: not-allowed; }
   100% { transform: rotate(calc(var(--s,1)*120deg)) translate(0) }
   }
 
+/* --- MANTRA BARU: Gaya untuk Jurnal Refleksi --- */
+.journal-selector input[type="radio"] {
+    display: none; /* Sembunyikan radio button asli */
+}
+
+.journal-selector label {
+    cursor: pointer;
+    padding: 0.5rem 0.75rem;
+    border: 2px solid #e5e7eb; /* border-gray-200 */
+    border-radius: 0.5rem; /* rounded-lg */
+    transition: all 0.2s ease-in-out;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 60px;
+}
+
+.journal-selector label:hover {
+    border-color: #9ca3af; /* border-gray-400 */
+    background-color: #f9fafb; /* bg-gray-50 */
+}
+
+.journal-selector input[type="radio"]:checked + label {
+    border-color: #3b82f6; /* border-blue-500 */
+    background-color: #eff6ff; /* bg-blue-50 */
+    transform: scale(1.05);
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+}
+
+.journal-selector .icon { width: 2rem; height: 2rem; margin-bottom: 0.25rem; }
+.journal-selector .text { font-size: 0.75rem; font-weight: 600; color: #4b5563; }
+
+.day-selector button {
+    padding: 0.5rem 1rem; border: 2px solid #e5e7eb; border-radius: 9999px;
+    font-weight: 600; transition: all 0.2s ease-in-out;
+}
+
+.day-selector button.selected {
+    background-color: #3b82f6; color: white; border-color: #3b82f6;
+}
