@@ -137,6 +137,7 @@
               
                 <a href="#shop" class="nav-link text-gray-500 hover:text-blue-600 flex items-center px-2 py-4 text-sm font-semibold border-b-2 border-transparent"><i data-lucide="shopping-cart" class="w-4 h-4 mr-2"></i>Shop</a>
                 <a href="#magic" class="nav-link text-gray-500 hover:text-blue-600 flex items-center px-2 py-4 text-sm font-semibold border-b-2 border-transparent"><i data-lucide="wand-2" class="w-4 h-4 mr-2"></i>Magic Controls</a>
+                <a href="#journal" class="nav-link text-gray-500 hover:text-blue-600 flex items-center px-2 py-4 text-sm font-semibold border-b-2 border-transparent"><i data-lucide="book-heart" class="w-4 h-4 mr-2"></i>Jurnal Refleksi</a>
             </div></div></nav>
         </header>
         
@@ -233,6 +234,34 @@
                         <div><label for="end-date" class="block text-sm font-medium text-gray-700">Sampai Tanggal</label><input type="date" id="end-date" class="mt-1 p-2 border border-gray-300 rounded-md"></div>
                     </div>
                 </div>
+            </div>
+            <div id="journal-page" class="hidden space-y-6">
+                <!-- Card untuk Aksi Jurnal -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex flex-wrap justify-between items-center gap-4 mb-6">
+                        <div>
+                            <h2 class="text-xl font-semibold">Jurnal Refleksi Siswa</h2>
+                            <p class="text-sm text-gray-500 mt-1">Catat dan tinjau refleksi harian siswa.</p>
+                        </div>
+                        <button id="add-journal-button" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-lg flex items-center">
+                            <i data-lucide="plus-circle" class="w-4 h-4 mr-2"></i>Tambah Jurnal Baru
+                        </button>
+                    </div>
+                    <div class="flex flex-col sm:flex-row items-end gap-4 border-t pt-6">
+                        <div class="flex-grow">
+                            <label for="journal-filter-start-date" class="block text-sm font-medium text-gray-700">Mulai Tanggal</label>
+                            <input type="date" id="journal-filter-start-date" class="mt-1 p-2 border border-gray-300 rounded-md w-full">
+                        </div>
+                        <div class="flex-grow">
+                            <label for="journal-filter-end-date" class="block text-sm font-medium text-gray-700">Sampai Tanggal</label>
+                            <input type="date" id="journal-filter-end-date" class="mt-1 p-2 border border-gray-300 rounded-md w-full">
+                        </div>
+                        <button id="print-journal-button" class="bg-gray-700 hover:bg-gray-800 text-white font-bold py-2 px-4 rounded-lg flex items-center sm:w-auto w-full">
+                            <i data-lucide="printer" class="w-4 h-4 mr-2"></i>Cetak
+                        </button>
+                    </div>
+                </div>
+                <div id="journal-list-container" class="space-y-4"><div class="loading-container"><div class="loader"></div><p class="loading-text">Memuat jurnal refleksi...</p></div></div>
             </div>
             <div id="quests-page" class="hidden space-y-6">
                 <!-- Card 1: Quest Controls -->
@@ -846,6 +875,57 @@
             </div>
         </div>
     </div>
+    <!-- Modal Jurnal Refleksi -->
+<div id="journal-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40 hidden modal-overlay opacity-0">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-3xl m-4 modal-content transform scale-95 max-h-[90vh] flex flex-col">
+        <div class="p-6 border-b flex justify-between items-center">
+            <h3 id="journal-modal-title" class="text-xl font-semibold">Tambah Jurnal Refleksi Baru</h3>
+            <button id="close-journal-modal-button" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+        </div>
+        <form id="journal-form" class="p-6 space-y-4 overflow-y-auto">
+            <input type="hidden" id="journal-id">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label for="journal-date" class="block text-sm font-medium text-gray-700">Tanggal</label>
+                    <input type="date" id="journal-date" required class="mt-1 w-full p-2 border border-gray-300 rounded-md">
+                </div>
+                <div>
+                    <label for="journal-day-name" class="block text-sm font-medium text-gray-700">Hari</label>
+                    <input type="text" id="journal-day-name" readonly class="mt-1 w-full p-2 border border-gray-300 rounded-md bg-gray-100 cursor-not-allowed">
+                </div>
+                <div>
+                    <label for="journal-class" class="block text-sm font-medium text-gray-700">Kelas</label>
+                    <select id="journal-class" required class="mt-1 w-full p-2 border border-gray-300 rounded-md bg-white"><option value="X RPL">X RPL</option><option value="XI RPL">XI RPL</option><option value="XII RPL">XII RPL</option><option value="X DPB">X DPB</option><option value="XI DPB">XI DPB</option><option value="XII DPB">XII DPB</option><option value="Umum">Umum/Semua Kelas</option></select>
+                </div>
+                <div>
+                    <label for="journal-subject" class="block text-sm font-medium text-gray-700">Mata Pelajaran</label>
+                    <select id="journal-subject" required class="mt-1 w-full p-2 border border-gray-300 rounded-md bg-white"><option value="RPL">RPL</option><option value="Web">Web</option><option value="Basis Data">Basis Data</option></select>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Cuaca Hari Ini</label>
+                    <div id="journal-weather-selector" class="flex flex-wrap gap-3"></div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Perasaanku Hari Ini</label>
+                    <div id="journal-feeling-selector" class="flex flex-wrap gap-3"></div>
+                </div>
+            </div>
+
+            <div><label for="journal-tasks" class="block text-sm font-medium text-gray-700">Daftar Tugas</label><textarea id="journal-tasks" rows="3" class="mt-1 w-full p-2 border border-gray-300 rounded-md" placeholder="Tugas apa saja yang dikerjakan hari ini?"></textarea></div>
+            <div><label for="journal-achievements" class="block text-sm font-medium text-gray-700">Pencapaian Hari Ini</label><textarea id="journal-achievements" rows="3" class="mt-1 w-full p-2 border border-gray-300 rounded-md" placeholder="Apa saja yang berhasil kamu capai?"></textarea></div>
+            <div><label for="journal-notes" class="block text-sm font-medium text-gray-700">Catatan Hari Ini</label><textarea id="journal-notes" rows="3" class="mt-1 w-full p-2 border border-gray-300 rounded-md" placeholder="Hal penting atau menarik apa yang terjadi?"></textarea></div>
+            <div><label for="journal-tomorrow-plan" class="block text-sm font-medium text-gray-700">Rencana Esok Hari</label><textarea id="journal-tomorrow-plan" rows="3" class="mt-1 w-full p-2 border border-gray-300 rounded-md" placeholder="Apa yang akan kamu lakukan besok?"></textarea></div>
+
+            <div class="pt-4 flex justify-end space-x-2">
+                <button type="button" id="cancel-journal-button" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg">Batal</button>
+                <button type="submit" id="submit-journal-button" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-lg">Simpan Jurnal</button>
+            </div>
+        </form>
+    </div>
+</div>
     <script type="module" src="script.js"></script>
 </body>
 </html>
