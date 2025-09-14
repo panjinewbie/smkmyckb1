@@ -2602,6 +2602,22 @@ async function handleCancelBounty(bountyId, bountyData, closeModalCallback) {
     }
 }
 
+// --- FUNGSI BARU: Menambahkan log ke modal solo battle ---
+function addSoloBattleLog(text, type = 'normal') {
+    const logContainer = document.getElementById('solo-battle-log-container');
+    if (!logContainer) return;
+    const colorClass = type === 'damage' ? 'text-red-400' : type === 'heal' ? 'text-green-400' : 'text-gray-300';
+    const logEntry = document.createElement('p');
+    logEntry.className = colorClass;
+    logEntry.textContent = `> ${text}`;
+    
+    const placeholder = logContainer.querySelector('.text-gray-400');
+    if (placeholder) placeholder.remove();
+    
+    logContainer.appendChild(logEntry);
+    logContainer.scrollTop = logContainer.scrollHeight;
+}
+
 // =======================================================
 //          MANTRA BARU: SOLO AI BATTLE
 // =======================================================
@@ -2658,6 +2674,10 @@ async function startSoloAiBattle(uid) {
     const modal = document.getElementById('solo-ai-battle-modal');
     if (!modal) return;
 
+    // Reset log
+    const logContainer = document.getElementById('solo-battle-log-container');
+    if (logContainer) logContainer.innerHTML = '<p class="text-gray-400">> Pertarungan dimulai...</p>';
+
     document.getElementById('forfeit-solo-battle-button').onclick = () => {
         if (confirm("Yakin mau kabur? Kamu akan kehilangan sedikit HP.")) {
             endSoloAiBattle(false, true); // isVictory=false, isForfeit=true
@@ -2679,22 +2699,32 @@ function updateSoloBattleUI() {
     const playerInfo = document.getElementById('solo-battle-player-info');
     const playerHpPercent = Math.max(0, (student.currentHp / student.maxHp) * 100);
     playerInfo.innerHTML = `
-        <p class="font-bold text-lg">${student.nama}</p>
-        <div class="w-full bg-gray-600 rounded-full h-4 mt-1">
-            <div class="bg-green-500 h-4 rounded-full" style="width: ${playerHpPercent}%"></div>
+        <div class="flex items-center gap-3">
+            <img src="${student.fotoProfilBase64 || `https://placehold.co/64x64/e2e8f0/3d4852?text=${student.nama.charAt(0)}`}" class="w-16 h-16 rounded-full object-cover border-2 border-green-400">
+            <div class="flex-grow">
+                <p class="font-bold text-lg">${student.nama}</p>
+                <div class="w-full bg-gray-600 rounded-full h-4 mt-1">
+                    <div class="bg-green-500 h-4 rounded-full" style="width: ${playerHpPercent}%"></div>
+                </div>
+                <p class="text-sm font-mono">${student.currentHp} / ${student.maxHp} HP</p>
+            </div>
         </div>
-        <p class="text-sm font-mono">${student.currentHp} / ${student.maxHp} HP</p>
     `;
 
     // Info Monster
     const monsterInfo = document.getElementById('solo-battle-monster-info');
     const monsterHpPercent = Math.max(0, (monster.currentHp / monster.maxHp) * 100);
     monsterInfo.innerHTML = `
-        <p class="font-bold text-lg">${monster.monsterName}</p>
-        <div class="w-full bg-gray-600 rounded-full h-4 mt-1">
-            <div class="bg-red-500 h-4 rounded-full" style="width: ${monsterHpPercent}%"></div>
+        <div class="flex items-center gap-3 justify-end">
+            <div class="flex-grow text-right">
+                <p class="font-bold text-lg">${monster.monsterName}</p>
+                <div class="w-full bg-gray-600 rounded-full h-4 mt-1">
+                    <div class="bg-red-500 h-4 rounded-full" style="width: ${monsterHpPercent}%"></div>
+                </div>
+                <p class="text-sm font-mono">${monster.currentHp} / ${monster.maxHp} HP</p>
+            </div>
+            <img src="${monster.monsterImageBase64 || 'https://placehold.co/64x64/a0aec0/ffffff?text=M'}" class="w-16 h-16 rounded-full object-cover border-2 border-red-400">
         </div>
-        <p class="text-sm font-mono">${monster.currentHp} / ${monster.maxHp} HP</p>
     `;
 }
 
@@ -2713,7 +2743,7 @@ async function nextSoloAiTurn() {
     currentSoloBattleState.isAnswerLocked = true; // Kunci saat memuat
 
     // Pengaturan Timer
-    let timeLeft = 10;
+    let timeLeft = 20;
     timerEl.textContent = timeLeft;
     timerEl.classList.remove('text-red-500');
     
@@ -2792,12 +2822,12 @@ async function handleSoloAiAnswer(selectedIndex) {
         audioPlayer.success();
         const damage = 20 + Math.floor(Math.random() * 10);
         monster.currentHp = Math.max(0, monster.currentHp - damage);
-        showToast(`Serangan berhasil! ${damage} damage!`);
+        addSoloBattleLog(`Serangan berhasil! ${damage} damage!`, 'heal');
     } else {
         audioPlayer.error();
         const damage = 10 + Math.floor(Math.random() * 5);
         student.currentHp = Math.max(0, student.currentHp - damage);
-        showToast(selectedIndex === -1 ? `Waktu habis! Kamu menerima ${damage} damage!` : `Jawaban salah! Kamu menerima ${damage} damage!`, true);
+        addSoloBattleLog(selectedIndex === -1 ? `Waktu habis! Kamu menerima ${damage} damage!` : `Jawaban salah! Kamu menerima ${damage} damage!`, 'damage');
     }
 
     // Cek akhir pertarungan
@@ -2826,9 +2856,11 @@ async function endSoloAiBattle(isVictory, isForfeit = false) {
         const penalty = Math.floor(student.maxHp * 0.05); // Penalti 5% HP karena kabur
         finalHp = Math.max(1, student.currentHp - penalty);
         questionContainer.innerHTML = `<h2 class="text-2xl font-bold text-yellow-400">Kamu Kabur!</h2><p>Kamu kehilangan ${penalty} HP.</p>`;
+        addSoloBattleLog(`Kamu kabur dan kehilangan ${penalty} HP.`, 'damage');
         audioPlayer.error();
     } else if (isVictory) {
         questionContainer.innerHTML = `<h2 class="text-2xl font-bold text-green-400">KAMU MENANG!</h2><p>Hadiah: +${monster.rewardCoin} Koin, +${monster.rewardXp} XP</p>`;
+        addSoloBattleLog(`KAMU MENANG! Hadiah diterima.`, 'heal');
         audioPlayer.success();
         
         const xpPerLevel = 1000;
@@ -2840,6 +2872,7 @@ async function endSoloAiBattle(isVictory, isForfeit = false) {
         updates[`/students/${uid}/coin`] = (student.coin || 0) + (monster.rewardCoin || 0);
     } else {
         questionContainer.innerHTML = `<h2 class="text-2xl font-bold text-red-500">KAMU KALAH...</h2><p>Coba lagi lain kali!</p>`;
+        addSoloBattleLog(`Kamu telah dikalahkan...`, 'damage');
         audioPlayer.error();
     }
 
