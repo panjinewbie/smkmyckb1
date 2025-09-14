@@ -2743,7 +2743,7 @@ async function nextSoloAiTurn() {
     currentSoloBattleState.isAnswerLocked = true; // Kunci saat memuat
 
     // Pengaturan Timer
-    let timeLeft = 20;
+    let timeLeft = 30; 
     timerEl.textContent = timeLeft;
     timerEl.classList.remove('text-red-500');
     
@@ -2782,8 +2782,8 @@ async function nextSoloAiTurn() {
         
         questionData.options.forEach((option, index) => {
             const button = document.createElement('button');
-            button.className = 'p-4 rounded-lg text-left transition-colors bg-gray-700 hover:bg-gray-600';
-            button.innerHTML = `<span class="font-bold text-yellow-400 mr-2">${String.fromCharCode(65 + index)}:</span> ${option}`;
+            button.className = 'p-4 rounded-lg text-left transition-colors bg-indigo-500 hover:bg-fuchsia-500';
+            button.innerHTML = `<span class="font-bold text-amber-400 mr-2">${String.fromCharCode(65 + index)}:</span> ${option}`;
             button.onclick = () => handleSoloAiAnswer(index);
             optionsContainer.appendChild(button);
         });
