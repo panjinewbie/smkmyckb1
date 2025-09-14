@@ -2803,47 +2803,130 @@ async function nextSoloAiTurn() {
 }
 
 async function handleSoloAiAnswer(selectedIndex) {
-    if (currentSoloBattleState.isAnswerLocked) return;
-    currentSoloBattleState.isAnswerLocked = true;
-    clearInterval(soloBattleTimerId);
-
-    const { student, monster, currentQuestionData } = currentSoloBattleState;
-    const options = document.querySelectorAll('#solo-battle-options-container button');
-    const isCorrect = selectedIndex === currentQuestionData.answerIndex;
-
-    // Umpan balik visual
-    options.forEach(btn => btn.disabled = true);
-    if (selectedIndex !== -1) { // Jika bukan timeout
-        options[selectedIndex].classList.add(isCorrect ? 'bg-green-600' : 'bg-red-600');
-    }
-    if (!isCorrect) {
-        options[currentQuestionData.answerIndex]?.classList.add('bg-green-600');
-    }
-
-    await new Promise(res => setTimeout(res, 1500)); // Jeda untuk umpan balik
-
-    // Terapkan logika permainan
-    if (isCorrect) {
-        audioPlayer.success();
-        const damage = 20 + Math.floor(Math.random() * 10);
-        monster.currentHp = Math.max(0, monster.currentHp - damage);
-        addSoloBattleLog(`Serangan berhasil! ${damage} damage!`, 'heal');
-    } else {
-        audioPlayer.error();
-        const damage = 10 + Math.floor(Math.random() * 5);
-        student.currentHp = Math.max(0, student.currentHp - damage);
-        addSoloBattleLog(selectedIndex === -1 ? `Waktu habis! Kamu menerima ${damage} damage!` : `Jawaban salah! Kamu menerima ${damage} damage!`, 'damage');
-    }
-
-    // Cek akhir pertarungan
-    if (monster.currentHp <= 0) {
-        endSoloAiBattle(true);
-    } else if (student.currentHp <= 0) {
-        endSoloAiBattle(false);
-    } else {
-        currentSoloBattleState.isAnswerLocked = false;
-        nextSoloAiTurn();
-    }
+     if (currentSoloBattleState.isAnswerLocked) return;
+     currentSoloBattleState.isAnswerLocked = true;
+     clearInterval(soloBattleTimerId);
+ 
+     const { student, monster, currentQuestionData } = currentSoloBattleState;
+     const options = document.querySelectorAll('#solo-battle-options-container button');
+     const isCorrect = selectedIndex === currentQuestionData.answerIndex;
+ 
+     // Umpan balik visual
+     options.forEach(btn => btn.disabled = true);
+     if (selectedIndex !== -1) {
+         options[selectedIndex].classList.add(isCorrect ? 'bg-green-600' : 'bg-red-600');
+     }
+     if (!isCorrect) {
+         options[currentQuestionData.answerIndex]?.classList.add('bg-green-600');
+     }
+ 
+     await new Promise(res => setTimeout(res, 1500));
+ 
+     // --- MANTRA PERBAIKAN: Logika Skill Dimulai ---
+     const currentPlayer = student; // Alias untuk konsistensi
+ 
+     // Ambil data skill pasif dari Kitab
+     const skillIndex = Math.min(currentPlayer.level - 1, 4);
+     const passiveSkill = SKILL_BOOK[currentPlayer.peran]?.passive[skillIndex];
+ 
+     // Cek & kurangi MP untuk skill pasif
+     let passiveIsActive = false;
+     if (passiveSkill && currentPlayer.mp >= passiveSkill.mpCost) {
+         currentPlayer.mp -= passiveSkill.mpCost;
+         passiveIsActive = true;
+         addSoloBattleLog(`✨ Skill Pasif [${passiveSkill.name}] aktif! (-${passiveSkill.mpCost} MP)`, 'heal');
+     } else {
+         addSoloBattleLog(`⚠️ MP tidak cukup! Skill Pasif tidak aktif.`, 'damage');
+     }
+ 
+     if (isCorrect) {
+         audioPlayer.success();
+         addSoloBattleLog(`Jawaban BENAR! ${currentPlayer.nama} bersiap...`);
+         await new Promise(res => setTimeout(res, 800));
+ 
+         if (currentPlayer.peran === 'Prajurit') {
+             let studentDamage = 25 + Math.floor(Math.random() * 10);
+             if (Math.random() < 0.25) {
+                 studentDamage = Math.floor(studentDamage * 1.5);
+                 addSoloBattleLog(`💥 SERANGAN PERKASA! ${currentPlayer.nama} mendaratkan serangan kritis, ${studentDamage} damage!`, 'heal');
+             } else {
+                 addSoloBattleLog(`⚔️ ${currentPlayer.nama} menyerang, ${studentDamage} damage.`, 'normal');
+             }
+             monster.currentHp = Math.max(0, monster.currentHp - studentDamage);
+         } else if (currentPlayer.peran === 'Penyembuh') {
+             const healAmount = Math.floor(currentPlayer.maxHp * 0.20);
+             currentPlayer.currentHp = Math.min(currentPlayer.maxHp, currentPlayer.currentHp + healAmount);
+             addSoloBattleLog(`💖 PEMULIHAN AJAIB! ${currentPlayer.nama} memulihkan dirinya sebesar ${healAmount} HP.`, 'heal');
+         } else if (currentPlayer.peran === 'Penyihir') {
+             let studentDamage = 25 + Math.floor(Math.random() * 10);
+             if (passiveIsActive && Math.random() < 0.15) {
+                 studentDamage = Math.floor(studentDamage * 1.5);
+                 addSoloBattleLog(`✨ CRITICAL HIT!`, 'heal');
+             }
+             if (passiveIsActive) {
+                 studentDamage = Math.floor(studentDamage * 1.05);
+             }
+             monster.currentHp = Math.max(0, monster.currentHp - studentDamage);
+             addSoloBattleLog(`🔮 ${currentPlayer.nama} merapal sihir, ${studentDamage} damage!`, 'heal');
+         } else {
+             let studentDamage = 25 + Math.floor(Math.random() * 10);
+             addSoloBattleLog(`👤 ${currentPlayer.nama} menyerang, ${studentDamage} damage.`, 'normal');
+             monster.currentHp = Math.max(0, monster.currentHp - studentDamage);
+         }
+     } else {
+         audioPlayer.error();
+         addSoloBattleLog(selectedIndex === -1 ? `Waktu habis! ${monster.monsterName} menyerang...` : `Jawaban SALAH! ${monster.monsterName} menyerang...`);
+         await new Promise(res => setTimeout(res, 800));
+ 
+         const availableSkills = monster.skills ? Object.keys(monster.skills).filter(s => monster.skills[s]) : [];
+         const monsterActionChoice = Math.random();
+ 
+         const performPhysicalAttack = () => {
+             let monsterDamage = 15 + Math.floor(Math.random() * 10);
+             if (passiveIsActive && currentPlayer.peran === 'Prajurit' && passiveSkill) {
+                 const reductionPercent = passiveSkill.desc.includes("12%") ? 0.12 : (passiveSkill.desc.includes("6%") ? 0.06 : 0.03);
+                 const reduction = Math.floor(monsterDamage * reductionPercent);
+                 monsterDamage -= reduction;
+                 addSoloBattleLog(`🛡️ Skill Pasif [${passiveSkill.name}] mengurangi ${reduction} damage!`, 'heal');
+             }
+             currentPlayer.currentHp = Math.max(0, currentPlayer.currentHp - monsterDamage);
+             addSoloBattleLog(`⚔️ ${monster.monsterName} menyerang fisik, ${monsterDamage} damage diterima!`, 'damage');
+         };
+ 
+         if (availableSkills.length > 0 && monsterActionChoice > 0.5) {
+             const randomSkill = availableSkills[Math.floor(Math.random() * availableSkills.length)];
+             switch (randomSkill) {
+                 case 'racun':
+                 case 'diam':
+                     if (!currentPlayer.statusEffects) currentPlayer.statusEffects = {};
+                     currentPlayer.statusEffects[randomSkill] = { expires: Date.now() + (2 * 24 * 60 * 60 * 1000) };
+                     addSoloBattleLog(`☠️ ${monster.monsterName} menggunakan skill ${randomSkill}! Kamu terkena kutukan!`, 'damage');
+                     break;
+                 case 'knock':
+                     if (!currentPlayer.statusEffects) currentPlayer.statusEffects = {};
+                     currentPlayer.currentHp = 10;
+                     currentPlayer.statusEffects.knock = { expires: Date.now() + (2 * 24 * 60 * 60 * 1000) };
+                     addSoloBattleLog(`😵 ${monster.monsterName} menggunakan skill Knock! HP-mu menjadi 10!`, 'damage');
+                     break;
+                 default:
+                     performPhysicalAttack();
+                     break;
+             }
+         } else {
+             performPhysicalAttack();
+         }
+     }
+ 
+     // Cek akhir pertarungan
+     if (monster.currentHp <= 0) {
+         endSoloAiBattle(true);
+     } else if (student.currentHp <= 0) {
+         endSoloAiBattle(false);
+     } else {
+         await new Promise(res => setTimeout(res, 1200));
+         currentSoloBattleState.isAnswerLocked = false;
+         nextSoloAiTurn();
+     }
 }
 
 async function endSoloAiBattle(isVictory, isForfeit = false) {
@@ -2854,7 +2937,7 @@ async function endSoloAiBattle(isVictory, isForfeit = false) {
     const questionContainer = document.getElementById('solo-battle-question-container');
     document.getElementById('solo-battle-options-container').innerHTML = '';
 
-    const updates = {};
+    const updates = {}; // Pindahkan deklarasi ke atas
     let finalHp = student.currentHp;
 
     if (isForfeit) {
@@ -2880,9 +2963,24 @@ async function endSoloAiBattle(isVictory, isForfeit = false) {
         addSoloBattleLog(`Kamu telah dikalahkan...`, 'damage');
         audioPlayer.error();
     }
-
-    updates[`/students/${uid}/hp`] = finalHp;
     
+    // --- MANTRA PERBAIKAN: Simpan semua status akhir siswa ---
+    updates[`/students/${uid}/hp`] = finalHp;
+    updates[`/students/${uid}/mp`] = student.mp; // Simpan sisa MP
+
+    // Bersihkan efek temporer dan simpan efek permanen dari monster
+    const finalStatusEffects = student.statusEffects || {};
+    delete finalStatusEffects.knock; // Efek knock hanya berlaku selama battle
+    updates[`/students/${uid}/statusEffects`] = finalStatusEffects;
+
+    // Jika kalah, berikan kutukan Diam
+    if (!isVictory && !isForfeit) {
+        const durationInDays = 1;
+        const expiryTimestamp = Date.now() + (durationInDays * 24 * 60 * 60 * 1000);
+        updates[`/students/${uid}/statusEffects/diam`] = { expires: expiryTimestamp };
+        addSoloBattleLog(`☠️ Kamu terkena kutukan Diam karena HP habis!`);
+    }
+
     if (Object.keys(updates).length > 0) {
         await update(ref(db), updates);
     }
