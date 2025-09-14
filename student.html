@@ -343,38 +343,38 @@
 </div>
   
 <!-- Modal Solo AI Battle -->
-<div id="solo-ai-battle-modal" class="fixed inset-0 bg-black bg-opacity-80 flex-col items-center justify-center p-4 z-50 hidden opacity-0 transition-opacity duration-300">
-    <div class="w-full max-w-3xl h-full flex flex-col bg-[#e2e3e5] text-white-500 rounded-lg shadow-2xl border-2 border-black-500">
+<div id="solo-ai-battle-modal" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center p-2 sm:p-4 z-50 hidden opacity-0 transition-opacity duration-300">
+    <div class="w-full max-w-3xl max-h-[95vh] flex flex-col bg-[#1f2937] text-gray-200 rounded-lg shadow-2xl border-2 border-gray-700">
         <!-- Header: Player vs Monster -->
-        <div class="p-4 grid grid-cols-3 gap-4 items-center border-b border-gray-600">
-            <div id="solo-battle-player-info" class="text-left">
+        <div class="p-3 sm:p-4 grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4 items-center border-b border-gray-600 flex-shrink-0">
+            <div id="solo-battle-player-info" class="text-center sm:text-left order-2 sm:order-1">
                 <!-- Player info will be injected here -->
             </div>
-            <div class="text-center">
-                <h3 class="font-bold text-2xl font-game">BATTLE!</h3>
-                <div id="solo-battle-timer" class="text-4xl font-bold text-blue-400">10</div>
+            <div class="text-center order-1 sm:order-2">
+                <h3 class="font-bold text-xl sm:text-2xl font-game text-yellow-400">BATTLE!</h3>
+                <div id="solo-battle-timer" class="text-3xl sm:text-4xl font-bold text-blue-400">30</div>
             </div>
-            <div id="solo-battle-monster-info" class="text-right">
+            <div id="solo-battle-monster-info" class="text-center sm:text-right order-3">
                 <!-- Monster info will be injected here -->
             </div>
         </div>
 
-        <!-- Game Area -->
-        <div class="flex-grow flex flex-col justify-around p-6 relative">
-            <div id="solo-battle-question-container" class="bg-black-200 p-6 rounded-lg text-center border-2 border-black-500 min-h-[150px] flex items-center justify-center">
-                <h2 id="solo-battle-question-text" class="text-xl lg:text-2xl">Pertanyaan/mantra dari Ivy akan muncul di sini...</h2>
+        <!-- Game Area (Scrollable) -->
+        <div class="flex-grow overflow-y-auto p-4 space-y-4">
+            <div id="solo-battle-question-container" class="bg-gray-800 p-4 rounded-lg text-center border-2 border-gray-600 min-h-[100px] flex items-center justify-center">
+                <h2 id="solo-battle-question-text" class="text-lg md:text-xl">Pertanyaan/mantra dari Ivy akan muncul di sini...</h2>
             </div>
-            <div id="solo-battle-options-container" class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+            <div id="solo-battle-options-container" class="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <!-- Options will be generated here -->
             </div>
             <!-- Battle Log -->
-            <div id="solo-battle-log-container" class="mt-4 h-24 bg-gray-900 text-black font-mono text-xs p-2 rounded-md overflow-y-auto border border-gray-600">
+            <div id="solo-battle-log-container" class="h-28 bg-gray-900 text-gray-300 font-mono text-xs p-2 rounded-md overflow-y-auto border border-gray-600">
                 <p class="text-gray-400">> Pertarungan dimulai...</p>
             </div>
         </div>
         
         <!-- Footer with a button to leave (forfeits the battle) -->
-        <div class="p-4 bg-black bg-opacity-20 border-t border-gray-600 text-center">
+        <div class="p-3 bg-gray-900 border-t border-gray-600 text-center flex-shrink-0">
              <button id="forfeit-solo-battle-button" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg">Kabur</button>
         </div>
     </div>
