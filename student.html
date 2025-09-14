@@ -342,6 +342,38 @@
     </div>
 </div>
   
-</button>
+<!-- Modal Solo AI Battle -->
+<div id="solo-ai-battle-modal" class="fixed inset-0 bg-black bg-opacity-80 flex-col items-center justify-center p-4 z-50 hidden opacity-0 transition-opacity duration-300">
+    <div class="w-full max-w-3xl h-full flex flex-col bg-[#1a202c] text-white rounded-lg shadow-2xl border-2 border-red-500">
+        <!-- Header: Player vs Monster -->
+        <div class="p-4 grid grid-cols-3 gap-4 items-center border-b border-gray-600">
+            <div id="solo-battle-player-info" class="text-left">
+                <!-- Player info will be injected here -->
+            </div>
+            <div class="text-center">
+                <h3 class="font-bold text-2xl font-game">BATTLE!</h3>
+                <div id="solo-battle-timer" class="text-4xl font-bold text-yellow-400">10</div>
+            </div>
+            <div id="solo-battle-monster-info" class="text-right">
+                <!-- Monster info will be injected here -->
+            </div>
+        </div>
+
+        <!-- Game Area -->
+        <div class="flex-grow flex flex-col justify-around p-6 relative">
+            <div id="solo-battle-question-container" class="bg-gray-800 p-6 rounded-lg text-center border-2 border-gray-500 min-h-[150px] flex items-center justify-center">
+                <h2 id="solo-battle-question-text" class="text-xl lg:text-2xl">Pertanyaan dari AI akan muncul di sini...</h2>
+            </div>
+            <div id="solo-battle-options-container" class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                <!-- Options will be generated here -->
+            </div>
+        </div>
+        
+        <!-- Footer with a button to leave (forfeits the battle) -->
+        <div class="p-4 bg-black bg-opacity-20 border-t border-gray-600 text-center">
+             <button id="forfeit-solo-battle-button" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg">Kabur</button>
+        </div>
+    </div>
+</div>
 </body>
 </html>
