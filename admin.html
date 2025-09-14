@@ -598,6 +598,7 @@
         <option value="BLOCK_ATTACK">🛡️ Blok Serangan Musuh (1x)</option>
         <option value="CURE_EFFECT">🌿 Sembuhkan 1 Efek Negatif</option>
         <option value="GACHA_MYSTERY">🎁 Mistery! (Efek Gacha)</option>
+        <option value="BATTLE_TICKET">⚔️ Tiket Lawan Monster (AI)</option>
     </optgroup>
     <optgroup label="Buff Positif (Keuntungan)">
         <option value="BUFF_HP_REGEN">💖 Regenerasi HP (+5% per hari)</option>
@@ -687,9 +688,15 @@
                     <input type="file" id="monster-image" accept="image/*" class="mt-1 w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100">
                     <img id="monster-image-preview" class="mt-2 h-24 w-24 object-cover rounded-md hidden border">
                 </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Harta Karun (Koin)</label>
-                    <input type="number" id="monster-reward-coin" required class="mt-1 w-full p-2 border border-gray-300 rounded-md" value="50">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label for="monster-reward-coin" class="block text-sm font-medium text-gray-700">Hadiah Koin</label>
+                        <input type="number" id="monster-reward-coin" required class="mt-1 w-full p-2 border border-gray-300 rounded-md" value="50">
+                    </div>
+                    <div>
+                        <label for="monster-reward-xp" class="block text-sm font-medium text-gray-700">Hadiah XP</label>
+                        <input type="number" id="monster-reward-xp" required class="mt-1 w-full p-2 border border-gray-300 rounded-md" value="50">
+                    </div>
                 </div>
                 <hr class="my-4">
                 <h4 class="text-lg font-semibold">Skill Monster</h4>
