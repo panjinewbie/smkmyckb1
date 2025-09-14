@@ -87,6 +87,10 @@ const AI_QUIZ_SAFE_HAVENS = [4, 9, 14]; // Indeks dari array AI_QUIZ_PRIZES (soa
 const LIFELINE_COSTS = { '5050': 15, 'phone': 20, 'audience': 25 };
 let currentAiQuizState = {}; // Menyimpan state quiz yang sedang berjalan
 
+// --- MANTRA BARU: State untuk Solo Battle ---
+let currentSoloBattleState = {};
+let soloBattleTimerId = null;
+
 // --- MANTRA BARU: Audio Player dengan Tone.js (VERSI DIPERBARUI) ---
 const audioPlayer = {
     isReady: false,
@@ -1704,6 +1708,7 @@ function openUseItemModal(uid, itemIndex, itemData) {
         case 'CURSE_DIAM': effectText = 'Memberikan efek Diam pada target.'; break;
         case 'CURSE_KNOCK': effectText = 'Memberikan efek Knock pada target.'; break;
         case 'CURE_EFFECT': effectText = 'Menghilangkan 1 efek negatif dari dirimu.'; break;
+        case 'BATTLE_TICKET': effectText = 'Gunakan untuk langsung bertarung dengan monster acak! (Solo, Pertanyaan AI)'; break;
     }
     effectEl.textContent = effectText;
 
@@ -1867,6 +1872,20 @@ async function handleUseItem(uid, itemIndex, itemData, closeModalCallback) {
                 gachaMessage = 'Kotaknya kosong... Coba lagi lain kali!';
             }
             successMessage = gachaMessage;
+        } else if (itemData.effect === 'BATTLE_TICKET') {
+            // Efek ini tidak memberikan hadiah langsung, tetapi memulai pertarungan.
+            // Kita hanya perlu mengonsumsi item dan memicu logika pertarungan.
+            successMessage = `Tiket digunakan! Bersiap untuk pertarungan...`;
+            updates[`/students/${uid}/inventory/${itemIndex}`] = null; // Konsumsi item
+            await update(ref(db), updates);
+            showToast(successMessage);
+            closeModalCallback(); // Tutup modal penggunaan item
+            
+            // Mulai pertarungan setelah jeda singkat agar toast terlihat
+            setTimeout(() => {
+                startSoloAiBattle(uid);
+            }, 500);
+            return; // Kembali lebih awal untuk mencegah pembaruan ganda
         }
 
         updates[`/students/${uid}/inventory/${itemIndex}`] = null; // Hapus item
@@ -2584,6 +2603,259 @@ async function handleCancelBounty(bountyId, bountyData, closeModalCallback) {
 }
 
 // =======================================================
+//          MANTRA BARU: SOLO AI BATTLE
+// =======================================================
+
+async function startSoloAiBattle(uid) {
+    // 1. Ambil semua data yang diperlukan
+    const [studentSnap, questsSnap, configSnap] = await Promise.all([
+        get(ref(db, `students/${uid}`)),
+        get(ref(db, 'quests')),
+        get(ref(db, 'config/ivySettings'))
+    ]);
+
+    if (!studentSnap.exists() || !questsSnap.exists() || !configSnap.exists()) {
+        showToast("Gagal memulai: Data siswa, monster, atau AI tidak lengkap!", true);
+        return;
+    }
+    if (!configSnap.val().apiKey) {
+        showToast("Kunci API untuk AI belum diatur oleh admin!", true);
+        return;
+    }
+
+    // 2. Pilih monster acak
+    const allQuests = questsSnap.val();
+    // --- PERBAIKAN: Cek apakah ada monster yang tersedia ---
+    if (!allQuests || Object.keys(allQuests).length === 0) {
+        showToast("Tidak ada monster di dunia ini untuk dilawan! Minta admin untuk membuatnya.", true);
+        audioPlayer.error();
+        return;
+    }
+
+    const questIds = Object.keys(allQuests);
+    const randomQuestId = questIds[Math.floor(Math.random() * questIds.length)];
+    const monsterData = allQuests[randomQuestId];
+
+    // 3. Inisialisasi state pertarungan
+    const studentData = studentSnap.val();
+    currentSoloBattleState = {
+        uid: uid,
+        student: {
+            ...studentData,
+            currentHp: studentData.hp,
+            maxHp: (studentData.level || 1) * 100
+        },
+        monster: {
+            ...monsterData,
+            currentHp: monsterData.monsterHp,
+            maxHp: monsterData.monsterMaxHp || monsterData.monsterHp
+        },
+        ivySettings: configSnap.val(),
+        isAnswerLocked: false,
+    };
+
+    // 4. Atur dan buka modal
+    const modal = document.getElementById('solo-ai-battle-modal');
+    if (!modal) return;
+
+    document.getElementById('forfeit-solo-battle-button').onclick = () => {
+        if (confirm("Yakin mau kabur? Kamu akan kehilangan sedikit HP.")) {
+            endSoloAiBattle(false, true); // isVictory=false, isForfeit=true
+        }
+    };
+    
+    audioPlayer.openModal();
+    modal.classList.remove('hidden');
+    setTimeout(() => modal.classList.remove('opacity-0'), 10);
+
+    // 5. Mulai giliran pertama
+    nextSoloAiTurn();
+}
+
+function updateSoloBattleUI() {
+    const { student, monster } = currentSoloBattleState;
+
+    // Info Pemain
+    const playerInfo = document.getElementById('solo-battle-player-info');
+    const playerHpPercent = Math.max(0, (student.currentHp / student.maxHp) * 100);
+    playerInfo.innerHTML = `
+        <p class="font-bold text-lg">${student.nama}</p>
+        <div class="w-full bg-gray-600 rounded-full h-4 mt-1">
+            <div class="bg-green-500 h-4 rounded-full" style="width: ${playerHpPercent}%"></div>
+        </div>
+        <p class="text-sm font-mono">${student.currentHp} / ${student.maxHp} HP</p>
+    `;
+
+    // Info Monster
+    const monsterInfo = document.getElementById('solo-battle-monster-info');
+    const monsterHpPercent = Math.max(0, (monster.currentHp / monster.maxHp) * 100);
+    monsterInfo.innerHTML = `
+        <p class="font-bold text-lg">${monster.monsterName}</p>
+        <div class="w-full bg-gray-600 rounded-full h-4 mt-1">
+            <div class="bg-red-500 h-4 rounded-full" style="width: ${monsterHpPercent}%"></div>
+        </div>
+        <p class="text-sm font-mono">${monster.currentHp} / ${monster.maxHp} HP</p>
+    `;
+}
+
+async function nextSoloAiTurn() {
+    if (currentSoloBattleState.isAnswerLocked) return;
+    
+    updateSoloBattleUI();
+    
+    const questionTextEl = document.getElementById('solo-battle-question-text');
+    const optionsContainer = document.getElementById('solo-battle-options-container');
+    const timerEl = document.getElementById('solo-battle-timer');
+
+    // Reset UI
+    optionsContainer.innerHTML = '';
+    questionTextEl.innerHTML = '<div class="w-8 h-8 border-4 border-dashed rounded-full animate-spin border-yellow-400 mx-auto"></div>';
+    currentSoloBattleState.isAnswerLocked = true; // Kunci saat memuat
+
+    // Pengaturan Timer
+    let timeLeft = 10;
+    timerEl.textContent = timeLeft;
+    timerEl.classList.remove('text-red-500');
+    
+    if (soloBattleTimerId) clearInterval(soloBattleTimerId);
+
+    soloBattleTimerId = setInterval(() => {
+        timeLeft--;
+        timerEl.textContent = timeLeft;
+        if (timeLeft <= 3) timerEl.classList.add('text-red-500');
+        if (timeLeft <= 0) {
+            clearInterval(soloBattleTimerId);
+            handleSoloAiAnswer(-1); // -1 menandakan waktu habis
+        }
+    }, 1000);
+
+    // Buat dan tampilkan pertanyaan
+    try {
+        const settings = currentSoloBattleState.ivySettings;
+        const basePrompt = settings.aiQuizPrompt || "Buatkan satu soal kuis pilihan ganda (4 opsi) tentang [TOPIK]. Tingkat kesulitan: [KESULITAN].";
+        const finalPrompt = basePrompt.replace(/\[TOPIK\]/gi, "pengetahuan umum acak").replace(/\[KESULITAN\]/gi, "mudah");
+        const payload = {
+            contents: [{ parts: [{ text: finalPrompt }] }],
+            generationConfig: {
+                responseMimeType: "application/json",
+                responseSchema: { type: "OBJECT", properties: { question: { type: "STRING" }, options: { type: "ARRAY", items: { type: "STRING" } }, answerIndex: { type: "INTEGER" } }, required: ["question", "options", "answerIndex"] }
+            }
+        };
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${settings.apiKey}`;
+        const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        const result = await response.json();
+        const questionData = JSON.parse(result.candidates[0].content.parts[0].text);
+        
+        currentSoloBattleState.currentQuestionData = questionData;
+        questionTextEl.textContent = questionData.question;
+        
+        questionData.options.forEach((option, index) => {
+            const button = document.createElement('button');
+            button.className = 'p-4 rounded-lg text-left transition-colors bg-gray-700 hover:bg-gray-600';
+            button.innerHTML = `<span class="font-bold text-yellow-400 mr-2">${String.fromCharCode(65 + index)}:</span> ${option}`;
+            button.onclick = () => handleSoloAiAnswer(index);
+            optionsContainer.appendChild(button);
+        });
+        
+        currentSoloBattleState.isAnswerLocked = false; // Buka kunci setelah memuat
+    } catch (error) {
+        console.error("Gagal memuat soal AI solo battle:", error);
+        questionTextEl.textContent = "Gagal memuat soal. Silakan coba lagi nanti.";
+        clearInterval(soloBattleTimerId);
+        setTimeout(() => endSoloAiBattle(false), 2000); // Akhiri pertarungan jika ada error
+    }
+}
+
+async function handleSoloAiAnswer(selectedIndex) {
+    if (currentSoloBattleState.isAnswerLocked) return;
+    currentSoloBattleState.isAnswerLocked = true;
+    clearInterval(soloBattleTimerId);
+
+    const { student, monster, currentQuestionData } = currentSoloBattleState;
+    const options = document.querySelectorAll('#solo-battle-options-container button');
+    const isCorrect = selectedIndex === currentQuestionData.answerIndex;
+
+    // Umpan balik visual
+    options.forEach(btn => btn.disabled = true);
+    if (selectedIndex !== -1) { // Jika bukan timeout
+        options[selectedIndex].classList.add(isCorrect ? 'bg-green-600' : 'bg-red-600');
+    }
+    if (!isCorrect) {
+        options[currentQuestionData.answerIndex]?.classList.add('bg-green-600');
+    }
+
+    await new Promise(res => setTimeout(res, 1500)); // Jeda untuk umpan balik
+
+    // Terapkan logika permainan
+    if (isCorrect) {
+        audioPlayer.success();
+        const damage = 20 + Math.floor(Math.random() * 10);
+        monster.currentHp = Math.max(0, monster.currentHp - damage);
+        showToast(`Serangan berhasil! ${damage} damage!`);
+    } else {
+        audioPlayer.error();
+        const damage = 10 + Math.floor(Math.random() * 5);
+        student.currentHp = Math.max(0, student.currentHp - damage);
+        showToast(selectedIndex === -1 ? `Waktu habis! Kamu menerima ${damage} damage!` : `Jawaban salah! Kamu menerima ${damage} damage!`, true);
+    }
+
+    // Cek akhir pertarungan
+    if (monster.currentHp <= 0) {
+        endSoloAiBattle(true);
+    } else if (student.currentHp <= 0) {
+        endSoloAiBattle(false);
+    } else {
+        currentSoloBattleState.isAnswerLocked = false;
+        nextSoloAiTurn();
+    }
+}
+
+async function endSoloAiBattle(isVictory, isForfeit = false) {
+    clearInterval(soloBattleTimerId);
+    currentSoloBattleState.isAnswerLocked = true;
+
+    const { uid, student, monster } = currentSoloBattleState;
+    const questionContainer = document.getElementById('solo-battle-question-container');
+    document.getElementById('solo-battle-options-container').innerHTML = '';
+
+    const updates = {};
+    let finalHp = student.currentHp;
+
+    if (isForfeit) {
+        const penalty = Math.floor(student.maxHp * 0.05); // Penalti 5% HP karena kabur
+        finalHp = Math.max(1, student.currentHp - penalty);
+        questionContainer.innerHTML = `<h2 class="text-2xl font-bold text-yellow-400">Kamu Kabur!</h2><p>Kamu kehilangan ${penalty} HP.</p>`;
+        audioPlayer.error();
+    } else if (isVictory) {
+        questionContainer.innerHTML = `<h2 class="text-2xl font-bold text-green-400">KAMU MENANG!</h2><p>Hadiah: +${monster.rewardCoin} Koin, +${monster.rewardXp} XP</p>`;
+        audioPlayer.success();
+        
+        const xpPerLevel = 1000;
+        const currentTotalXp = ((student.level || 1) - 1) * xpPerLevel + (student.xp || 0);
+        const newTotalXp = currentTotalXp + (monster.rewardXp || 0);
+        
+        updates[`/students/${uid}/level`] = Math.floor(newTotalXp / xpPerLevel) + 1;
+        updates[`/students/${uid}/xp`] = newTotalXp % xpPerLevel;
+        updates[`/students/${uid}/coin`] = (student.coin || 0) + (monster.rewardCoin || 0);
+    } else {
+        questionContainer.innerHTML = `<h2 class="text-2xl font-bold text-red-500">KAMU KALAH...</h2><p>Coba lagi lain kali!</p>`;
+        audioPlayer.error();
+    }
+
+    updates[`/students/${uid}/hp`] = finalHp;
+    
+    if (Object.keys(updates).length > 0) {
+        await update(ref(db), updates);
+    }
+
+    setTimeout(() => {
+        const modal = document.getElementById('solo-ai-battle-modal');
+        modal.classList.add('opacity-0');
+        setTimeout(() => modal.classList.add('hidden'), 300);
+    }, 4000);
+}
+// =======================================================
 //                  LOGIKA NOTIFIKASI ADMIN
 // =======================================================
 
@@ -3270,6 +3542,7 @@ async function gameTick() {
             document.getElementById('monster-name').value = questData.monsterName;
             document.getElementById('monster-hp').value = questData.monsterHp;
             document.getElementById('monster-reward-coin').value = questData.rewardCoin;
+            document.getElementById('monster-reward-xp').value = questData.rewardXp || 50;
             if (questData.monsterImageBase64) {
                 monsterImagePreview.src = questData.monsterImageBase64;
                 monsterImagePreview.classList.remove('hidden');
@@ -3352,6 +3625,7 @@ async function gameTick() {
             monsterHp: parseInt(document.getElementById('monster-hp').value),
             monsterMaxHp: parseInt(document.getElementById('monster-hp').value),
             rewardCoin: parseInt(document.getElementById('monster-reward-coin').value),
+            rewardXp: parseInt(document.getElementById('monster-reward-xp').value),
             monsterImageBase64: monsterImagePreview.src.startsWith('data:image') ? monsterImagePreview.src : null,
             skills: skills,
             questions: questions
@@ -3388,8 +3662,11 @@ async function gameTick() {
                 card.innerHTML = `
                     <img src="${quest.monsterImageBase64 || 'https://placehold.co/300x200/a0aec0/ffffff?text=Monster'}" class="w-full h-32 object-cover rounded-md mb-4">
                     <h4 class="text-lg font-bold">${quest.monsterName}</h4>
-                    <p class="text-sm text-red-500">HP: ${quest.monsterHp}</p>
-                    <p class="text-sm text-yellow-500">Reward: ${quest.rewardCoin} Koin</p>
+                    <p class="text-sm text-red-500 font-semibold">HP: ${quest.monsterHp}</p>
+                    <div class="text-sm mt-2 space-y-1 flex-grow">
+                        <p class="text-yellow-600 font-medium flex items-center"><i data-lucide="coins" class="w-4 h-4 mr-1.5"></i> ${quest.rewardCoin} Koin</p>
+                        <p class="text-blue-600 font-medium flex items-center"><i data-lucide="star" class="w-4 h-4 mr-1.5"></i> ${quest.rewardXp || 0} XP</p>
+                    </div>
                     <div class="mt-auto pt-4 flex justify-end items-center">
                         <button data-id="${questId}" class="edit-quest-btn p-1 text-blue-600 hover:text-blue-800" title="Edit Monster"><i data-lucide="edit" class="w-4 h-4"></i></button>
                         <button data-id="${questId}" class="delete-quest-btn p-1 text-red-600 hover:text-red-800" title="Hapus Monster"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
@@ -4292,7 +4569,7 @@ function setupNoiseDetector() {
                 <img src="${quest.monsterImageBase64 || 'https://placehold.co/64x64/a0aec0/ffffff?text=M'}" class="w-16 h-16 object-cover rounded-md mr-4">
                 <div>
                     <h4 class="font-bold text-lg">${quest.monsterName}</h4>
-                    <p class="text-sm text-gray-600">HP: ${quest.monsterHp} | Reward: ${quest.rewardCoin} Koin</p>
+                    <p class="text-sm text-gray-600">HP: ${quest.monsterHp} | Reward: ${quest.rewardCoin} Koin, ${quest.rewardXp || 0} XP</p>
                 </div>
             `;
             monsterListDiv.appendChild(monsterCard);
@@ -4720,16 +4997,16 @@ classSelect.innerHTML = '<option value="SEMUA_KELAS">Semua Kelas</option>'; // O
             if (isVictory) {
                 document.getElementById('battle-question-text').textContent = "SELAMAT! KALIAN MENANG!";
                 
-                const xpReward = 50;
-                const coinReward = Math.ceil((monster.rewardCoin || 0) / party.length);
+                const xpRewardPerPerson = monster.rewardXp || 50;
+                const coinRewardPerPerson = Math.ceil((monster.rewardCoin || 0) / party.length);
 
                 party.forEach(p => {
                      if (p.currentHp > 0) {
                         const currentTotalXp = ((p.level || 1) - 1) * 1000 + (p.xp || 0);
-                        const newTotalXp = currentTotalXp + xpReward;
+                        const newTotalXp = currentTotalXp + xpRewardPerPerson;
                         updates[`/students/${p.id}/xp`] = newTotalXp % 1000;
                         updates[`/students/${p.id}/level`] = Math.floor(newTotalXp / 1000) + 1;
-                        updates[`/students/${p.id}/coin`] = (p.coin || 0) + coinReward;
+                        updates[`/students/${p.id}/coin`] = (p.coin || 0) + coinRewardPerPerson;
                      }
                     
                     // Simpan HP final dan kelola status efek
@@ -4748,7 +5025,7 @@ classSelect.innerHTML = '<option value="SEMUA_KELAS">Semua Kelas</option>'; // O
                     updates[`/students/${p.id}/statusEffects`] = finalStatusEffects;
                 });
                 
-                addLog(`Setiap anggota yang selamat mendapat ${xpReward} XP dan ${coinReward} Koin.`, 'heal');
+                addLog(`Setiap anggota yang selamat mendapat ${xpRewardPerPerson} XP dan ${coinRewardPerPerson} Koin.`, 'heal');
                 audioPlayer.success();
 
             } else {
@@ -5144,8 +5421,8 @@ async function setupAttendancePage() {
                 const newTotalXp = currentTotalXp + 10;
                 statUpdates.xp = newTotalXp % xpPerLevel;
                 statUpdates.level = Math.floor(newTotalXp / xpPerLevel) + 1;
-                statUpdates.coin = (data.coin || 0) + 10;
-                message = `+10 XP, +10 Koin untuk ${data.nama}!`;
+                statUpdates.coin = (data.coin || 0) + 5;
+                message = `+10 XP, +5 Koin untuk ${data.nama}!`;
                 audioPlayer.xpGain();
                 break;
             }
