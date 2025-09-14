@@ -1697,8 +1697,8 @@ function openUseItemModal(uid, itemIndex, itemData) {
     switch (itemData.effect) {
         case 'HEAL_HP': effectText = `Memulihkan ${itemData.effectValue} HP.`; break;
         case 'GAIN_XP': effectText = `Menambahkan ${itemData.effectValue} XP.`; break;
-        case 'BLOCK_ATTACK': effectText = `Memblok 1x serangan musuh.`; break;
-        case 'NONE': effectText = 'Tidak ada efek khusus.'; break;
+        case 'BLOCK_ATTACK': effectText = `Memblok 1x serangan musuh.`; break;        
+        case 'GACHA_MYSTERY': effectText = 'Memberikan hadiah acak! Apa ya isinya?'; break;
         // --- Teks Efek Baru ---
         case 'CURSE_RACUN': effectText = 'Memberikan efek Racun pada target.'; break;
         case 'CURSE_DIAM': effectText = 'Memberikan efek Diam pada target.'; break;
@@ -1809,6 +1809,64 @@ async function handleUseItem(uid, itemIndex, itemData, closeModalCallback) {
         // --- 👆 AKHIR DARI MANTRA 👆 ---
         else if (itemData.effect.startsWith('CURSE_')) {
              throw new Error("Item ini harus digunakan pada siswa lain!");
+        }
+        // --- 👇 MANTRA BARU UNTUK ITEM GACHA "MISTERY!" 👇 ---
+        else if (itemData.effect === 'GACHA_MYSTERY') {
+            const rand = Math.random() * 100;
+            let gachaMessage = 'Kotak misteri dibuka...';
+            
+            if (rand < 50) { // 50% Kembang Api
+                showFireworks();
+                gachaMessage = 'Wow! Kembang api kejutan! ✨';
+            } else if (rand < 65) { // 15% Hadiah Stat
+                const rewards = ['coin', 'xp', 'hp'];
+                const rewardType = rewards[Math.floor(Math.random() * rewards.length)];
+                const rewardValue = 10;
+
+                if (rewardType === 'coin') {
+                    updates[`/students/${uid}/coin`] = (studentData.coin || 0) + rewardValue;
+                } else if (rewardType === 'xp') {
+                    const xpPerLevel = 1000;
+                    const currentTotalXp = ((studentData.level || 1) - 1) * xpPerLevel + (studentData.xp || 0);
+                    const newTotalXp = currentTotalXp + rewardValue;
+                    updates[`/students/${uid}/level`] = Math.floor(newTotalXp / xpPerLevel) + 1;
+                    updates[`/students/${uid}/xp`] = newTotalXp % xpPerLevel;
+                } else { // hp
+                    const maxHp = (studentData.level || 1) * 100;
+                    updates[`/students/${uid}/hp`] = Math.min(maxHp, (studentData.hp || 0) + rewardValue);
+                }
+                gachaMessage = `Hoki! Kamu dapat +${rewardValue} ${rewardType.toUpperCase()}!`;
+            } else if (rand < 67) { // 2% Hadiah Buff
+                const buffs = ['buff_hp_regen', 'CURE_EFFECT'];
+                const buffType = buffs[Math.floor(Math.random() * buffs.length)];
+
+                if (buffType === 'buff_hp_regen') {
+                    const expiryTimestamp = Date.now() + (1 * 24 * 60 * 60 * 1000); // 1 hari
+                    updates[`/students/${uid}/statusEffects/buff_hp_regen`] = { expires: expiryTimestamp, name: 'Aura Regenerasi (Gacha)' };
+                    gachaMessage = 'Langka! Kamu dapat Aura Regenerasi HP selama 1 hari!';
+                } else { // CURE_EFFECT
+                    const activeEffects = studentData.statusEffects || {};
+                    const effectToCure = Object.keys(activeEffects).find(k => ['racun', 'diam', 'knock'].includes(k));
+                    if (effectToCure) {
+                        updates[`/students/${uid}/statusEffects/${effectToCure}`] = null;
+                        gachaMessage = `Langka! Efek negatif "${effectToCure}" berhasil disembuhkan!`;
+                    } else {
+                        gachaMessage = 'Kamu dapat penawar, tapi kamu tidak punya efek negatif. Sayang sekali...';
+                    }
+                }
+            } else if (rand < 68) { // 1% Hadiah Item Kutukan
+                const curseItem = { name: 'Gulungan Kutukan Knock', description: 'Merutuki target dengan efek Knock, membuat HP mereka menjadi 10.', effect: 'CURSE_KNOCK', effectValue: 0, iconUrl: 'https://cdn-icons-png.flaticon.com/512/2541/2541990.png' };
+                const emptySlotIndex = (studentData.inventory || []).findIndex(slot => !slot);
+                if (emptySlotIndex !== -1) {
+                    updates[`/students/${uid}/inventory/${emptySlotIndex}`] = curseItem;
+                    gachaMessage = 'SUPER LANGKA! Kamu mendapatkan Gulungan Kutukan Knock!';
+                } else {
+                    gachaMessage = 'Kamu dapat item langka, tapi inventarismu penuh! Zonk deh...';
+                }
+            } else { // 32% Zonk
+                gachaMessage = 'Kotaknya kosong... Coba lagi lain kali!';
+            }
+            successMessage = gachaMessage;
         }
 
         updates[`/students/${uid}/inventory/${itemIndex}`] = null; // Hapus item
@@ -2687,6 +2745,37 @@ notificationList.querySelectorAll('[data-notification-id]').forEach(item => {
     });
 }
 
+// =======================================================
+//          MANTRA BARU: EFEK KEMBANG API
+// =======================================================
+function showFireworks() {
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; z-index:9999; pointer-events:none;';
+    document.body.appendChild(overlay);
+
+    for (let i = 0; i < 30; i++) { // 30 particles
+        const particle = document.createElement('div');
+        const x = Math.random() * 100;
+        const y = Math.random() * 100;
+        const color = `hsl(${Math.random() * 360}, 100%, 50%)`;
+        particle.style.cssText = `position:absolute; left:${x}%; top:${y}%; width:5px; height:5px; background-color:${color}; border-radius:50%;`;
+        
+        particle.animate([
+            { transform: 'scale(1)', opacity: 1 },
+            { transform: `scale(${Math.random() * 2 + 1})`, opacity: 0 }
+        ], {
+            duration: Math.random() * 1000 + 500,
+            easing: 'ease-out',
+            delay: Math.random() * 200
+        });
+        
+        overlay.appendChild(particle);
+    }
+
+    setTimeout(() => {
+        overlay.remove();
+    }, 3000);
+}
 // =======================================================
 //                  LOGIKA DASBOR ADMIN
 // =======================================================
