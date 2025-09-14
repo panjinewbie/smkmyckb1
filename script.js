@@ -919,7 +919,12 @@ if(profileNavLink && profileNavLink.textContent === 'Profil'){
                 diam: { icon: 'thumbs-down', text: 'Diam', color: 'gray' }, // Efek Negatif
                 knock: { icon: 'tornado', text: 'Knock', color: 'yellow' }, // Efek Negatif
                 buff_admin_key: { icon: 'key-round', text: 'Kunci Admin', color: 'yellow' } // Buff Kunci
-                
+                ,
+                // --- 👇 MANTRA PERBAIKAN: Tambahkan definisi untuk buff positif ---
+                buff_attack: { icon: 'sword', text: 'Attack Up', color: 'orange' },
+                buff_defense: { icon: 'shield', text: 'Defense Up', color: 'blue' },
+                buff_hp_regen: { icon: 'heart-pulse', text: 'Regen HP', color: 'green' },
+                buff_temp_hp: { icon: 'heart-handshake', text: 'HP Sement.', color: 'pink' }
             };
 
             // --- GANTI BLOK for...in... YANG LAMA DENGAN INI ---
