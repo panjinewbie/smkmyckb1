@@ -2748,7 +2748,7 @@ async function nextSoloAiTurn() {
     currentSoloBattleState.isAnswerLocked = true; // Kunci saat memuat
 
     // Pengaturan Timer
-    let timeLeft = 30; 
+    let timeLeft = 60; 
     timerEl.textContent = timeLeft;
     timerEl.classList.remove('text-red-500');
     
