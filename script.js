@@ -1070,13 +1070,13 @@ INFORMASI PENTING TENTANG SISWA YANG SEDANG KAMU AJAK BICARA (GUNAKAN UNTUK KONT
         }
         finalPersona += `\n\nKamu sedang berbicara dengan siswa bernama '${studentData.nama}'. Sapa dia dengan namanya dan gunakan informasi di atas untuk menjawab pertanyaan yang relevan.`;
             try {
-            const apiKey = ivySettings.apiKey;
-            if (!apiKey) throw new Error("API Key belum diatur oleh Admin!");
-
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`;
+                        const apiKey = ivySettings.apiKey;
+                        if (!apiKey) throw new Error("API Key belum diatur oleh Admin!");
             
-            const requestBody = {
-            contents: [{ parts: [{ text: `${finalPersona}\n\nPertanyaan: ${userMessage}` }] }]
+                        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+                        
+                        const requestBody = {
+                        contents: [{ parts: [{ text: `${finalPersona}\n\nPertanyaan: ${userMessage}` }] }]
                 };
 
                 const response = await fetch(apiUrl, {
