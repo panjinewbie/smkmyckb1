@@ -1072,9 +1072,9 @@ INFORMASI PENTING TENTANG SISWA YANG SEDANG KAMU AJAK BICARA (GUNAKAN UNTUK KONT
             try {
                         const apiKey = ivySettings.apiKey;
                         if (!apiKey) throw new Error("API Key belum diatur oleh Admin!");
-            
+
                         const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
-                        
+
                         const requestBody = {
                         contents: [{ parts: [{ text: `${finalPersona}\n\nPertanyaan: ${userMessage}` }] }]
                 };
@@ -1285,7 +1285,7 @@ async function loadAiQuizQuestion() {
     };
 
     try {
-        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${currentAiQuizState.ivySettings.apiKey}`;
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${currentAiQuizState.ivySettings.apiKey}`;
         const response = await fetch(apiUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -2776,7 +2776,7 @@ async function nextSoloAiTurn() {
                 responseSchema: { type: "OBJECT", properties: { question: { type: "STRING" }, options: { type: "ARRAY", items: { type: "STRING" } }, answerIndex: { type: "INTEGER" } }, required: ["question", "options", "answerIndex"] }
             }
         };
-        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${settings.apiKey}`;
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${settings.apiKey}`;
         const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         const result = await response.json();
@@ -4972,7 +4972,7 @@ classSelect.innerHTML = '<option value="SEMUA_KELAS">Semua Kelas</option>'; // O
                     responseSchema: { type: "OBJECT", properties: { question: { type: "STRING" }, options: { type: "ARRAY", items: { type: "STRING" } }, answerIndex: { type: "INTEGER" }, explanation: { type: "STRING" } }, required: ["question", "options", "answerIndex"] }
                 }
             };
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${settings.apiKey}`;
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${settings.apiKey}`;
             const response = await fetch(apiUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
