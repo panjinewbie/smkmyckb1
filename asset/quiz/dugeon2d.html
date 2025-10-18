@@ -33,8 +33,7 @@
             image-rendering: pixelated; /* For sharp pixel art */
             transition: filter 0.5s ease;
         }
-        .player { background-image: url('https://placehold.co/32x32/3498db/ffffff?text=👨‍🚀'); }
-        .wall { background-image: url('https://placehold.co/32x32/444444/444444?text=🧱'); background-color: #444; }
+        .player { background-image: url('https://placehold.co/32x32/3498db/ffffff?text='); background-color: #444; }
         .path { background-color: #555; }
         .monster { background-image: url('https://placehold.co/32x32/e74c3c/ffffff?text=👹'); }
         .treasure { background-image: url('https://placehold.co/32x32/f1c40f/ffffff?text=💎'); animation: sparkle 1.5s infinite; }
@@ -154,6 +153,17 @@
         // --- MANTRA BARU: Komunikasi dengan Halaman Induk ---
         const urlParams = new URLSearchParams(window.location.search);
         const studentUid = urlParams.get('uid');
+        const studentAvatar = decodeURIComponent(urlParams.get('avatar') || '');
+
+        // --- MANTRA BARU: Ganti Avatar Pemain ---
+        if (studentAvatar) {
+            // Buat style baru secara dinamis untuk menimpa style default
+            const style = document.createElement('style');
+            style.innerHTML = `
+                .player { background-image: url('${studentAvatar}'); }
+            `;
+            document.head.appendChild(style);
+        }
 
         function sendResultToParent(status, treasures) {
             window.parent.postMessage({
