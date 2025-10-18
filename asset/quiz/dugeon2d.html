@@ -33,9 +33,10 @@
             image-rendering: pixelated; /* For sharp pixel art */
             transition: filter 0.5s ease;
         }
-        .player { background-image: url('https://placehold.co/32x32/3498db/ffffff?text='); background-color: #444; }
+        .player { background-image: url('https://placehold.co/32x32/3498db/ffffff?text='); background-size: cover; background-repeat: no-repeat; background-position: center; background-color: #444; }
+        .wall { background-image: url('https://placehold.co/32x32/444444/444444?text=🧱'); background-color: #444; }
         .path { background-color: #555; }
-        .monster { background-image: url('https://placehold.co/32x32/e74c3c/ffffff?text=👹'); }
+        .monster { background-size: cover; background-repeat: no-repeat; background-position: center; }
         .treasure { background-image: url('https://placehold.co/32x32/f1c40f/ffffff?text=💎'); animation: sparkle 1.5s infinite; }
         .exit { background-image: url('https://placehold.co/32x32/2ecc71/ffffff?text=🚪'); }
         
@@ -153,7 +154,17 @@
         // --- MANTRA BARU: Komunikasi dengan Halaman Induk ---
         const urlParams = new URLSearchParams(window.location.search);
         const studentUid = urlParams.get('uid');
-        const studentAvatar = decodeURIComponent(urlParams.get('avatar') || '');
+
+        // --- PERBAIKAN BESAR: Ambil data dari sessionStorage, bukan dari URL ---
+        let studentAvatar = '';
+        let monsterImageUrls = ['https://placehold.co/32x32/e74c3c/ffffff?text=👹']; // Default
+        const storedData = sessionStorage.getItem('dungeonData');
+        if (storedData) {
+            const data = JSON.parse(storedData);
+            studentAvatar = data.avatar || '';
+            monsterImageUrls = data.monsters && data.monsters.length > 0 ? data.monsters : monsterImageUrls;
+            sessionStorage.removeItem('dungeonData'); // Hapus data setelah digunakan
+        }
 
         // --- MANTRA BARU: Ganti Avatar Pemain ---
         if (studentAvatar) {
@@ -173,6 +184,19 @@
                 treasures: treasures
             }, '*'); // Gunakan origin yang lebih spesifik di produksi
         }
+
+        // --- MANTRA BARU: Mendengarkan hasil pertarungan dari parent ---
+        window.addEventListener('message', (event) => {
+            if (event.data && event.data.type === 'dungeonBattleResult') {
+                const { victory, monsterPos } = event.data;
+                if (victory) {
+                    handleBattleWin(monsterPos);
+                } else {
+                    handleBattleLoss();
+                }
+            }
+        });
+
 
         // --- Konfigurasi Game ---
         const gameContainer = document.getElementById('game-container');
@@ -309,8 +333,12 @@
                         switch (maze[y][x]) {
                             case 1: cell.classList.add('wall'); break;
                             case 0: cell.classList.add('path'); break;
-                            case 2: cell.classList.add('player'); break;
-                            case 3: cell.classList.add('monster'); break;
+                            case 2: cell.classList.add('player'); break;                            
+                            case 3:
+                                cell.classList.add('monster');
+                                const randomMonsterImg = monsterImageUrls[Math.floor(Math.random() * monsterImageUrls.length)];
+                                cell.style.backgroundImage = `url('${randomMonsterImg}')`;
+                                break;
                             case 4: cell.classList.add('treasure'); break;
                             case 5: cell.classList.add('exit'); break;
                         }
@@ -395,9 +423,9 @@
         function handleInteraction(cellType, x, y) {
             switch (cellType) {
                 case 3:
-                    gameActive = false;
-                    currentMonsterPos = { x, y };
-                    showQuiz();
+                    // --- PERUBAHAN BESAR: Minta pertarungan ke parent, bukan showQuiz() ---
+                    gameActive = false; // Jeda permainan
+                    window.parent.postMessage({ type: 'dungeonBattleStart', uid: studentUid, monsterPos: { x, y } }, '*');
                     break;
                 case 4:
                     treasureCollected++;
@@ -411,92 +439,27 @@
             }
         }
         
-        // --- Logika Kuis (Sama seperti sebelumnya) ---
+        // --- FUNGSI BARU: Menangani hasil pertarungan ---
+        function handleBattleWin(monsterPos) {
+            // Hapus monster dari peta dan dari daftar
+            if (monsterPos) {
+                maze[monsterPos.y][monsterPos.x] = 0; 
+                monsters = monsters.filter(m => m.x !== monsterPos.x || m.y !== monsterPos.y);
+            }
+            gameActive = true; // Lanjutkan permainan
+            drawMaze();
+        }
 
-        async function showQuiz() {
-            quizModal.classList.remove('hidden');
-            spinner.classList.remove('hidden');
-            quizContent.classList.add('hidden');
-            feedbackText.textContent = '';
+        function handleBattleLoss() {
+            // Kembalikan pemain ke posisi awal
+            maze[playerPos.y][playerPos.x] = 0;
+            playerPos = { ...initialPlayerPos };
+            maze[playerPos.y][playerPos.x] = 2;
             
-            try {
-                // MANTRA BARU: Menggunakan API Key dari parent window jika ada
-                const questionData = await fetchQuestionFromAI(); // Kita biarkan ini untuk sementara
-                displayQuestion(questionData);
-            } catch (error) {
-                console.error("Gagal mengambil pertanyaan dari AI:", error);
-                feedbackText.textContent = "Gagal memuat soal. Coba lagi.";
-                const fallbackQuestion = { question: "Apa singkatan dari HTML?", options: ["Hyper Trainer Marking Language", "Hyper Text Markup Language", "Hyperlinks and Text Markup Language", "Home Tool Markup Language"], answerIndex: 1 };
-                displayQuestion(fallbackQuestion);
-            }
-        }
-
-        function displayQuestion(data) {
-            spinner.classList.add('hidden');
-            quizContent.classList.remove('hidden');
-            questionTextEl.textContent = data.question;
-            // MANTRA BARU YANG LEBIH AMAN!
-            answerOptionsEl.replaceChildren(); 
-            data.options.forEach((option, index) => {
-                const button = document.createElement('button');
-                button.textContent = option;
-                button.classList.add('btn-answer', 'p-4', 'rounded-md', 'text-left');
-                button.onclick = () => checkAnswer(index, data.answerIndex, button);
-                answerOptionsEl.appendChild(button);
-            });
-        }
-        
-        async function fetchQuestionFromAI() {
-            // PENTING: API Key tidak boleh ada di sini.
-            const apiKey = "AIzaSyCA2Dwl7FPBDcbAtS5iTyTADx0YY5byxo8"; // Placeholder, idealnya didapat dari parent
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-            const payload = {
-              contents: [{ parts: [{ text: "Buat satu pertanyaan pilihan ganda (4 opsi) tingkat dasar tentang konsep pemrograman atau teknologi (seperti variabel, loop, HTML, atau internet) untuk siswa SMK. Berikan jawaban dalam format JSON. Format JSON harus: { question: string, options: string[], answerIndex: number }" }] }],
-              generationConfig: {
-                responseMimeType: "application/json",
-                responseSchema: { type: "OBJECT", properties: { "question": { "type": "STRING" }, "options": { "type": "ARRAY", "items": { "type": "STRING" } }, "answerIndex": { "type": "INTEGER" } }, required: ["question", "options", "answerIndex"] }
-              }
-            };
-            const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-            if (!response.ok) throw new Error(`API call failed with status: ${response.status}`);
-            const result = await response.json();
-            const jsonText = result.candidates[0].content.parts[0].text;
-            return JSON.parse(jsonText);
-        }
-
-        function checkAnswer(selectedIndex, correctIndex, button) {
-            const buttons = answerOptionsEl.getElementsByTagName('button');
-            for(let btn of buttons) { btn.disabled = true; }
-
-            if (selectedIndex === correctIndex) {
-                feedbackText.textContent = "BENAR! Monster telah kalah!";
-                feedbackText.classList.add('text-green-400');
-                feedbackText.classList.remove('text-red-400');
-                button.classList.add('correct');
-                maze[currentMonsterPos.y][currentMonsterPos.x] = 0; 
-                monsters = monsters.filter(m => m.x !== currentMonsterPos.x || m.y !== currentMonsterPos.y);
-                setTimeout(closeQuiz, 2000);
-            } else {
-                feedbackText.textContent = "SALAH! Kamu kembali ke awal!";
-                feedbackText.classList.add('text-red-400');
-                feedbackText.classList.remove('text-green-400');
-                button.classList.add('incorrect');
-                setTimeout(() => {
-                    maze[playerPos.y][playerPos.x] = 0;
-                    playerPos = { ...initialPlayerPos }; // Reset to initial position
-                    maze[playerPos.y][playerPos.x] = 2;
-                    initializeVisibility(); // Reset kabutnya juga!
-                    updateVisibility();
-                    closeQuiz();
-                }, 2000);
-            }
-        }
-        
-        function closeQuiz() {
-            quizModal.classList.add('hidden');
-            feedbackText.textContent = '';
-            feedbackText.className = 'mt-4 h-6 text-lg font-bold';
-            gameActive = true;
+            initializeVisibility(); // Reset kabut
+            updateVisibility();
+            
+            gameActive = true; // Lanjutkan permainan
             drawMaze();
         }
 
