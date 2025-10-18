@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dungeon Misi AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Press Start 2P', cursive;
+            background-color: #1a1a1a;
+            color: #ffffff;
+            /* Hapus overflow: hidden agar bisa discroll jika perlu di layar kecil */
+            overflow: hidden;
+        }
+        .game-container {
+            border: 4px solid #4a4a4a;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+            /* MANTRA BARU: Paksa layout grid agar tidak memanjang */
+            display: grid;
+            grid-template-columns: repeat(15, 32px);
+        }
+        .grid-cell {
+            /* Ukuran petak disesuaikan agar pas di layar kecil */
+            width: 32px;
+            height: 32px;
+            font-size: 22px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-size: cover;
+            image-rendering: pixelated; /* For sharp pixel art */
+            transition: filter 0.5s ease;
+        }
+        .player { background-image: url('https://placehold.co/32x32/3498db/ffffff?text=👨‍🚀'); }
+        .wall { background-image: url('https://placehold.co/32x32/444444/444444?text=🧱'); background-color: #444; }
+        .path { background-color: #555; }
+        .monster { background-image: url('https://placehold.co/32x32/e74c3c/ffffff?text=👹'); }
+        .treasure { background-image: url('https://placehold.co/32x32/f1c40f/ffffff?text=💎'); animation: sparkle 1.5s infinite; }
+        .exit { background-image: url('https://placehold.co/32x32/2ecc71/ffffff?text=🚪'); }
+        
+        /* --- EFEK KABUT BARU! --- */
+        .fog { background-color: #000; border: 1px solid #111; }
+        .visited { filter: brightness(0.4); } /* Petak yang sudah dilewati jadi lebih gelap */
+
+        @keyframes sparkle {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.7; }
+        }
+
+        .modal-content {
+            background-color: #2c2c2c;
+            border: 4px solid #4a4a4a;
+        }
+        .btn-answer {
+            background-color: #4a4a4a;
+            border: 2px solid #6a6a6a;
+            transition: all 0.2s;
+        }
+        .btn-answer:hover {
+            background-color: #6a6a6a;
+            border-color: #8a8a8a;
+        }
+        .btn-answer.correct {
+             background-color: #27ae60;
+             border-color: #2ecc71;
+        }
+        .btn-answer.incorrect {
+            background-color: #c0392b;
+            border-color: #e74c3c;
+        }
+
+        /* --- MANTRA BARU: Tombol Kontrol Arah --- */
+        .control-btn {
+            background-color: #4a4a4a;
+            border: 2px solid #6a6a6a;
+            border-radius: 0.5rem;
+            color: white;
+            font-size: 1.5rem;
+            width: 4rem;
+            height: 4rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            user-select: none; /* Mencegah teks terseleksi saat diklik cepat */
+        }
+        .control-btn:hover {
+            background-color: #6a6a6a; border-color: #8a8a8a;
+        }
+        .control-btn:active {
+            transform: scale(0.95); background-color: #8a8a8a;
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen p-2 md:p-4">
+
+    <h1 class="text-2xl md:text-3xl mb-4 text-yellow-400 drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">DUNGEON MISI AI</h1>
+
+    <div class="game-wrapper flex flex-col md:flex-row gap-4 md:gap-8 items-center">
+        <!-- Game Container -->
+        <div id="game-container" class="game-container bg-black"></div>
+
+        <!-- Status Panel -->
+        <div class="status-panel w-full md:w-64 p-4 rounded-lg" style="background-color: #2c2c2c; border: 4px solid #4a4a4a;">
+            <h2 class="text-xl mb-4 text-center border-b-2 border-gray-500 pb-2">STATUS</h2>
+            <div class="flex justify-between items-center text-lg">
+                <span>Harta Karun:</span>
+                <span id="treasure-count" class="text-yellow-400 text-2xl">0</span>
+            </div>
+             <div class="mt-4">
+                <h3 class="text-lg mb-2 text-center">CARA MAIN</h3>
+                <p class="text-center text-sm">Gunakan panah atau tombol di layar untuk bergerak.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- MANTRA BARU: Tombol Kontrol di Layar -->
+    <div class="mt-4 grid grid-cols-3 gap-2 w-48">
+        <div></div>
+        <button id="btn-up" class="control-btn">⬆️</button>
+        <div></div>
+        <button id="btn-left" class="control-btn">⬅️</button>
+        <button id="btn-down" class="control-btn">⬇️</button>
+        <button id="btn-right" class="control-btn">➡️</button>
+    </div>
+
+    <!-- Modal (sama seperti sebelumnya) -->
+    <div id="quiz-modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center hidden z-50">
+        <div class="modal-content p-8 rounded-lg shadow-lg text-center w-full max-w-2xl">
+            <h2 class="text-2xl mb-2 text-red-500">MONSTER MUNCUL!</h2>
+            <p class="mb-6">Jawab pertanyaan ini untuk mengalahkannya!</p>
+            <div id="spinner" class="mb-4">
+                <p class="text-yellow-400 animate-pulse">Monster sedang merapal mantra pertanyaan...</p>
+            </div>
+            <div id="quiz-content" class="hidden">
+                <p id="question-text" class="text-lg mb-6"></p>
+                <div id="answer-options" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+            </div>
+             <p id="feedback-text" class="mt-4 h-6 text-lg font-bold"></p>
+        </div>
+    </div>
+
+    <div id="win-modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center hidden z-50">
+        <div class="modal-content p-8 rounded-lg shadow-lg text-center">
+            <h2 id="win-title" class="text-4xl mb-4 text-green-400">MISI SELESAI!</h2>
+            <p id="win-message" class="text-lg mb-6">Kamu berhasil keluar dari labirin!</p>
+            <button id="close-win-modal" class="btn-answer px-6 py-3 rounded-md">Keluar Dungeon</button>
+        </div>
+    </div>
+
+    <script>
+        // --- MANTRA BARU: Komunikasi dengan Halaman Induk ---
+        const urlParams = new URLSearchParams(window.location.search);
+        const studentUid = urlParams.get('uid');
+
+        function sendResultToParent(status, treasures) {
+            window.parent.postMessage({
+                type: 'dungeonResult',
+                uid: studentUid,
+                status: status,
+                treasures: treasures
+            }, '*'); // Gunakan origin yang lebih spesifik di produksi
+        }
+
+        // --- Konfigurasi Game ---
+        const gameContainer = document.getElementById('game-container');
+        const treasureCountEl = document.getElementById('treasure-count');
+        const quizModal = document.getElementById('quiz-modal');
+        const winModal = document.getElementById('win-modal');
+        const questionTextEl = document.getElementById('question-text');
+        const answerOptionsEl = document.getElementById('answer-options');
+        const spinner = document.getElementById('spinner');
+        const quizContent = document.getElementById('quiz-content');
+        const feedbackText = document.getElementById('feedback-text');
+        const closeWinModalButton = document.getElementById('close-win-modal');
+
+        // 0 = Jalan, 1 = Dinding, 2 = Pemain, 3 = Monster, 4 = Harta Karun, 5 = Pintu Keluar
+        const NUM_MONSTERS = 5;
+        const NUM_TREASURES = 7;
+
+        const baseMaze = [
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+            [1, 0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1],
+            [1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+            [1, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1],
+            [1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1],
+            [1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 1, 0, 1],
+            [1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1],
+            [1, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 0, 1, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 0, 0],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        ];
+
+        let maze, playerPos, initialPlayerPos;
+        let monsters = [];
+        let treasureCollected = 0;
+        let gameActive = true;
+        let currentMonsterPos = null;
+
+        function initializeLevel() {
+            maze = JSON.parse(JSON.stringify(baseMaze)); // Deep copy
+
+            const emptyCells = [];
+            for (let y = 0; y < maze.length; y++) {
+                for (let x = 0; x < maze[y].length; x++) {
+                    if (maze[y][x] === 0) {
+                        emptyCells.push({ x, y });
+                    }
+                }
+            }
+
+            // Shuffle empty cells
+            for (let i = emptyCells.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [emptyCells[i], emptyCells[j]] = [emptyCells[j], emptyCells[i]];
+            }
+
+            const placeItem = (itemCode) => {
+                const pos = emptyCells.pop();
+                if (pos) {
+                    maze[pos.y][pos.x] = itemCode;
+                    return pos;
+                }
+                return null;
+            };
+
+            playerPos = placeItem(2);
+            initialPlayerPos = { ...playerPos }; // Save initial position
+
+            placeItem(5); // Exit
+
+            monsters = []; // Reset monsters
+            for (let i = 0; i < NUM_MONSTERS; i++) {
+                const pos = placeItem(3);
+                if (pos) {
+                    monsters.push(pos);
+                }
+            }
+
+            for (let i = 0; i < NUM_TREASURES; i++) {
+                placeItem(4);
+            }
+        }
+
+        // --- SISTEM KABUT BARU! ---
+        const FOG = 0;
+        const VISITED = 1;
+        const VISIBLE = 2;
+        const visibilityRadius = 2.5; // Jarak pandang pemain
+        let visibility = [];
+
+        function initializeVisibility() {
+            visibility = Array(maze.length).fill(0).map(() => Array(maze[0].length).fill(FOG));
+        }
+
+        function updateVisibility() {
+            for (let y = 0; y < maze.length; y++) {
+                for (let x = 0; x < maze[0].length; x++) {
+                    if (visibility[y][x] === VISIBLE) {
+                        visibility[y][x] = VISITED;
+                    }
+                }
+            }
+
+            for (let y = playerPos.y - Math.ceil(visibilityRadius); y <= playerPos.y + Math.ceil(visibilityRadius); y++) {
+                for (let x = playerPos.x - Math.ceil(visibilityRadius); x <= playerPos.x + Math.ceil(visibilityRadius); x++) {
+                    if (y >= 0 && y < maze.length && x >= 0 && x < maze[0].length) {
+                        const distance = Math.sqrt(Math.pow(playerPos.x - x, 2) + Math.pow(playerPos.y - y, 2));
+                        if (distance <= visibilityRadius) {
+                             visibility[y][x] = VISIBLE;
+                        }
+                    }
+                }
+            }
+        }
+
+        // --- Fungsi Utama Game ---
+
+        function drawMaze() {
+            // MANTRA BARU YANG LEBIH AMAN!
+            gameContainer.replaceChildren(); 
+            for (let y = 0; y < maze.length; y++) {
+                for (let x = 0; x < maze[y].length; x++) {
+                    const cell = document.createElement('div');
+                    cell.classList.add('grid-cell');
+                    
+                    const visibilityStatus = visibility[y][x];
+
+                    if (visibilityStatus === FOG) {
+                        cell.classList.add('fog');
+                    } else {
+                        switch (maze[y][x]) {
+                            case 1: cell.classList.add('wall'); break;
+                            case 0: cell.classList.add('path'); break;
+                            case 2: cell.classList.add('player'); break;
+                            case 3: cell.classList.add('monster'); break;
+                            case 4: cell.classList.add('treasure'); break;
+                            case 5: cell.classList.add('exit'); break;
+                        }
+                        if (visibilityStatus === VISITED) {
+                             cell.classList.add('visited');
+                        }
+                    }
+                    gameContainer.appendChild(cell);
+                }
+            }
+        }
+
+        function moveMonsters() {
+            const monstersToMove = [...monsters];
+            for (const monster of monstersToMove) {
+                if (!gameActive) break;
+
+                if (visibility[monster.y][monster.x] !== VISIBLE) {
+                    continue;
+                }
+
+                const dx = playerPos.x - monster.x;
+                const dy = playerPos.y - monster.y;
+
+                // If adjacent, ATTACK!
+                if (Math.abs(dx) <= 1 && Math.abs(dy) <= 1) {
+                    handleInteraction(3, monster.x, monster.y);
+                    continue;
+                }
+
+                // If not adjacent, move closer
+                let newX = monster.x;
+                let newY = monster.y;
+
+                if (Math.abs(dx) > Math.abs(dy)) {
+                    newX += Math.sign(dx);
+                } else if (dy !== 0) {
+                    newY += Math.sign(dy);
+                } else if (dx !== 0) {
+                    newX += Math.sign(dx);
+                }
+
+                // Check if the new position is a path (0).
+                if (maze[newY] && maze[newY][newX] === 0) {
+                    maze[monster.y][monster.x] = 0; // Clear old position
+                    monster.x = newX;
+                    monster.y = newY;
+                    maze[newY][newX] = 3; // Move to new position
+                }
+            }
+        }
+
+        function movePlayer(dx, dy) {
+            if (!gameActive) return;            
+             const newX = playerPos.x + dx;
+            const newY = playerPos.y + dy;
+            if (newY < 0 || newY >= maze.length || newX < 0 || newX >= maze[0].length || maze[newY][newX] === 1) return;
+
+            const targetCell = maze[newY][newX];
+
+            if (targetCell === 3) {
+                handleInteraction(3, newX, newY);
+                return;
+            }
+
+            maze[playerPos.y][playerPos.x] = 0;
+            playerPos = { x: newX, y: newY };
+            maze[playerPos.y][playerPos.x] = 2; // Place player on map before monster turn
+
+            if (targetCell === 4 || targetCell === 5) {
+                handleInteraction(targetCell, newX, newY);
+            }
+
+            if (gameActive) {
+                moveMonsters();
+            }
+            
+            updateVisibility();
+            drawMaze();
+        }
+
+        function handleInteraction(cellType, x, y) {
+            switch (cellType) {
+                case 3:
+                    gameActive = false;
+                    currentMonsterPos = { x, y };
+                    showQuiz();
+                    break;
+                case 4:
+                    treasureCollected++;
+                    treasureCountEl.textContent = treasureCollected;
+                    maze[y][x] = 0; // Clear treasure from maze
+                    break;
+                case 5:
+                    showWinScreen("MISI SELESAI!", `Kamu berhasil keluar dengan membawa ${treasureCollected} harta karun!`, 'win');
+                    gameActive = false;
+                    break;
+            }
+        }
+        
+        // --- Logika Kuis (Sama seperti sebelumnya) ---
+
+        async function showQuiz() {
+            quizModal.classList.remove('hidden');
+            spinner.classList.remove('hidden');
+            quizContent.classList.add('hidden');
+            feedbackText.textContent = '';
+            
+            try {
+                // MANTRA BARU: Menggunakan API Key dari parent window jika ada
+                const questionData = await fetchQuestionFromAI(); // Kita biarkan ini untuk sementara
+                displayQuestion(questionData);
+            } catch (error) {
+                console.error("Gagal mengambil pertanyaan dari AI:", error);
+                feedbackText.textContent = "Gagal memuat soal. Coba lagi.";
+                const fallbackQuestion = { question: "Apa singkatan dari HTML?", options: ["Hyper Trainer Marking Language", "Hyper Text Markup Language", "Hyperlinks and Text Markup Language", "Home Tool Markup Language"], answerIndex: 1 };
+                displayQuestion(fallbackQuestion);
+            }
+        }
+
+        function displayQuestion(data) {
+            spinner.classList.add('hidden');
+            quizContent.classList.remove('hidden');
+            questionTextEl.textContent = data.question;
+            // MANTRA BARU YANG LEBIH AMAN!
+            answerOptionsEl.replaceChildren(); 
+            data.options.forEach((option, index) => {
+                const button = document.createElement('button');
+                button.textContent = option;
+                button.classList.add('btn-answer', 'p-4', 'rounded-md', 'text-left');
+                button.onclick = () => checkAnswer(index, data.answerIndex, button);
+                answerOptionsEl.appendChild(button);
+            });
+        }
+        
+        async function fetchQuestionFromAI() {
+            // PENTING: API Key tidak boleh ada di sini.
+            const apiKey = "AIzaSyCA2Dwl7FPBDcbAtS5iTyTADx0YY5byxo8"; // Placeholder, idealnya didapat dari parent
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+            const payload = {
+              contents: [{ parts: [{ text: "Buat satu pertanyaan pilihan ganda (4 opsi) tingkat dasar tentang konsep pemrograman atau teknologi (seperti variabel, loop, HTML, atau internet) untuk siswa SMK. Berikan jawaban dalam format JSON. Format JSON harus: { question: string, options: string[], answerIndex: number }" }] }],
+              generationConfig: {
+                responseMimeType: "application/json",
+                responseSchema: { type: "OBJECT", properties: { "question": { "type": "STRING" }, "options": { "type": "ARRAY", "items": { "type": "STRING" } }, "answerIndex": { "type": "INTEGER" } }, required: ["question", "options", "answerIndex"] }
+              }
+            };
+            const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            if (!response.ok) throw new Error(`API call failed with status: ${response.status}`);
+            const result = await response.json();
+            const jsonText = result.candidates[0].content.parts[0].text;
+            return JSON.parse(jsonText);
+        }
+
+        function checkAnswer(selectedIndex, correctIndex, button) {
+            const buttons = answerOptionsEl.getElementsByTagName('button');
+            for(let btn of buttons) { btn.disabled = true; }
+
+            if (selectedIndex === correctIndex) {
+                feedbackText.textContent = "BENAR! Monster telah kalah!";
+                feedbackText.classList.add('text-green-400');
+                feedbackText.classList.remove('text-red-400');
+                button.classList.add('correct');
+                maze[currentMonsterPos.y][currentMonsterPos.x] = 0; 
+                monsters = monsters.filter(m => m.x !== currentMonsterPos.x || m.y !== currentMonsterPos.y);
+                setTimeout(closeQuiz, 2000);
+            } else {
+                feedbackText.textContent = "SALAH! Kamu kembali ke awal!";
+                feedbackText.classList.add('text-red-400');
+                feedbackText.classList.remove('text-green-400');
+                button.classList.add('incorrect');
+                setTimeout(() => {
+                    maze[playerPos.y][playerPos.x] = 0;
+                    playerPos = { ...initialPlayerPos }; // Reset to initial position
+                    maze[playerPos.y][playerPos.x] = 2;
+                    initializeVisibility(); // Reset kabutnya juga!
+                    updateVisibility();
+                    closeQuiz();
+                }, 2000);
+            }
+        }
+        
+        function closeQuiz() {
+            quizModal.classList.add('hidden');
+            feedbackText.textContent = '';
+            feedbackText.className = 'mt-4 h-6 text-lg font-bold';
+            gameActive = true;
+            drawMaze();
+        }
+
+        function showWinScreen(title, message, status) {
+            winModal.classList.remove('hidden');
+            document.getElementById('win-title').textContent = title;
+            document.getElementById('win-message').textContent = message;
+            
+            closeWinModalButton.onclick = () => {
+                // Kirim hasil ke parent window
+                sendResultToParent(status, treasureCollected);
+            };
+        }
+
+        // --- Event Listener ---
+        window.addEventListener('keydown', (e) => {
+            switch (e.key) {
+                case 'ArrowUp': movePlayer(0, -1); break;
+                case 'ArrowDown': movePlayer(0, 1); break;
+                case 'ArrowLeft': movePlayer(-1, 0); break;
+                case 'ArrowRight': movePlayer(1, 0); break;
+            }
+        });
+
+        // --- MANTRA BARU: Event Listener untuk Tombol di Layar ---
+        document.getElementById('btn-up').onclick = () => movePlayer(0, -1);
+        document.getElementById('btn-down').onclick = () => movePlayer(0, 1);
+        document.getElementById('btn-left').onclick = () => movePlayer(-1, 0);
+        document.getElementById('btn-right').onclick = () => movePlayer(1, 0);
+
+        // --- Inisialisasi Game ---
+        initializeLevel();
+        initializeVisibility();
+        updateVisibility();
+        drawMaze();
+    </script>
+</body>
+</html>

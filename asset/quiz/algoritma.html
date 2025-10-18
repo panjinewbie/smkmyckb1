@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Who Wants to Be a Programmer Millionaire</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
+    <style>
+        body {
+            font-family: 'Roboto Mono', monospace;
+            background: #020230;
+            color: #f0f0f0;
+        }
+        .main-container {
+            display: flex;
+            flex-direction: column-reverse;
+            lg:flex-direction: row;
+            height: 100vh;
+            max-width: 1280px;
+            margin: auto;
+        }
+        .game-area {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            position: relative;
+        }
+        .sidebar {
+            width: 100%;
+            lg:width: 320px;
+            flex-shrink: 0;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .lifeline-container {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 2rem;
+        }
+        .lifeline {
+            width: 60px;
+            height: 60px;
+            border: 2px solid #f0f0f0;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .lifeline:hover:not(.used) {
+            background-color: #ff8e00;
+        }
+        .lifeline.used {
+            background-color: #555;
+            color: #888;
+            cursor: not-allowed;
+            border-color: #555;
+            text-decoration: line-through;
+        }
+        .prize-list {
+            list-style: none;
+            padding: 0;
+            text-align: right;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+        .prize-list li {
+            padding: 0.5rem 1rem;
+            margin-bottom: 0.25rem;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+        .prize-list li.current {
+            background-color: #ff8e00;
+            color: #020230;
+            font-weight: bold;
+            transform: scale(1.05);
+        }
+        .prize-list li.safe-haven {
+            font-weight: bold;
+            color: #a7f3d0;
+        }
+        .question-container {
+            background: linear-gradient(45deg, #000428, #004e92);
+            padding: 2rem;
+            border-radius: 12px;
+            text-align: center;
+            border: 2px solid #f0f0f0;
+            margin: 1rem;
+            min-height: 200px;
+        }
+        .options-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            md:grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem;
+        }
+        .option {
+            background: linear-gradient(45deg, #000428, #004e92);
+            border: 2px solid #f0f0f0;
+            border-radius: 12px;
+            padding: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: left;
+        }
+        .option:hover:not(.disabled) {
+            background: linear-gradient(45deg, #004e92, #0077b6);
+        }
+        .option.selected { background: #ff8e00; border-color: #ff8e00; }
+        .option.correct { background: #22c55e; border-color: #22c55e; animation: pulse-green 1s infinite; }
+        .option.incorrect { background: #ef4444; border-color: #ef4444; animation: shake 0.5s; }
+        .option.disabled { opacity: 0.5; cursor: not-allowed; }
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(2, 2, 48, 0.9); display: flex; align-items: center;
+            justify-content: center; z-index: 100;
+        }
+        .modal-content {
+            background: linear-gradient(45deg, #000428, #004e92);
+            padding: 3rem; border-radius: 12px; text-align: center; border: 2px solid #f0f0f0;
+        }
+        #phone-timer-container {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%); background-color: rgba(0,0,0,0.8);
+            padding: 2rem 3rem; border-radius: 50%; border: 4px solid #ff8e00; z-index: 50;
+        }
+         .loader {
+            border: 8px solid #f3f3f3;
+            border-top: 8px solid #ff8e00;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes pulse-green { /* ... */ }
+        @keyframes shake { /* ... */ }
+    </style>
+</head>
+<body class="bg-gray-900 text-white">
+    <div id="start-screen" class="modal-overlay flex">
+        <div class="modal-content">
+            <h1 class="text-4xl font-bold mb-4">Who Wants to Be a</h1>
+            <h2 class="text-5xl font-bold text-yellow-400 mb-8">Programmer Millionaire?</h2>
+            <p class="text-xl mb-6">Edisi: AI Tak Terbatas</p>
+            <button id="start-button" class="bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-8 rounded-full text-2xl">Mulai Main!</button>
+        </div>
+    </div>
+    <div id="game-screen" class="main-container hidden">
+        <div class="game-area">
+            <div id="phone-timer-container" class="hidden">
+                <div id="phone-timer-text" class="text-6xl font-bold text-yellow-400">30</div>
+            </div>
+            <div id="question-container" class="question-container flex items-center justify-center">
+                <h2 id="question-text" class="text-2xl lg:text-3xl">Pertanyaan akan muncul di sini...</h2>
+            </div>
+            <div id="options-container" class="options-container"></div>
+        </div>
+        <div class="sidebar">
+            <ul id="prize-ladder" class="prize-list"></ul>
+            <div>
+                 <img src="https://placehold.co/300x100/020230/FFFF00?text=Programmer+Millionaire" alt="Logo" class="mx-auto mt-4 rounded-lg">
+                <div class="lifeline-container">
+                    <div id="lifeline-5050" class="lifeline" title="50:50">50:50</div>
+                    <div id="lifeline-audience" class="lifeline" title="Tanya Penonton"><i class="fas fa-users"></i></div>
+                    <div id="lifeline-phone" class="lifeline" title="Telepon Teman"><i class="fas fa-phone"></i></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="game-over-screen" class="modal-overlay hidden"><!-- ... --></div>
+    <div id="audience-modal" class="modal-overlay hidden"><!-- ... --></div>
+    <script>
+        // --- PENTING! JANGAN TARUH API KEY ASLI DI SINI ---
+        // API Key ini akan diambil secara otomatis oleh environment Canvas.
+        // Jangan pernah hardcode API key di kode client-side.
+        const apiKey = "AIzaSyBk_Pmw-RFFwdbMqYVeEYPeT0ioQ0pko3Y";
+        // --- KONFIGURASI GAME ---
+        const prizes = [
+            "6 XP", "10 XP", "16 XP", "20 XP", "26 XP", "30 XP", "36 XP", "40 XP", "46 XP", "50 XP",
+            "56 XP", "60 XP", "65 XP", "70 XP", "76 XP", "80 XP", "86 XP",
+            "90 XP", "96 Juta XP", "100 XP"
+        ];
+        const SAFE_HAVENS = [4, 9, 14]; 
+        
+        // --- ELEMEN DOM ---
+        const startScreen = document.getElementById('start-screen');
+        const gameScreen = document.getElementById('game-screen');
+        const questionText = document.getElementById('question-text');
+        const optionsContainer = document.getElementById('options-container');
+        const prizeLadder = document.getElementById('prize-ladder');
+        // ... (elemen DOM lainnya)
+
+        // --- STATE GAME ---
+        let currentQuestionIndex;
+        let lifelines;
+        let isAnswerLocked;
+        let currentQuestionData; // Untuk menyimpan data soal dari AI
+
+        // --- SOUND EFFECTS ---
+        // ... (sound effects)
+
+        async function generateQuestion(level) {
+            const prompt = `Buatkan satu soal kuis pilihan ganda (4 opsi) tentang konsep dasar algoritma.
+            - Buat soal dalam format cerita pendek atau skenario dunia nyata yang sederhana.
+            - Tingkat kesulitan: ${level}.
+            - Berikan penjelasan singkat kenapa jawaban itu benar.
+            - Pastikan jawaban yang benar ada di salah satu opsi.
+            `;
+            
+            const payload = {
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: "OBJECT",
+                        properties: {
+                            story: { type: "STRING" },
+                            question: { type: "STRING" },
+                            options: { type: "ARRAY", items: { type: "STRING" } },
+                            answerIndex: { type: "INTEGER" },
+                            explanation: { type: "STRING" }
+                        },
+                        required: ["story", "question", "options", "answerIndex", "explanation"]
+                    }
+                }
+            };
+            
+            try {
+                const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + apiKey, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const result = await response.json();
+                const jsonText = result.candidates[0].content.parts[0].text;
+                return JSON.parse(jsonText);
+            } catch (error) {
+                console.error("Gagal mengambil soal dari Gemini:", error);
+                // Fallback jika API gagal
+                return {
+                    story: "Maaf, AI sedang istirahat.",
+                    question: "Coba lagi nanti, ya?",
+                    options: ["OK", "Siap", "Tentu", "Baiklah"],
+                    answerIndex: 0,
+                    explanation: "Terjadi kesalahan saat menghubungi Gemini AI. Cek koneksi internet atau API key."
+                };
+            }
+        }
+
+        function initGame() {
+            currentQuestionIndex = 0;
+            isAnswerLocked = false;
+            lifelines = { '5050': false, 'audience': false, 'phone': false };
+            startScreen.classList.add('hidden');
+            gameScreen.classList.remove('hidden');
+            buildPrizeLadder();
+            loadQuestion();
+        }
+
+        function buildPrizeLadder() {
+            prizeLadder.innerHTML = '';
+            prizes.slice().reverse().forEach((prize, index) => {
+                const originalIndex = prizes.length - 1 - index;
+                const li = document.createElement('li');
+                li.textContent = `${originalIndex + 1}. ${prize}`;
+                li.dataset.index = originalIndex;
+                if (SAFE_HAVENS.includes(originalIndex)) li.classList.add('safe-haven');
+                prizeLadder.appendChild(li);
+            });
+        }
+        
+        function updatePrizeLadder() {
+            // ... (sama seperti sebelumnya)
+        }
+
+        async function loadQuestion() {
+            isAnswerLocked = false;
+            optionsContainer.innerHTML = '';
+            questionText.innerHTML = '<div class="loader"></div><p class="mt-4">Gemini sedang meracik soal...</p>';
+            
+            const difficulty = currentQuestionIndex < 7 ? "sangat mudah" : "mudah ke sedang";
+            currentQuestionData = await generateQuestion(difficulty);
+
+            questionText.innerHTML = `<p class="text-lg mb-4">${currentQuestionData.story}</p><p class="text-2xl font-bold">${currentQuestionData.question}</p>`;
+            
+            currentQuestionData.options.forEach((option, index) => {
+                const button = document.createElement('button');
+                button.classList.add('option');
+                button.innerHTML = `<span class="font-bold text-yellow-400 mr-4">${String.fromCharCode(65 + index)}:</span> ${option}`;
+                button.dataset.index = index;
+                button.addEventListener('click', selectAnswer);
+                optionsContainer.appendChild(button);
+            });
+            updatePrizeLadder();
+        }
+
+        function selectAnswer(e) {
+            if (isAnswerLocked) return;
+            isAnswerLocked = true;
+
+            const selectedButton = e.currentTarget;
+            const selectedAnswerIndex = parseInt(selectedButton.dataset.index);
+            const correctAnswerIndex = currentQuestionData.answerIndex;
+
+            selectedButton.classList.add('selected');
+            // ... (sound effect)
+
+            setTimeout(() => {
+                const allOptions = optionsContainer.querySelectorAll('.option');
+                allOptions.forEach(btn => btn.classList.add('disabled'));
+
+                if (selectedAnswerIndex === correctAnswerIndex) {
+                    selectedButton.classList.add('correct');
+                    // ... (sound effect)
+                    
+                    // Tampilkan penjelasan sebelum lanjut
+                    setTimeout(() => {
+                        questionText.innerHTML += `<br><br><p class="text-green-300 font-bold p-2 bg-black/30 rounded-lg">Penjelasan: ${currentQuestionData.explanation}</p>`;
+                    }, 500);
+
+                    setTimeout(() => {
+                        currentQuestionIndex++;
+                        if (currentQuestionIndex >= prizes.length) {
+                           endGame(true);
+                        } else {
+                           loadQuestion();
+                        }
+                    }, 5000); // Waktu lebih lama untuk membaca penjelasan
+                } else {
+                    selectedButton.classList.add('incorrect');
+                    allOptions[correctAnswerIndex].classList.add('correct');
+                    // ... (sound effect)
+                    setTimeout(() => endGame(false), 2000);
+                }
+            }, 2500);
+        }
+        
+        function getPrizeWon() {
+             let lastSafeHavenPrize = "0 XP";
+             // ... logika disesuaikan dengan array 'prizes'
+        }
+
+        function endGame(isWinner) {
+             // ... logika disesuaikan dengan XP
+        }
+
+        // --- FUNGSI LIFELINE & EVENT LISTENERS ---
+        // ... (sebagian besar sama, pastikan menyesuaikan dengan currentQuestionData jika perlu)
+
+        document.getElementById('start-button').addEventListener('click', initGame);
+        // ... (event listener lainnya)
+    </script>
+</body>
+</html>
