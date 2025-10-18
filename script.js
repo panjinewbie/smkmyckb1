@@ -1715,6 +1715,7 @@ function openUseItemModal(uid, itemIndex, itemData) {
         case 'CURE_EFFECT': effectText = 'Menghilangkan 1 efek negatif dari dirimu.'; break;
         case 'BATTLE_TICKET': effectText = 'Gunakan untuk langsung bertarung dengan monster acak! (Solo, Pertanyaan AI)'; break;
     }
+    if (itemData.effect === 'DUNGEON_TICKET') effectText = 'Memasuki dungeon misterius untuk mencari harta karun!';
     effectEl.textContent = effectText;
 
     const closeModal = () => {
@@ -1748,6 +1749,11 @@ function openUseItemModal(uid, itemIndex, itemData) {
     audioPlayer.openModal();
     modal.classList.remove('hidden');
     setTimeout(() => modal.classList.remove('opacity-0'), 10);
+
+    // PENTING: Tambahkan listener untuk menerima pesan dari iframe dungeon
+    // Hapus listener lama untuk mencegah duplikasi jika modal dibuka berkali-kali
+    window.removeEventListener('message', handleDungeonMessage);
+    window.addEventListener('message', handleDungeonMessage);
 }
 
 // --- GANTI SELURUH FUNGSI LAMA DENGAN INI ---
@@ -1823,15 +1829,15 @@ async function handleUseItem(uid, itemIndex, itemData, closeModalCallback) {
         // --- 👇 MANTRA BARU UNTUK ITEM GACHA "MISTERY!" 👇 ---
         else if (itemData.effect === 'GACHA_MYSTERY') {
             const rand = Math.random() * 100;
-            let gachaMessage = 'Kotak misteri dibuka...';
+            let gachaMessage;
             
-            if (rand < 50) { // 50% Kembang Api
+            if (rand < 40) { // 40% Kembang Api (Zonk visual)
                 showFireworks();
                 gachaMessage = 'Wow! Kembang api kejutan! ✨';
-            } else if (rand < 65) { // 15% Hadiah Stat
+            } else if (rand < 65) { // 25% Hadiah Stat
                 const rewards = ['coin', 'xp', 'hp'];
                 const rewardType = rewards[Math.floor(Math.random() * rewards.length)];
-                const rewardValue = 10;
+                const rewardValue = Math.floor(Math.random() * 11) + 5; // Hadiah 5-15
 
                 if (rewardType === 'coin') {
                     updates[`/students/${uid}/coin`] = (studentData.coin || 0) + rewardValue;
@@ -1841,40 +1847,49 @@ async function handleUseItem(uid, itemIndex, itemData, closeModalCallback) {
                     const newTotalXp = currentTotalXp + rewardValue;
                     updates[`/students/${uid}/level`] = Math.floor(newTotalXp / xpPerLevel) + 1;
                     updates[`/students/${uid}/xp`] = newTotalXp % xpPerLevel;
-                } else { // hp
+                } else { // HP
                     const maxHp = (studentData.level || 1) * 100;
                     updates[`/students/${uid}/hp`] = Math.min(maxHp, (studentData.hp || 0) + rewardValue);
                 }
                 gachaMessage = `Hoki! Kamu dapat +${rewardValue} ${rewardType.toUpperCase()}!`;
-            } else if (rand < 67) { // 2% Hadiah Buff
-                const buffs = ['buff_hp_regen', 'CURE_EFFECT'];
-                const buffType = buffs[Math.floor(Math.random() * buffs.length)];
-
-                if (buffType === 'buff_hp_regen') {
-                    const expiryTimestamp = Date.now() + (1 * 24 * 60 * 60 * 1000); // 1 hari
-                    updates[`/students/${uid}/statusEffects/buff_hp_regen`] = { expires: expiryTimestamp, name: 'Aura Regenerasi (Gacha)' };
-                    gachaMessage = 'Langka! Kamu dapat Aura Regenerasi HP selama 1 hari!';
-                } else { // CURE_EFFECT
-                    const activeEffects = studentData.statusEffects || {};
-                    const effectToCure = Object.keys(activeEffects).find(k => ['racun', 'diam', 'knock'].includes(k));
-                    if (effectToCure) {
-                        updates[`/students/${uid}/statusEffects/${effectToCure}`] = null;
-                        gachaMessage = `Langka! Efek negatif "${effectToCure}" berhasil disembuhkan!`;
-                    } else {
-                        gachaMessage = 'Kamu dapat penawar, tapi kamu tidak punya efek negatif. Sayang sekali...';
-                    }
-                }
-            } else if (rand < 68) { // 1% Hadiah Item Kutukan
-                const curseItem = { name: 'Gulungan Kutukan Knock', description: 'Merutuki target dengan efek Knock, membuat HP mereka menjadi 10.', effect: 'CURSE_KNOCK', effectValue: 0, iconUrl: 'https://cdn-icons-png.flaticon.com/512/2541/2541990.png' };
+            } else if (rand < 75) { // 10% Hadiah Item
+                // --- MANTRA BARU: Menambahkan Tiket Pertarungan ke dalam Gacha ---
+                const itemPrizes = [
+                    { name: 'Gulungan Kutukan Knock', description: 'Merutuki target dengan efek Knock, membuat HP mereka menjadi 10.', effect: 'CURSE_KNOCK', effectValue: 0, iconUrl: 'https://cdn-icons-png.flaticon.com/512/2541/2541990.png' },
+                    { name: 'Tiket Pertarungan', description: 'Gunakan untuk langsung bertarung dengan monster acak.', effect: 'BATTLE_TICKET', effectValue: 0, iconUrl: 'https://cdn-icons-png.flaticon.com/512/2933/2933879.png' }
+                ];
+                const prizeItem = itemPrizes[Math.floor(Math.random() * itemPrizes.length)];
+                
                 const emptySlotIndex = (studentData.inventory || []).findIndex(slot => !slot);
                 if (emptySlotIndex !== -1) {
-                    updates[`/students/${uid}/inventory/${emptySlotIndex}`] = curseItem;
-                    gachaMessage = 'SUPER LANGKA! Kamu mendapatkan Gulungan Kutukan Knock!';
+                    updates[`/students/${uid}/inventory/${emptySlotIndex}`] = prizeItem;
+                    gachaMessage = `LANGKA! Kamu mendapatkan item: ${prizeItem.name}!`;
                 } else {
                     gachaMessage = 'Kamu dapat item langka, tapi inventarismu penuh! Zonk deh...';
                 }
-            } else { // 32% Zonk
-                gachaMessage = 'Kotaknya kosong... Coba lagi lain kali!';
+            } else { // 25% "Zonk" yang lebih seru
+                const zonkRand = Math.random();
+                if (zonkRand < 0.5) { // 50% peluang dapat tiket pertarungan
+                    const battleTicketItem = { name: 'Tiket Pertarungan (Gacha)', description: 'Gunakan untuk langsung bertarung dengan monster acak.', effect: 'BATTLE_TICKET', effectValue: 0, iconUrl: 'https://cdn-icons-png.flaticon.com/512/2933/2933879.png' };
+                    const emptySlotIndex = (studentData.inventory || []).findIndex(slot => !slot);
+                    if (emptySlotIndex !== -1) {
+                        updates[`/students/${uid}/inventory/${emptySlotIndex}`] = battleTicketItem;
+                        gachaMessage = 'Bukan zonk! Kamu dapat Tiket Pertarungan gratis!';
+                    } else {
+                        gachaMessage = 'Kamu dapat tiket, tapi inventarismu penuh! Zonk deh...';
+                    }
+                    successMessage = gachaMessage;
+                } else { // 50% peluang langsung bertarung
+                    gachaMessage = 'Kejutan! Monster tiba-tiba muncul dari dalam kotak!';
+                    updates[`/students/${uid}/inventory/${itemIndex}`] = null; // Konsumsi item gacha
+                    await update(ref(db), updates);
+                    showToast(gachaMessage);
+                    closeModalCallback(); // Tutup modal penggunaan item
+
+                    // Mulai pertarungan setelah jeda singkat
+                    setTimeout(() => startSoloAiBattle(uid), 500);
+                    return; // Keluar lebih awal karena alur sudah berbeda
+                }
             }
             successMessage = gachaMessage;
         } else if (itemData.effect === 'BATTLE_TICKET') {
@@ -1891,6 +1906,19 @@ async function handleUseItem(uid, itemIndex, itemData, closeModalCallback) {
                 startSoloAiBattle(uid);
             }, 500);
             return; // Kembali lebih awal untuk mencegah pembaruan ganda
+        } else if (itemData.effect === 'DUNGEON_TICKET') {
+            // --- MANTRA BARU: Logika untuk membuka Dungeon 2D ---
+            successMessage = `Tiket digunakan! Kamu memasuki dungeon...`;
+            updates[`/students/${uid}/inventory/${itemIndex}`] = null; // Konsumsi item
+            await update(ref(db), updates);
+            showToast(successMessage);
+            closeModalCallback(); // Tutup modal penggunaan item
+
+            setTimeout(() => {
+                openDungeon2D(uid); // Panggil fungsi untuk membuka modal dungeon
+            }, 500);
+
+            return; // Kembali lebih awal
         }
 
         updates[`/students/${uid}/inventory/${itemIndex}`] = null; // Hapus item
@@ -1903,6 +1931,76 @@ async function handleUseItem(uid, itemIndex, itemData, closeModalCallback) {
     } finally {
         useButton.disabled = false;
         useButton.textContent = 'Gunakan Item';
+    }
+}
+
+// =======================================================
+//          MANTRA BARU: LOGIKA DUNGEON 2D
+// =======================================================
+function openDungeon2D(uid) {
+    const modal = document.getElementById('dungeon-2d-modal');
+    const iframe = document.getElementById('dungeon-2d-iframe');
+    const closeButton = document.getElementById('close-dungeon-2d-modal');
+
+    if (!modal || !iframe || !closeButton) {
+        console.error("Elemen UI Dungeon 2D tidak ditemukan!");
+        return;
+    }
+
+    const closeModal = () => {
+        if (confirm("Yakin ingin keluar dari dungeon? Semua progres akan hilang.")) {
+            iframe.src = "about:blank"; // Hentikan game di dalam iframe
+            modal.classList.add('opacity-0');
+            setTimeout(() => modal.classList.add('hidden'), 300);
+            audioPlayer.closeModal();
+        }
+    };
+
+    closeButton.onclick = closeModal;
+    iframe.src = `asset/quiz/dugeon2d.html?uid=${uid}`; // Kirim UID ke iframe
+
+    modal.classList.remove('hidden');
+    setTimeout(() => modal.classList.remove('opacity-0'), 10);
+    audioPlayer.openModal();
+    createLucideIcons();
+}
+
+async function handleDungeonMessage(event) {
+    // Pastikan pesan berasal dari sumber yang kita harapkan (iframe dungeon)
+    if (!event.data || !event.data.type || event.data.type !== 'dungeonResult') {
+        return;
+    }
+
+    const { uid, status, treasures } = event.data;
+    if (!uid) return;
+
+    // Tutup modal dungeon
+    const modal = document.getElementById('dungeon-2d-modal');
+    modal.classList.add('opacity-0');
+    setTimeout(() => modal.classList.add('hidden'), 300);
+
+    if (status === 'win' && treasures > 0) {
+        const studentRef = ref(db, `students/${uid}`);
+        const studentSnap = await get(studentRef);
+        if (studentSnap.exists()) {
+            const studentData = studentSnap.val();
+            const coinReward = treasures * 5; // 5 koin per harta karun
+            const xpReward = treasures * 10;   // 10 XP per harta karun
+
+            const xpPerLevel = 1000;
+            const currentTotalXp = ((studentData.level || 1) - 1) * xpPerLevel + (studentData.xp || 0);
+            const newTotalXp = currentTotalXp + xpReward;
+
+            const updates = {};
+            updates.coin = (studentData.coin || 0) + coinReward;
+            updates.level = Math.floor(newTotalXp / xpPerLevel) + 1;
+            updates.xp = newTotalXp % xpPerLevel;
+
+            await update(studentRef, updates);
+            showToast(`Misi Dungeon Selesai! Kamu dapat +${coinReward} Koin dan +${xpReward} XP!`);
+        }
+    } else {
+        showToast("Kamu gagal keluar dari dungeon. Coba lagi lain kali!", true);
     }
 }
 // Salin dan tempel DUA FUNGSI INI ke dalam file script.js kamu
@@ -2607,6 +2705,16 @@ async function handleCancelBounty(bountyId, bountyData, closeModalCallback) {
     }
 }
 
+// =======================================================
+//          MANTRA BARU: PENGACAK JAWABAN
+// =======================================================
+function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+}
+
 // --- FUNGSI BARU: Menambahkan log ke modal solo battle ---
 function addSoloBattleLog(text, type = 'normal') {
     const logContainer = document.getElementById('solo-battle-log-container');
@@ -2780,8 +2888,15 @@ async function nextSoloAiTurn() {
         const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         const result = await response.json();
-        const questionData = JSON.parse(result.candidates[0].content.parts[0].text);
+        let questionData = JSON.parse(result.candidates[0].content.parts[0].text);
         
+        // --- MANTRA PENGACAK JAWABAN DIMULAI DI SINI! ---
+        const correctAnswerText = questionData.options[questionData.answerIndex];
+        shuffleArray(questionData.options); // Acak urutan pilihan jawaban
+        const newAnswerIndex = questionData.options.indexOf(correctAnswerText);
+        questionData.answerIndex = newAnswerIndex; // Perbarui indeks jawaban yang benar
+        // --- AKHIR MANTRA PENGACAK ---
+
         currentSoloBattleState.currentQuestionData = questionData;
         questionTextEl.textContent = questionData.question;
         
@@ -4980,7 +5095,16 @@ classSelect.innerHTML = '<option value="SEMUA_KELAS">Semua Kelas</option>'; // O
             });
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             const result = await response.json();
-            return JSON.parse(result.candidates[0].content.parts[0].text);
+            let questionData = JSON.parse(result.candidates[0].content.parts[0].text);
+
+            // --- MANTRA PENGACAK JAWABAN DIMULAI DI SINI! ---
+            const correctAnswerText = questionData.options[questionData.answerIndex];
+            shuffleArray(questionData.options); // Acak urutan pilihan jawaban
+            const newAnswerIndex = questionData.options.indexOf(correctAnswerText);
+            questionData.answerIndex = newAnswerIndex; // Perbarui indeks jawaban yang benar
+            // --- AKHIR MANTRA PENGACAK ---
+
+            return questionData;
         }
         // --- DEBUGGING: Cek data yang diterima oleh fungsi battle ---
         console.log("setupBattleUI menerima party:", JSON.parse(JSON.stringify(party)));
