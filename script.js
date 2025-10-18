@@ -90,6 +90,7 @@ let currentAiQuizState = {}; // Menyimpan state quiz yang sedang berjalan
 // --- MANTRA BARU: State untuk Solo Battle ---
 let currentSoloBattleState = {};
 let soloBattleTimerId = null;
+let dungeonBattleState = null; // <-- MANTRA BARU: State untuk melacak pertarungan dari dungeon
 
 // --- MANTRA BARU: Audio Player dengan Tone.js (VERSI DIPERBARUI) ---
 const audioPlayer = {
@@ -1937,7 +1938,7 @@ async function handleUseItem(uid, itemIndex, itemData, closeModalCallback) {
 // =======================================================
 //          MANTRA BARU: LOGIKA DUNGEON 2D
 // =======================================================
-function openDungeon2D(uid, studentData) {
+async function openDungeon2D(uid, studentData) {
     const modal = document.getElementById('dungeon-2d-modal');
     const iframe = document.getElementById('dungeon-2d-iframe');
     const closeButton = document.getElementById('close-dungeon-2d-modal');
@@ -1945,6 +1946,21 @@ function openDungeon2D(uid, studentData) {
     if (!modal || !iframe || !closeButton) {
         console.error("Elemen UI Dungeon 2D tidak ditemukan!");
         return;
+    }
+
+    // --- MANTRA BARU: Ambil gambar monster dari database ---
+    const questsSnap = await get(ref(db, 'quests'));
+    let monsterImages = [];
+    if (questsSnap.exists()) {
+        const allQuests = questsSnap.val();
+        // Ambil semua URL gambar yang valid
+        monsterImages = Object.values(allQuests)
+            .map(quest => quest.monsterImageBase64)
+            .filter(img => img); // Filter out null/empty images
+    }
+    // Jika tidak ada gambar monster, siapkan placeholder
+    if (monsterImages.length === 0) {
+        monsterImages.push('https://placehold.co/32x32/e74c3c/ffffff?text=👹');
     }
 
     const closeModal = () => {
@@ -1959,8 +1975,17 @@ function openDungeon2D(uid, studentData) {
     closeButton.onclick = closeModal;
     // --- MANTRA BARU: Kirim URL Avatar ke iframe ---
     const avatarUrl = studentData.fotoProfilBase64 || '';
-    // Encode URL avatar untuk memastikan tidak ada karakter yang merusak URL
-    iframe.src = `asset/quiz/dugeon2d.html?uid=${uid}&avatar=${encodeURIComponent(avatarUrl)}`;
+
+    // --- PERBAIKAN BESAR: Gunakan sessionStorage untuk menghindari URL terlalu panjang ---
+    // 1. Siapkan data yang akan dikirim
+    const dungeonData = {
+        avatar: avatarUrl,
+        monsters: monsterImages
+    };
+    // 2. Simpan data sebagai string JSON di sessionStorage
+    sessionStorage.setItem('dungeonData', JSON.stringify(dungeonData));
+    // 3. Atur src iframe dengan URL yang bersih dan pendek
+    iframe.src = `asset/quiz/dugeon2d.html?uid=${uid}`;
 
     modal.classList.remove('hidden');
     setTimeout(() => modal.classList.remove('opacity-0'), 10);
@@ -1970,10 +1995,26 @@ function openDungeon2D(uid, studentData) {
 
 async function handleDungeonMessage(event) {
     // Pastikan pesan berasal dari sumber yang kita harapkan (iframe dungeon)
-    if (!event.data || !event.data.type || event.data.type !== 'dungeonResult') {
+    if (!event.data || !event.data.type) {
         return;
     }
 
+    // --- MANTRA BARU: Menangani permintaan pertarungan dari dungeon ---
+    if (event.data.type === 'dungeonBattleStart') {
+        const { uid, monsterPos } = event.data;
+        if (!uid) return;
+
+        // Simpan state bahwa pertarungan ini berasal dari dungeon
+        dungeonBattleState = { monsterPos: monsterPos };
+
+        // Sembunyikan modal dungeon dan mulai pertarungan
+        document.getElementById('dungeon-2d-modal').classList.add('hidden');
+        startSoloAiBattle(uid);
+        return;
+    }
+
+    // --- Logika lama untuk hasil akhir dungeon ---
+    if (event.data.type !== 'dungeonResult') return;
     const { uid, status, treasures } = event.data;
     if (!uid) return;
 
@@ -3107,6 +3148,21 @@ async function endSoloAiBattle(isVictory, isForfeit = false) {
         const modal = document.getElementById('solo-ai-battle-modal');
         modal.classList.add('opacity-0');
         setTimeout(() => modal.classList.add('hidden'), 300);
+
+        // --- MANTRA BARU: Cek apakah pertarungan ini dari dungeon ---
+        if (dungeonBattleState) {
+            const dungeonModal = document.getElementById('dungeon-2d-modal');
+            const dungeonIframe = document.getElementById('dungeon-2d-iframe');
+
+            // Tampilkan kembali modal dungeon
+            dungeonModal.classList.remove('hidden');
+
+            // Kirim hasil pertarungan kembali ke iframe dungeon
+            dungeonIframe.contentWindow.postMessage({ type: 'dungeonBattleResult', victory: isVictory, monsterPos: dungeonBattleState.monsterPos }, '*');
+
+            dungeonBattleState = null; // Reset state
+            return; // Hentikan eksekusi lebih lanjut karena alur kembali ke dungeon
+        }
     }, 4000);
 }
 // =======================================================
