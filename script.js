@@ -1915,7 +1915,7 @@ async function handleUseItem(uid, itemIndex, itemData, closeModalCallback) {
             closeModalCallback(); // Tutup modal penggunaan item
 
             setTimeout(() => {
-                openDungeon2D(uid); // Panggil fungsi untuk membuka modal dungeon
+                openDungeon2D(uid, studentData); // Panggil fungsi untuk membuka modal dungeon
             }, 500);
 
             return; // Kembali lebih awal
@@ -1937,7 +1937,7 @@ async function handleUseItem(uid, itemIndex, itemData, closeModalCallback) {
 // =======================================================
 //          MANTRA BARU: LOGIKA DUNGEON 2D
 // =======================================================
-function openDungeon2D(uid) {
+function openDungeon2D(uid, studentData) {
     const modal = document.getElementById('dungeon-2d-modal');
     const iframe = document.getElementById('dungeon-2d-iframe');
     const closeButton = document.getElementById('close-dungeon-2d-modal');
@@ -1957,7 +1957,10 @@ function openDungeon2D(uid) {
     };
 
     closeButton.onclick = closeModal;
-    iframe.src = `asset/quiz/dugeon2d.html?uid=${uid}`; // Kirim UID ke iframe
+    // --- MANTRA BARU: Kirim URL Avatar ke iframe ---
+    const avatarUrl = studentData.fotoProfilBase64 || '';
+    // Encode URL avatar untuk memastikan tidak ada karakter yang merusak URL
+    iframe.src = `asset/quiz/dugeon2d.html?uid=${uid}&avatar=${encodeURIComponent(avatarUrl)}`;
 
     modal.classList.remove('hidden');
     setTimeout(() => modal.classList.remove('opacity-0'), 10);
