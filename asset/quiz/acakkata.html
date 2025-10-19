@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Permainan Acak Kata - Pemrograman Web</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        /* Menggunakan font Inter sebagai default */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        ::placeholder {
+            color: #9ca3af;
+            opacity: 1; 
+        }
+        /* Mencegah layout shift saat pesan feedback muncul/hilang */
+        #feedback-message {
+            min-height: 28px;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 flex items-center justify-center min-h-screen p-4">
+
+    <div id="game-container" class="bg-white rounded-2xl shadow-2xl p-6 md:p-10 w-full max-w-lg text-center transition-all duration-500">
+        <h1 class="text-2xl md:text-3xl font-bold text-slate-800 mb-2">Acak Kata: Pemrograman Web</h1>
+        <p id="progress-text" class="text-slate-500 mb-6">Ditenagai oleh AI</p>
+
+        <div class="my-4 p-4 bg-slate-100 rounded-lg">
+            <p id="scrambled-word" class="text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-sky-500 to-indigo-600 tracking-widest min-h-[60px] flex items-center justify-center">MEMUAT...</p>
+        </div>
+
+        <div id="input-area" class="mt-6 flex flex-col sm:flex-row gap-3 hidden">
+            <input type="text" id="guess-input" placeholder="Ketik jawabanmu di sini..." class="w-full p-3 border-2 border-slate-300 rounded-lg text-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none transition-all duration-200 text-center sm:text-left">
+            <button id="check-button" class="bg-sky-600 text-white font-semibold py-3 px-6 rounded-lg hover:bg-sky-700 transition-transform duration-200 active:scale-95">
+                Tebak
+            </button>
+        </div>
+        
+        <div id="action-area" class="mt-6 hidden">
+             <button id="next-button" class="w-full bg-indigo-600 text-white font-semibold py-3 px-6 rounded-lg hover:bg-indigo-700 transition-transform duration-200 active:scale-95">
+                Kata Berikutnya →
+            </button>
+             <button id="finish-button" class="w-full bg-green-600 text-white font-semibold py-3 px-6 rounded-lg hover:bg-green-700 transition-transform duration-200 active:scale-95 hidden">
+                Selesai & Ambil Hadiah
+            </button>
+        </div>
+
+        <p id="feedback-message" class="mt-4 font-medium text-lg"></p>
+    </div>
+
+    <script>
+        const MAX_ROUNDS = 5;
+        let currentRound = 0;
+        let wordsGuessed = 0;
+        let currentWord = '';
+        let apiKey = '';
+        let studentUid = '';
+
+        const scrambledWordEl = document.getElementById('scrambled-word');
+        const guessInput = document.getElementById('guess-input');
+        const checkButton = document.getElementById('check-button');
+        const nextButton = document.getElementById('next-button');
+        const finishButton = document.getElementById('finish-button');
+        const feedbackMessageEl = document.getElementById('feedback-message');
+        const progressTextEl = document.getElementById('progress-text');
+        const inputArea = document.getElementById('input-area');
+        const actionArea = document.getElementById('action-area');
+        const gameContainer = document.getElementById('game-container');
+
+        async function fetchWordFromAI() {
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+            const payload = {
+              contents: [{ parts: [{ text: "Buat satu istilah pemrograman web (antara 4-10 huruf, tanpa spasi), lalu acak hurufnya. Berikan jawaban dalam format JSON: { scrambled: string, answer: string }" }] }],
+              generationConfig: {
+                responseMimeType: "application/json",
+                responseSchema: { type: "OBJECT", properties: { "scrambled": { "type": "STRING" }, "answer": { "type": "STRING" } }, required: ["scrambled", "answer"] }
+              }
+            };
+
+            try {
+                const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                if (!response.ok) throw new Error(`API call failed: ${response.status}`);
+                const result = await response.json();
+                const data = JSON.parse(result.candidates[0].content.parts[0].text);
+                data.answer = data.answer.toUpperCase();
+                data.scrambled = data.scrambled.toUpperCase();
+                return data;
+            } catch (error) {
+                console.error("Gagal mengambil kata dari AI:", error);
+                return { scrambled: "SCS", answer: "CSS" };
+            }
+        }
+
+        async function nextRound() {
+            currentRound++;
+            if (currentRound > MAX_ROUNDS) {
+                showGameEnd();
+                return;
+            }
+
+            scrambledWordEl.textContent = "MEMINTA...";
+            const wordData = await fetchWordFromAI();
+            currentWord = wordData.answer;
+            scrambledWordEl.textContent = wordData.scrambled;
+
+            resetUIForNewRound();
+            updateProgress();
+        }
+
+        function checkGuess() {
+            if (!guessInput.value) {
+                showFeedback("Jawaban tidak boleh kosong!", "orange");
+                return;
+            }
+
+            const userGuess = guessInput.value.trim().toUpperCase();
+
+            if (userGuess === currentWord) {
+                wordsGuessed++;
+                showFeedback("Benar! 🎉", "green");
+                inputArea.classList.add('hidden');
+                actionArea.classList.remove('hidden');
+                if (currentRound === MAX_ROUNDS) {
+                    nextButton.classList.add('hidden');
+                    finishButton.classList.remove('hidden');
+                }
+                guessInput.blur();
+            } else {
+                showFeedback("Salah, coba lagi! 🤔", "red");
+                gameContainer.classList.add('animate-shake');
+                setTimeout(() => gameContainer.classList.remove('animate-shake'), 500);
+            }
+        }
+        
+        function showGameEnd() {
+            scrambledWordEl.textContent = "SELESAI!";
+            scrambledWordEl.classList.remove('bg-gradient-to-r', 'from-sky-500', 'to-indigo-600');
+            scrambledWordEl.classList.add('text-green-500');
+            progressTextEl.textContent = `Kamu berhasil menebak ${wordsGuessed} dari ${MAX_ROUNDS} kata!`;
+            inputArea.classList.add('hidden');
+            actionArea.classList.add('hidden');
+            feedbackMessageEl.innerHTML = 'Hadiah akan dikirimkan. Menutup game...';
+            feedbackMessageEl.className = 'mt-4 font-medium text-lg text-slate-700';
+
+            window.parent.postMessage({
+                type: 'acakKataResult',
+                uid: studentUid,
+                wordsGuessed: wordsGuessed
+            }, '*');
+
+            setTimeout(() => {
+                const closeButton = window.parent.document.getElementById('close-acak-kata-modal');
+                if (closeButton) closeButton.click();
+            }, 3000);
+        }
+
+        function showFeedback(message, color) {
+            feedbackMessageEl.textContent = message;
+            const colorClasses = {
+                green: 'text-green-600',
+                red: 'text-red-600',
+                orange: 'text-orange-500'
+            };
+            feedbackMessageEl.className = `mt-4 font-medium text-lg ${colorClasses[color] || 'text-slate-500'}`;
+        }
+        
+        function resetUIForNewRound() {
+            feedbackMessageEl.textContent = '';
+            guessInput.value = '';
+            inputArea.classList.remove('hidden'); // Tampilkan input
+            actionArea.classList.add('hidden'); // Sembunyikan tombol
+            guessInput.focus();
+        }
+
+        function updateProgress() {
+            progressTextEl.textContent = `Kata ke: ${currentRound} / ${MAX_ROUNDS}`;
+        }
+
+        checkButton.onclick = checkGuess;
+        nextButton.onclick = nextRound;
+        finishButton.onclick = showGameEnd;
+        guessInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                checkGuess();
+            }
+        });
+
+        const style = document.createElement('style');
+        style.innerHTML = `
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+        .animate-shake {
+            animation: shake 0.5s ease-in-out;
+        }`;
+        document.head.appendChild(style);
+
+        window.onload = () => {
+            const storedData = sessionStorage.getItem('acakKataData');
+            if (storedData) {
+                const data = JSON.parse(storedData);
+                studentUid = data.uid;
+                apiKey = data.apiKey;
+                sessionStorage.removeItem('acakKataData'); // Hapus setelah digunakan
+                nextRound(); // Mulai ronde pertama
+            } else {
+                scrambledWordEl.textContent = "ERROR";
+                progressTextEl.textContent = "Gagal memuat data game. Silakan coba lagi dari halaman utama.";
+            }
+        };
+    </script>
+</body>
+</html>
