@@ -1754,6 +1754,7 @@ function openUseItemModal(uid, itemIndex, itemData) {
     // PENTING: Tambahkan listener untuk menerima pesan dari iframe dungeon
     // Hapus listener lama untuk mencegah duplikasi jika modal dibuka berkali-kali
     window.removeEventListener('message', handleDungeonMessage);
+    window.removeEventListener('message', handleAcakKataMessage);
     window.addEventListener('message', handleDungeonMessage);
 }
 
@@ -1920,6 +1921,19 @@ async function handleUseItem(uid, itemIndex, itemData, closeModalCallback) {
             }, 500);
 
             return; // Kembali lebih awal
+        } else if (itemData.effect === 'ACAK_KATA_TICKET') {
+            // --- MANTRA BARU: Logika untuk membuka Game Acak Kata ---
+            successMessage = `Tiket digunakan! Bersiap untuk bermain Acak Kata...`;
+            updates[`/students/${uid}/inventory/${itemIndex}`] = null; // Konsumsi item
+            await update(ref(db), updates);
+            showToast(successMessage);
+            closeModalCallback(); // Tutup modal penggunaan item
+
+            setTimeout(() => {
+                openAcakKataGame(uid); // Panggil fungsi untuk membuka modal game
+            }, 500);
+
+            return; // Kembali lebih awal
         }
 
         updates[`/students/${uid}/inventory/${itemIndex}`] = null; // Hapus item
@@ -1991,6 +2005,78 @@ async function openDungeon2D(uid, studentData) {
     setTimeout(() => modal.classList.remove('opacity-0'), 10);
     audioPlayer.openModal();
     createLucideIcons();
+}
+
+async function openAcakKataGame(uid) {
+    const modal = document.getElementById('acak-kata-modal');
+    const iframe = document.getElementById('acak-kata-iframe');
+    const closeButton = document.getElementById('close-acak-kata-modal');
+
+    if (!modal || !iframe || !closeButton) {
+        console.error("Elemen UI Game Acak Kata tidak ditemukan!");
+        return;
+    }
+
+    // Ambil API Key dari config
+    const configSnap = await get(ref(db, 'config/ivySettings'));
+    if (!configSnap.exists() || !configSnap.val().apiKey) {
+        showToast("Konfigurasi AI (API Key) tidak ditemukan! Hubungi admin.", true);
+        return;
+    }
+    const apiKey = configSnap.val().apiKey;
+
+    const closeModal = () => {
+        if (confirm("Yakin ingin keluar dari game? Progres tidak akan tersimpan.")) {
+            iframe.src = "about:blank";
+            modal.classList.add('opacity-0');
+            setTimeout(() => modal.classList.add('hidden'), 300);
+            audioPlayer.closeModal();
+            window.removeEventListener('message', handleAcakKataMessage);
+        }
+    };
+
+    closeButton.onclick = closeModal;
+
+    // Simpan data yang dibutuhkan ke sessionStorage
+    sessionStorage.setItem('acakKataData', JSON.stringify({ uid, apiKey }));
+
+    iframe.src = `asset/quiz/acakkata.html`;
+
+    modal.classList.remove('hidden');
+    setTimeout(() => modal.classList.remove('opacity-0'), 10);
+    audioPlayer.openModal();
+    createLucideIcons();
+
+    // Pasang listener untuk hasil game
+    window.addEventListener('message', handleAcakKataMessage);
+}
+
+async function handleAcakKataMessage(event) {
+    if (!event.data || event.data.type !== 'acakKataResult') return;
+
+    const { uid, wordsGuessed } = event.data;
+    if (!uid || wordsGuessed <= 0) return;
+
+    const studentRef = ref(db, `students/${uid}`);
+    const studentSnap = await get(studentRef);
+    if (studentSnap.exists()) {
+        const studentData = studentSnap.val();
+        const coinReward = wordsGuessed * 3; // 3 koin per kata
+        const xpReward = wordsGuessed * 5;   // 5 XP per kata
+
+        // --- PERBAIKAN: Logika penambahan XP yang benar ---
+        const xpPerLevel = 1000;
+        const currentTotalXp = ((studentData.level || 1) - 1) * xpPerLevel + (studentData.xp || 0);
+        const newTotalXp = currentTotalXp + xpReward;
+
+        const updates = {};
+        updates.coin = (studentData.coin || 0) + coinReward;
+        updates.level = Math.floor(newTotalXp / xpPerLevel) + 1;
+        updates.xp = newTotalXp % xpPerLevel;
+
+        await update(studentRef, updates);
+        showToast(`Hebat! Kamu menebak ${wordsGuessed} kata dan dapat +${coinReward} Koin & +${xpReward} XP!`);
+    }
 }
 
 async function handleDungeonMessage(event) {
