@@ -90,6 +90,7 @@ let currentAiQuizState = {}; // Menyimpan state quiz yang sedang berjalan
 // --- MANTRA BARU: State untuk Solo Battle ---
 let currentSoloBattleState = {};
 let soloBattleTimerId = null;
+let currentAcakKataBattleState = {}; // <-- MANTRA BARU: State untuk Acak Kata Battle
 let dungeonBattleState = null; // <-- MANTRA BARU: State untuk melacak pertarungan dari dungeon
 
 // --- MANTRA BARU: Audio Player dengan Tone.js (VERSI DIPERBARUI) ---
@@ -1754,7 +1755,6 @@ function openUseItemModal(uid, itemIndex, itemData) {
     // PENTING: Tambahkan listener untuk menerima pesan dari iframe dungeon
     // Hapus listener lama untuk mencegah duplikasi jika modal dibuka berkali-kali
     window.removeEventListener('message', handleDungeonMessage);
-    window.removeEventListener('message', handleAcakKataMessage);
     window.addEventListener('message', handleDungeonMessage);
 }
 
@@ -1923,15 +1923,13 @@ async function handleUseItem(uid, itemIndex, itemData, closeModalCallback) {
             return; // Kembali lebih awal
         } else if (itemData.effect === 'ACAK_KATA_TICKET') {
             // --- MANTRA BARU: Logika untuk membuka Game Acak Kata ---
-            successMessage = `Tiket digunakan! Bersiap untuk bermain Acak Kata...`;
+            successMessage = `Tiket digunakan! Monster Kata Acak muncul!`;
             updates[`/students/${uid}/inventory/${itemIndex}`] = null; // Konsumsi item
             await update(ref(db), updates);
             showToast(successMessage);
             closeModalCallback(); // Tutup modal penggunaan item
 
-            setTimeout(() => {
-                openAcakKataGame(uid); // Panggil fungsi untuk membuka modal game
-            }, 500);
+            setTimeout(() => startAcakKataBattle(uid), 500);
 
             return; // Kembali lebih awal
         }
@@ -2005,78 +2003,6 @@ async function openDungeon2D(uid, studentData) {
     setTimeout(() => modal.classList.remove('opacity-0'), 10);
     audioPlayer.openModal();
     createLucideIcons();
-}
-
-async function openAcakKataGame(uid) {
-    const modal = document.getElementById('acak-kata-modal');
-    const iframe = document.getElementById('acak-kata-iframe');
-    const closeButton = document.getElementById('close-acak-kata-modal');
-
-    if (!modal || !iframe || !closeButton) {
-        console.error("Elemen UI Game Acak Kata tidak ditemukan!");
-        return;
-    }
-
-    // Ambil API Key dari config
-    const configSnap = await get(ref(db, 'config/ivySettings'));
-    if (!configSnap.exists() || !configSnap.val().apiKey) {
-        showToast("Konfigurasi AI (API Key) tidak ditemukan! Hubungi admin.", true);
-        return;
-    }
-    const apiKey = configSnap.val().apiKey;
-
-    const closeModal = () => {
-        if (confirm("Yakin ingin keluar dari game? Progres tidak akan tersimpan.")) {
-            iframe.src = "about:blank";
-            modal.classList.add('opacity-0');
-            setTimeout(() => modal.classList.add('hidden'), 300);
-            audioPlayer.closeModal();
-            window.removeEventListener('message', handleAcakKataMessage);
-        }
-    };
-
-    closeButton.onclick = closeModal;
-
-    // Simpan data yang dibutuhkan ke sessionStorage
-    sessionStorage.setItem('acakKataData', JSON.stringify({ uid, apiKey }));
-
-    iframe.src = `asset/quiz/acakkata.html`;
-
-    modal.classList.remove('hidden');
-    setTimeout(() => modal.classList.remove('opacity-0'), 10);
-    audioPlayer.openModal();
-    createLucideIcons();
-
-    // Pasang listener untuk hasil game
-    window.addEventListener('message', handleAcakKataMessage);
-}
-
-async function handleAcakKataMessage(event) {
-    if (!event.data || event.data.type !== 'acakKataResult') return;
-
-    const { uid, wordsGuessed } = event.data;
-    if (!uid || wordsGuessed <= 0) return;
-
-    const studentRef = ref(db, `students/${uid}`);
-    const studentSnap = await get(studentRef);
-    if (studentSnap.exists()) {
-        const studentData = studentSnap.val();
-        const coinReward = wordsGuessed * 3; // 3 koin per kata
-        const xpReward = wordsGuessed * 5;   // 5 XP per kata
-
-        // --- PERBAIKAN: Logika penambahan XP yang benar ---
-        const xpPerLevel = 1000;
-        const currentTotalXp = ((studentData.level || 1) - 1) * xpPerLevel + (studentData.xp || 0);
-        const newTotalXp = currentTotalXp + xpReward;
-
-        const updates = {};
-        updates.coin = (studentData.coin || 0) + coinReward;
-        updates.level = Math.floor(newTotalXp / xpPerLevel) + 1;
-        updates.xp = newTotalXp % xpPerLevel;
-
-        await update(studentRef, updates);
-        showToast(`Hebat! Kamu menebak ${wordsGuessed} kata dan dapat +${coinReward} Koin & +${xpReward} XP!`);
-    }
 }
 
 async function handleDungeonMessage(event) {
@@ -3251,9 +3177,218 @@ async function endSoloAiBattle(isVictory, isForfeit = false) {
         }
     }, 4000);
 }
+
+// =======================================================
+//          MANTRA BARU: ACAK KATA BATTLE
+// =======================================================
+
+async function startAcakKataBattle(uid) {
+    const [studentSnap, questsSnap, configSnap] = await Promise.all([
+        get(ref(db, `students/${uid}`)),
+        get(ref(db, 'quests')),
+        get(ref(db, 'config/ivySettings'))
+    ]);
+
+    if (!studentSnap.exists() || !questsSnap.exists() || !configSnap.exists() || !configSnap.val().apiKey) {
+        showToast("Gagal memulai: Data siswa, monster, atau AI tidak lengkap!", true);
+        return;
+    }
+
+    const allQuests = questsSnap.val();
+    if (!allQuests || Object.keys(allQuests).length === 0) {
+        showToast("Tidak ada monster di dunia ini! Minta admin untuk membuatnya.", true);
+        return;
+    }
+
+    const questIds = Object.keys(allQuests);
+    const randomQuestId = questIds[Math.floor(Math.random() * questIds.length)];
+    const monsterData = allQuests[randomQuestId];
+
+    const studentData = studentSnap.val();
+    currentAcakKataBattleState = {
+        uid: uid,
+        student: { ...studentData, currentHp: studentData.hp, maxHp: (studentData.level || 1) * 100 },
+        monster: { ...monsterData, currentHp: monsterData.monsterHp, maxHp: monsterData.monsterMaxHp || monsterData.monsterHp },
+        ivySettings: configSnap.val(),
+        isAnswerLocked: false,
+    };
+
+    const modal = document.getElementById('acak-kata-battle-modal');
+    const form = document.getElementById('acak-kata-battle-form');
+    const forfeitButton = document.getElementById('forfeit-acak-kata-battle-button');
+
+    if (!modal || !form || !forfeitButton) return;
+
+    const logContainer = document.getElementById('acak-kata-battle-log-container');
+    if (logContainer) logContainer.innerHTML = '<p class="text-gray-400">> Pertarungan dimulai...</p>';
+
+    form.onsubmit = (e) => {
+        e.preventDefault();
+        handleAcakKataAnswer();
+    };
+    forfeitButton.onclick = () => {
+        if (confirm("Yakin mau kabur? Kamu akan kehilangan sedikit HP.")) {
+            endAcakKataBattle(false, true);
+        }
+    };
+    
+    audioPlayer.openModal();
+    modal.classList.remove('hidden');
+    setTimeout(() => modal.classList.remove('opacity-0'), 10);
+
+    nextAcakKataTurn();
+}
+
+function updateAcakKataBattleUI() {
+    const { student, monster } = currentAcakKataBattleState;
+
+    const playerInfo = document.getElementById('acak-kata-battle-player-info');
+    const playerHpPercent = Math.max(0, (student.currentHp / student.maxHp) * 100);
+    playerInfo.innerHTML = `<p class="font-bold text-lg">${student.nama}</p><div class="w-full bg-gray-600 rounded-full h-4 mt-1"><div class="bg-green-500 h-4 rounded-full" style="width: ${playerHpPercent}%"></div></div><p class="text-sm font-mono">${student.currentHp} / ${student.maxHp} HP</p>`;
+
+    const monsterInfo = document.getElementById('acak-kata-battle-monster-info');
+    const monsterHpPercent = Math.max(0, (monster.currentHp / monster.maxHp) * 100);
+    monsterInfo.innerHTML = `<p class="font-bold text-lg">${monster.monsterName}</p><div class="w-full bg-gray-600 rounded-full h-4 mt-1"><div class="bg-red-500 h-4 rounded-full" style="width: ${monsterHpPercent}%"></div></div><p class="text-sm font-mono">${monster.currentHp} / ${monster.maxHp} HP</p>`;
+}
+
+async function nextAcakKataTurn() {
+    if (currentAcakKataBattleState.isAnswerLocked) return;
+    
+    updateAcakKataBattleUI();
+    
+    const questionTextEl = document.getElementById('acak-kata-battle-question-text');
+    const answerInput = document.getElementById('acak-kata-battle-answer-input');
+    const submitButton = document.getElementById('acak-kata-battle-submit-button');
+
+    questionTextEl.textContent = 'MEMINTA...';
+    answerInput.value = '';
+    answerInput.disabled = true;
+    submitButton.disabled = true;
+    currentAcakKataBattleState.isAnswerLocked = true;
+
+    try {
+        const settings = currentAcakKataBattleState.ivySettings;
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${settings.apiKey}`;
+        const payload = {
+            contents: [{ parts: [{ text: "Buat satu istilah pemrograman web (antara 4-10 huruf, tanpa spasi), lalu acak hurufnya. Berikan jawaban dalam format JSON: { scrambled: string, answer: string }" }] }],
+            generationConfig: {
+                responseMimeType: "application/json",
+                responseSchema: { type: "OBJECT", properties: { "scrambled": { "type": "STRING" }, "answer": { "type": "STRING" } }, required: ["scrambled", "answer"] }
+            }
+        };
+        const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        const result = await response.json();
+        let questionData = JSON.parse(result.candidates[0].content.parts[0].text);
+        
+        questionData.answer = questionData.answer.toUpperCase();
+        questionData.scrambled = questionData.scrambled.toUpperCase();
+
+        currentAcakKataBattleState.currentQuestionData = questionData;
+        questionTextEl.textContent = questionData.scrambled;
+        
+        answerInput.disabled = false;
+        submitButton.disabled = false;
+        answerInput.focus();
+        currentAcakKataBattleState.isAnswerLocked = false;
+
+    } catch (error) {
+        console.error("Gagal memuat soal Acak Kata:", error);
+        questionTextEl.textContent = "ERROR";
+        setTimeout(() => endAcakKataBattle(false), 2000);
+    }
+}
+
+async function handleAcakKataAnswer() {
+    if (currentAcakKataBattleState.isAnswerLocked) return;
+    currentAcakKataBattleState.isAnswerLocked = true;
+
+    const { student, monster, currentQuestionData } = currentAcakKataBattleState;
+    const answerInput = document.getElementById('acak-kata-battle-answer-input');
+    const submitButton = document.getElementById('acak-kata-battle-submit-button');
+    const logContainer = document.getElementById('acak-kata-battle-log-container');
+
+    const addLog = (text, type) => {
+        const colorClass = type === 'damage' ? 'text-red-400' : type === 'heal' ? 'text-green-400' : 'text-gray-300';
+        logContainer.innerHTML += `<p class="${colorClass}">> ${text}</p>`;
+        logContainer.scrollTop = logContainer.scrollHeight;
+    };
+
+    answerInput.disabled = true;
+    submitButton.disabled = true;
+
+    const userGuess = answerInput.value.trim().toUpperCase();
+    const isCorrect = userGuess === currentQuestionData.answer;
+
+    if (isCorrect) {
+        audioPlayer.success();
+        addLog(`Jawaban BENAR! (${currentQuestionData.answer})`, 'heal');
+        await new Promise(res => setTimeout(res, 800));
+        let studentDamage = 20 + Math.floor(Math.random() * 11); // Damage 20-30
+        monster.currentHp = Math.max(0, monster.currentHp - studentDamage);
+        addLog(`⚔️ ${student.nama} menyerang, ${studentDamage} damage!`, 'normal');
+    } else {
+        audioPlayer.error();
+        addLog(`Jawaban SALAH! Jawaban benar: ${currentQuestionData.answer}`, 'damage');
+        await new Promise(res => setTimeout(res, 800));
+        let monsterDamage = 10 + Math.floor(Math.random() * 6); // Damage 10-15
+        student.currentHp = Math.max(0, student.currentHp - monsterDamage);
+        addLog(`⚔️ ${monster.monsterName} menyerang, ${monsterDamage} damage diterima!`, 'damage');
+    }
+
+    if (monster.currentHp <= 0) {
+        endAcakKataBattle(true);
+    } else if (student.currentHp <= 0) {
+        endAcakKataBattle(false);
+    } else {
+        await new Promise(res => setTimeout(res, 1200));
+        currentAcakKataBattleState.isAnswerLocked = false;
+        nextAcakKataTurn();
+    }
+}
+
+async function endAcakKataBattle(isVictory, isForfeit = false) {
+    currentAcakKataBattleState.isAnswerLocked = true;
+    const { uid, student, monster } = currentAcakKataBattleState;
+    const questionContainer = document.getElementById('acak-kata-battle-question-container');
+    document.getElementById('acak-kata-battle-form').classList.add('hidden');
+
+    const updates = {};
+    let finalHp = student.currentHp;
+
+    if (isForfeit) {
+        const penalty = Math.floor(student.maxHp * 0.05);
+        finalHp = Math.max(1, student.currentHp - penalty);
+        questionContainer.innerHTML = `<h2 class="text-2xl font-bold text-yellow-400">Kamu Kabur!</h2><p>Kamu kehilangan ${penalty} HP.</p>`;
+    } else if (isVictory) {
+        questionContainer.innerHTML = `<h2 class="text-2xl font-bold text-green-400">KAMU MENANG!</h2><p>Hadiah: +${monster.rewardCoin} Koin, +${monster.rewardXp} XP</p>`;
+        const xpPerLevel = 1000;
+        const currentTotalXp = ((student.level || 1) - 1) * xpPerLevel + (student.xp || 0);
+        const newTotalXp = currentTotalXp + (monster.rewardXp || 0);
+        updates[`/students/${uid}/level`] = Math.floor(newTotalXp / xpPerLevel) + 1;
+        updates[`/students/${uid}/xp`] = newTotalXp % xpPerLevel;
+        updates[`/students/${uid}/coin`] = (student.coin || 0) + (monster.rewardCoin || 0);
+    } else {
+        questionContainer.innerHTML = `<h2 class="text-2xl font-bold text-red-500">KAMU KALAH...</h2>`;
+    }
+    
+    updates[`/students/${uid}/hp`] = finalHp;
+    if (Object.keys(updates).length > 0) await update(ref(db), updates);
+
+    setTimeout(() => {
+        const modal = document.getElementById('acak-kata-battle-modal');
+        modal.classList.add('opacity-0');
+        setTimeout(() => {
+            modal.classList.add('hidden');
+            document.getElementById('acak-kata-battle-form').classList.remove('hidden');
+        }, 300);
+    }, 4000);
+}
 // =======================================================
 //                  LOGIKA NOTIFIKASI ADMIN
 // =======================================================
+
+
 
 // --- FUNGSI INTI BARU: Menambahkan Notifikasi ke Firebase ---
 async function addNotification(message, type = 'info', details = {}, targetUid = null) {
