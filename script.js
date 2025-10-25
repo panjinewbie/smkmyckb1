@@ -1573,12 +1573,27 @@ async function setupStudentShopPage(uid) {
             const newStock = (itemData.stock || 0) - 1;
             const newItemForInventory = { name: itemData.name, description: itemData.description, effect: itemData.effect, effectValue: itemData.effectValue, iconUrl: itemData.imageBase64 };
 
-            const updates = {};
-            updates[`/students/${uid}/coin`] = newCoin;
-            updates[`/shopItems/${itemId}/stock`] = newStock;
-            updates[`/students/${uid}/inventory/${emptySlotIndex}`] = newItemForInventory;
+            // Update coin siswa
+            await update(ref(db, `students/${uid}`), {
+                coin: newCoin,
+                [`inventory/${emptySlotIndex}`]: newItemForInventory
+            });
+
+            // Update stock item
+            await update(ref(db, `shopItems/${itemId}`), {
+                stock: newStock
+            });
             
-            await update(ref(db), updates);
+            // Catat transaksi
+            const transactionRef = ref(db, 'transactions');
+            await push(transactionRef, {
+                itemId: itemId,
+                itemName: itemData.name,
+                price: itemData.price,
+                studentId: uid,
+                studentName: studentData.nama,
+                timestamp: Date.now()
+            });
             
             addNotification(
                 `<strong>${studentData.nama}</strong> membeli <strong>${itemData.name}</strong>.`, 
@@ -3580,6 +3595,173 @@ function showFireworks() {
     }, 3000);
 }
 // =======================================================
+//          ANALISIS PENJUALAN (GRAFIK)
+// =======================================================
+let salesChartInstance = null; // Untuk memegang instance chart agar bisa dihancurkan
+
+async function setupSalesAnalytics() {
+    const transactionsRef = ref(db, 'transactions');
+    const snapshot = await get(transactionsRef);
+
+    const totalItemsSoldEl = document.getElementById('total-items-sold');
+    const totalRevenueEl = document.getElementById('total-revenue');
+    const bestSellingItemEl = document.getElementById('best-selling-item');
+    const itemsSalesCtx = document.getElementById('items-sales-chart')?.getContext('2d');
+    const dailySalesCtx = document.getElementById('daily-sales-chart')?.getContext('2d');
+
+    // Pastikan semua elemen ada sebelum melanjutkan
+    if (!totalItemsSoldEl || !totalRevenueEl || !bestSellingItemEl || !itemsSalesCtx || !dailySalesCtx) {
+        console.error("Elemen untuk analisis penjualan tidak ditemukan!");
+        return;
+    }
+
+    // Handle jika tidak ada transaksi
+    if (!snapshot.exists()) {
+        const noDataMessage = "Belum ada data penjualan untuk ditampilkan.";
+        [itemsSalesCtx, dailySalesCtx].forEach(ctx => {
+            ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+            ctx.font = "16px sans-serif";
+            ctx.fillStyle = "#888";
+            ctx.textAlign = "center";
+            ctx.fillText(noDataMessage, ctx.canvas.width / 2, ctx.canvas.height / 2);
+        });
+
+        totalItemsSoldEl.textContent = '0';
+        totalRevenueEl.innerHTML = '0 <span class="text-base font-normal">Koin</span>';
+        bestSellingItemEl.textContent = '-';
+        if (salesChartInstance) salesChartInstance.destroy();
+        return;
+    }
+
+    const transactions = snapshot.val();
+    const salesCount = {};
+    const dailySales = {};
+    let totalRevenue = 0;
+    let totalItemsSold = 0;
+
+    // Proses transaksi untuk kedua grafik
+    for (const key in transactions) {
+        const tx = transactions[key];
+        // Data untuk grafik item
+        salesCount[tx.itemName] = (salesCount[tx.itemName] || 0) + 1;
+        totalRevenue += tx.price;
+        totalItemsSold++;
+
+        // Data untuk grafik tren harian
+        const date = new Date(tx.timestamp || 0).toLocaleDateString('id-ID');
+        if (!dailySales[date]) {
+            dailySales[date] = {
+                count: 0,
+                revenue: 0
+            };
+        }
+        dailySales[date].count++;
+        dailySales[date].revenue += tx.price;
+    }
+
+    // Persiapkan data untuk grafik item terlaris
+    const sortedItems = Object.entries(salesCount).sort(([,a],[,b]) => b - a);
+    const itemLabels = sortedItems.map(([name]) => name);
+    const itemData = sortedItems.map(([,count]) => count);
+    const bestSellingItem = sortedItems.length > 0 ? sortedItems[0][0] : '-';
+
+    // Persiapkan data untuk grafik tren harian
+    const sortedDates = Object.entries(dailySales)
+        .sort(([a], [b]) => new Date(a) - new Date(b))
+        .slice(-7); // Ambil 7 hari terakhir saja
+
+    const dailyLabels = sortedDates.map(([date]) => {
+        const [day, month] = date.split('/');
+        return `${day}/${month}`;
+    });
+    const dailyData = sortedDates.map(([, data]) => data.revenue);
+
+    // Update kartu statistik
+    totalItemsSoldEl.textContent = totalItemsSold;
+    totalRevenueEl.innerHTML = `${totalRevenue} <span class="text-base font-normal">Koin</span>`;
+    bestSellingItemEl.textContent = bestSellingItem;
+
+    // Hancurkan chart lama jika ada
+    if (salesChartInstance) {
+        salesChartInstance.destroy();
+    }
+
+    // Buat chart item terlaris
+    new Chart(itemsSalesCtx, {
+        type: 'bar',
+        data: {
+            labels: itemLabels,
+            datasets: [{
+                label: 'Jumlah Terjual',
+                data: itemData,
+                backgroundColor: 'rgba(59, 130, 246, 0.5)',
+                borderColor: 'rgba(59, 130, 246, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                },
+                title: {
+                    display: true,
+                    text: 'Item Terlaris'
+                }
+            }
+        }
+    });
+
+    // Buat chart tren harian
+    new Chart(dailySalesCtx, {
+        type: 'line',
+        data: {
+            labels: dailyLabels,
+            datasets: [{
+                label: 'Pendapatan (Koin)',
+                data: dailyData,
+                borderColor: 'rgba(34, 197, 94, 1)',
+                backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: value => `${value} Koin`
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                },
+                title: {
+                    display: true,
+                    text: 'Tren Pendapatan 7 Hari Terakhir'
+                }
+            }
+        }
+    });
+}
+
+// =======================================================
 //                  LOGIKA DASBOR ADMIN
 // =======================================================
 function setupAdminDashboard() {
@@ -3731,7 +3913,10 @@ setTimeout(() => {
         magicControlsPage.classList.toggle('hidden', pageId !== 'magic');
 
         document.getElementById('journal-page').classList.toggle('hidden', pageId !== 'journal'); // New line
-        if (pageId === 'quests') setupQuestsPage();
+        if (pageId === 'quests') {
+            setupQuestsPage();
+            // Mungkin panggil fungsi lain yang relevan dengan halaman quest di sini
+        }
         if (pageId === 'attendance') setupAttendancePage();
         if (pageId === 'shop') setupShopPage();
         if (pageId === 'magic') setupMagicControlsPage();
@@ -4757,6 +4942,7 @@ async function handleGiveAdminReward(bountyId, bountyData, closeModalCallback) {
     shopItemForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const itemId = document.getElementById('shop-item-id').value;
+        const submitButton = document.getElementById('submit-shop-item-button');
         
         const itemData = {
             name: document.getElementById('item-name').value,
@@ -4767,6 +4953,9 @@ async function handleGiveAdminReward(bountyId, bountyData, closeModalCallback) {
             stock: parseInt(document.getElementById('item-stock').value),
             imageBase64: itemImagePreview.src.startsWith('data:image') ? itemImagePreview.src : null,
         };
+
+        submitButton.disabled = true;
+        submitButton.textContent = 'Menyimpan...';
 
         try {
             if (itemId) {
@@ -4781,11 +4970,16 @@ async function handleGiveAdminReward(bountyId, bountyData, closeModalCallback) {
             const message = itemId ? 'Gagal memperbarui item!' : 'Gagal menambahkan item baru!';
             showToast(message, true);
             console.error(error);
+        } finally {
+            submitButton.disabled = false;
+            submitButton.textContent = 'Simpan Item';
         }
     });
 
     function setupShopPage() {
         const shopItemsRef = ref(db, 'shopItems');
+        setupSalesAnalytics(); // Panggil fungsi analisis di sini
+
         onValue(shopItemsRef, (snapshot) => {
             shopItemList.innerHTML = ''; // Hapus loader
             if (!snapshot.exists()) {
@@ -6343,6 +6537,5 @@ function setupJournalPage() {
     setupSelectors();
     renderJournals();
 }
-
 // Panggil lucide.createIcons() secara global sekali untuk halaman login & student
 createLucideIcons();
