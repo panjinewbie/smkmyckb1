@@ -4,48 +4,317 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DREAMY Gamifikasi - Login</title>
-    
-    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Press+Start+2P&display=swap" rel="stylesheet">
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script> <!-- MANTRA BARU DISINI -->
+    <link rel="icon" href="https://blogger.googleusercontent.com/img/a/AVvXsEiYeuamAA-439_rhfNSWoNA_HXYwDHMShHq_QTJsf3NORXy4xNu1v6ETybToshBjOPfVmTTrMpuIBXeFlc1d7YZja9G12s1olc2vzXTEI0og4p7qu1E6gn9HEbo6K473PlSZIAl46TADoe352csCDbViUKp7TnUSlYnNB7kC-sn6cXe8y5YsOTpH1srOT4">
+    <link rel='stylesheet prefetch' href='https://fonts.googleapis.com/css?family=Open+Sans'>
     <link rel="stylesheet" href="style.css">
+   <style>
+        html,
+        *, *:before, *:after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        }
+
+        html, body {
+        font-size: 62.5%;
+        height: 100%;
+        overflow: hidden;
+        
+        }
+        @media (max-width: 768px) {
+        html, body {
+            font-size: 50%;
+        }
+        }
+
+        svg {
+        display: inline-block;
+        width: 2rem;
+        height: 2rem;
+        overflow: visible;
+        }
+
+        .svg-icon {
+        cursor: pointer;
+        }
+        .svg-icon path {
+        stroke: rgba(255, 255, 255, 0.9);
+        fill: none;
+        stroke-width: 1;
+        }
+
+        input, button {
+        outline: none;
+        border: none;
+        }
+
+        .cont {
+        position: relative;
+        height: 100%;
+        background-image: url("asset/gambar/pose2.jpg");
+        background-size: cover;
+        overflow: auto;
+        font-family: "Open Sans", Helvetica, Arial, sans-serif;
+         &::before {
+    content: '';
+	position: fixed;
+	top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+	background-image: linear-gradient(to bottom right,#002f4b,#dc4225);
+	opacity: .5; 
+    }
+        }
+
+        .demo {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        margin-left: -15rem;
+        margin-top: -26.5rem;
+        width: 30rem;
+        height: 53rem;
+        overflow: hidden;
+        }
+
+        .login {
+        position: relative;
+        height: 100%;
+        background: -webkit-linear-gradient(top, rgba(14, 13, 18, 0.8) 0%, rgba(0, 0, 0, 0.6) 100%);
+        background: linear-gradient(to bottom, rgba(14, 13, 18, 0.5) 0%, rgba(0, 0, 0, 0.6) 100%);
+        -webkit-transition: opacity 0.1s, -webkit-transform 0.3s cubic-bezier(0.17, -0.65, 0.665, 1.25);
+        transition: opacity 0.1s, -webkit-transform 0.3s cubic-bezier(0.17, -0.65, 0.665, 1.25);
+        transition: opacity 0.1s, transform 0.3s cubic-bezier(0.17, -0.65, 0.665, 1.25);
+        transition: opacity 0.1s, transform 0.3s cubic-bezier(0.17, -0.65, 0.665, 1.25), -webkit-transform 0.3s cubic-bezier(0.17, -0.65, 0.665, 1.25);
+        -webkit-transform: scale(1);
+                transform: scale(1);
+                z-index: 4;
+        }
+        .login.inactive {
+        opacity: 0;
+        -webkit-transform: scale(1.1);
+                transform: scale(1.1);
+        }
+
+        #nome{
+            text-align: center;
+            font-size: 20px;
+            padding-top: 100px; /* Adjusted padding */
+            padding-bottom: 50px;
+            color: white;
+        }
+        
+        #nome h1 {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 3rem;
+            text-shadow: 2px 2px 4px #000000;
+        }
+
+        #nome p {
+            font-family: 'Inter', sans-serif;
+            font-size: 1.4rem;
+            color: #e0e0e0;
+            text-shadow: 1px 1px 2px #000000;
+            margin-top: 1rem;
+        }
+
+
+        .login__form {
+        position: absolute;
+        top: 50%;
+        left: 0;
+        width: 100%;
+        height: 50%;
+        padding: 1.5rem 2.5rem;
+        text-align: center;
+        }
+
+        .login__row {
+        height: 5rem;
+        padding-top: 1rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .login__icon {
+        margin-bottom: -0.4rem;
+        margin-right: 0.5rem;
+        }
+        .login__icon.name path {
+        stroke-dasharray: 73.50196075439453;
+        stroke-dashoffset: 73.50196075439453;
+        -webkit-animation: animatePath 2s 0.5s forwards;
+                animation: animatePath 2s 0.5s forwards;
+        }
+        .login__icon.pass path {
+        stroke-dasharray: 92.10662841796875;
+        stroke-dashoffset: 92.10662841796875;
+        -webkit-animation: animatePath 2s 0.5s forwards;
+                animation: animatePath 2s 0.5s forwards;
+        }
+        .login__input {
+        display: inline-block;
+        width: 22rem;
+        height: 100%;
+        padding-left: 1.5rem;
+        font-size: 1.5rem;
+        background: transparent;
+        color: #FDFCFD;
+        }
+        .login__submit {
+        position: relative;
+        width: 100%;
+        height: 4rem;
+        margin: 5rem 0 2.2rem;
+        color: #fff;
+        background: #2196F3;
+        font-size: 1.5rem;
+        border-radius: 3rem;
+        cursor: pointer;
+        overflow: hidden;
+        -webkit-transition: width 0.3s 0.15s, font-size 0.1s 0.15s;
+        transition: width 0.3s 0.15s, font-size 0.1s 0.15s;
+        }
+
+        .login__signup {
+            font-size: 1.2rem;
+            color: #ABA8AE;
+            margin-top: 2rem;
+        }
+        .login__signup a {
+            color: #fff;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .canvas-area{
+        border-radius:5px;
+        width:100%;
+        height:100%;
+        background:cover; 
+        background-position:-500px 0;
+        overflow:hidden;
+        position:relative;
+        }
+
+
+        #stars-font,#stars-under{
+        margin-left:-500px;
+        overflow:hidden;
+        opacity: 0.5;
+        }
+
+        @-webkit-keyframes animatePath {
+        to {
+            stroke-dashoffset: 0;
+        }
+        }
+        @keyframes animatePath {
+        to {
+            stroke-dashoffset: 0;
+        }
+        }
+    </style>
 </head>
-<body class="min-h-screen login-bg">
+<body>
 
-    <section id="login-page" class="min-h-screen flex items-center justify-center p-4">
-    <div class="w-full max-w-sm">
-        <div class="text-center mb-8">
-            <h1 class="font-game text-3xl md:text-4xl text-white" style="text-shadow: 2px 2px 4px #000000;">DREAMY</h1>
+<div class="canvas-area">
+    
+    <canvas id="stars-font" width="5000" height="1000px" style="z-index:2;position:absolute;"></canvas>
+    <canvas id="stars-under" width="5000" height="1000px" style="z-index:1;position:absolute;"></canvas>
+
+    <div class="cont">
+        <div class="demo">
+            <div class="login">
+                <div id="nome">
+                   
+    <div class="vector Vright"></div>
+                    <h1 class="font-game text-3xl md:text-4xl text-white" style="text-shadow: 2px 2px 4px #000000;">DREAMY</h1>
             <p class="text-gray-200 mt-2 text-sm md:text-base" style="text-shadow: 1px 1px 2px #000000;">Dunia RPG Edukasi Anak Mardi Yuana</p>
-        </div>
-
-        <div class="bg-black bg-opacity-60 rounded-xl shadow-lg p-6 md:p-8 backdrop-blur-sm border border-gray-700">
-            <h2 class="text-2xl font-bold text-center text-white mb-6">Login</h2>
-            <div id="login-notification" class="hidden p-3 rounded-lg mb-4 text-center text-sm text-white"></div>
-            <form id="login-form">
-                <div class="space-y-4">
-                    <div>
-                        <label for="login-email" class="block text-sm font-medium text-gray-200">Email</label>
-                        <input type="email" id="login-email" required class="mt-1 w-full p-3 bg-gray-700 bg-opacity-50 border border-gray-500 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="email@kamu.com">
-                    </div>
-                    <div>
-                        <label for="login-password" class="block text-sm font-medium text-gray-200">Password</label>
-                        <input type="password" id="login-password" required class="mt-1 w-full p-3 bg-gray-700 bg-opacity-50 border border-gray-500 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="••••••••">
-                    </div>
                 </div>
-                <button type="submit" id="login-button" class="w-full mt-6 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-transform transform hover:scale-105">
-                    Masuk Dunia DREAMY
-                </button>
-            </form>
+                <div class="login__form">
+                    <div id="login-notification" class="hidden p-3 rounded-lg mb-4 text-center text-sm text-white"></div>
+                    <form id="login-form">
+                        <div class="login__row">
+                            <svg class="login__icon name svg-icon" viewBox="0 0 20 20">
+                                <path d="M0,20 a10,8 0 0,1 20,0z M10,0 a4,4 0 0,1 0,8 a4,4 0 0,1 0,-8" />
+                            </svg>
+                            <input type="email" id="login-email" required class="login__input name" placeholder="Email"/>
+                        </div>
+                        <div class="login__row">
+                            <svg class="login__icon pass svg-icon" viewBox="0 0 20 20">
+                                <path d="M0,20 20,20 20,8 0,8z M10,13 10,16z M4,8 a6,8 0 0,1 12,0" />
+                            </svg>
+                            <input type="password" id="login-password" required class="login__input pass" placeholder="Password"/>
+                        </div>
+                        <button type="submit" id="login-button" class="login__submit">Masuk Dunia DREAMY</button>
+                    </form>
+                    <p class="login__signup">Dibuat oleh © <a href="https://sites.google.com/view/smk-myckb/halaman-muka" target="_blank">Mas Panji Purnomo</a></p>
+                </div>
+            </div>
         </div>
-        <div class="text-center mt-8">
-    <p class="text-xs text-gray-400">Dibuat oleh © <a style="text-decoration:none" href="https://sites.google.com/view/smk-myckb/halaman-muka" target="_blank"><font color="#0080FF" face="sans-serif">Mas Panji Purnomo</font></a> </p>
-</div>
     </div>
-</section>
-    <script type="module" src="script.js"></script>
+</div>
+
+<script src='https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js'></script>
+<script type="module" src="script.js"></script>
+<script>
+(function(){
+    function init() {
+        starsFont = document.getElementById("stars-font");
+        ctx = starsFont.getContext("2d");
+
+        starsUnder = document.getElementById("stars-under");
+        ctx2 = starsUnder.getContext("2d");
+        
+        drawAll();
+    }
+
+    function drawAll() {
+        draw1();
+        draw2();
+    }
+
+    function draw1(){
+        ctx.clearRect(0, 0, 5000,1000);
+        for(var i=0;i<1000;i++){
+            ctx.beginPath();
+            ctx.arc(Math.random()*5000,10+Math.random()*1000,Math.random()*2,0,Math.PI*2,true);
+            ctx.closePath()
+            ctx.shadowBlur = 10; 
+            ctx.shadowColor = 'white';
+            ctx.fillStyle = 'white';
+            ctx.fill();
+        }
+    }
+
+    function draw2(){
+        ctx2.clearRect(0, 0, 5000,1000);
+        for(var i=0;i<1000;i++){
+            ctx2.beginPath();
+            ctx2.arc(Math.random()*5000,10+Math.random()*1000,Math.random()*2,0,Math.PI*2,true);
+            ctx2.closePath()
+            ctx2.shadowBlur = 10; 
+            ctx2.shadowColor = 'white';
+            ctx2.fillStyle = '#ECE9E9';
+            ctx2.fill();
+        }
+    }
+    init();
+
+    var currentPositionX_ = 0;
+    $('body').mousemove(function(e){
+        var currentPositionX = e.pageX;
+        var movement = (currentPositionX - ($('body').width()/2)) / ($('body').width()/2);
+
+        $('#stars-font').css('margin-left', -500 - (movement * 150) + 'px');
+        $('#stars-under').css('margin-left', -500 - (movement * 100) + 'px');
+        $('.canvas-area').css('background-position', (-500 - (movement * 50)) + 'px 0');
+    });
+})();
+</script>
+
 </body>
 </html>
