@@ -94,6 +94,7 @@
     <script type="module" src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js"></script>
     <script type="module" src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js"></script>
     <script type="module" src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="style.css">
 <link rel="icon" href="https://blogger.googleusercontent.com/img/a/AVvXsEiYeuamAA-439_rhfNSWoNA_HXYwDHMShHq_QTJsf3NORXy4xNu1v6ETybToshBjOPfVmTTrMpuIBXeFlc1d7YZja9G12s1olc2vzXTEI0og4p7qu1E6gn9HEbo6K473PlSZIAl46TADoe352csCDbViUKp7TnUSlYnNB7kC-sn6cXe8y5YsOTpH1srOT4">
 </head>
@@ -365,7 +366,46 @@
     </div>
 </div>
 
-            <div id="shop-page" class="hidden">
+            <div id="shop-page" class="hidden space-y-6">
+                <!-- Bagian Analisis Penjualan -->
+                <div class="bg-white rounded-lg shadow-md mb-6">
+                    <div class="p-6 border-b">
+                        <h2 class="text-xl font-semibold">Analisis Penjualan</h2>
+                        <p class="text-sm text-gray-500 mt-1">Grafik item yang paling sering dibeli oleh siswa.</p>
+                    </div>
+                    <div class="p-6">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 text-center">
+                            <div class="bg-gray-100 p-4 rounded-lg">
+                                <p class="text-sm text-gray-600">Total Item Terjual</p>
+                                <p id="total-items-sold" class="text-2xl font-bold">0</p>
+                            </div>
+                            <div class="bg-gray-100 p-4 rounded-lg">
+                                <p class="text-sm text-gray-600">Total Pendapatan</p>
+                                <p id="total-revenue" class="text-2xl font-bold">0 <span class="text-base font-normal">Koin</span></p>
+                            </div>
+                            <div class="bg-gray-100 p-4 rounded-lg">
+                                <p class="text-sm text-gray-600">Item Terlaris</p>
+                                <p id="best-selling-item" class="text-lg font-bold">-</p>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <div class="relative">
+                                <h4 class="text-sm font-medium text-gray-700 mb-2">Grafik Penjualan per Item</h4>
+                                <div class="h-80">
+                                    <canvas id="items-sales-chart"></canvas>
+                                </div>
+                            </div>
+                            <div class="relative">
+                                <h4 class="text-sm font-medium text-gray-700 mb-2">Tren Penjualan Harian</h4>
+                                <div class="h-80">
+                                    <canvas id="daily-sales-chart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bagian Manajemen Toko -->
                 <div class="bg-white rounded-lg shadow-md">
                     <div class="p-6 border-b border-gray-200 flex flex-wrap gap-4 justify-between items-center">
                         <div>
