@@ -1,6 +1,79 @@
-body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+/* ======================================================= */
+/*          MANTRA BARU: TEMA TERANG & GELAP               */
+/* ======================================================= */
+:root {
+    --DinExp: 'Inter', sans-serif;
+    --spacegrotesk: 'Space Grotesk', sans-serif;
+    --rubik: 'rubik', sans-serif;
+    --arial: 'arial', sans-serif;
+    --fontawesome: 'Font Awesome 6 Free', 'Font Awesome 6 Brands';
+    
+    --link: #8383C0;
+    --purple: #8383C0;  
+    --success: #03A65A;
+    --help: #0070E0;
+    --danger: #DB3056;
+    --warning: #FC8621;
+    --shadow: 0px 0px 35px 0px rgba(0, 0, 0, 0.25);
+    --white: #fff;
+    --whiteO: 255, 255, 255;
+    --black: #000;
+    --black0: 0, 0, 0;
+    --scrollbar: 0, 0, 0;
+}
+
+:root[data-color-scheme="dark"] {
+    --primary: #1C1C1F;
+    --secondary: #151618;
+    --tertiary: #101112;
+    --text: #CEDBE3;
+    --yellow: #EB9B38;
+    --blue: #2DFDF6;
+    --text-primary: var(--text);
+    --text-secondary: rgba(206, 219, 227, 0.7);
+    --accent-yellow: var(--yellow);
+    --accent-blue: var(--blue);
+    --card-bg: rgba(255, 255, 255, 0.08);
+    --card-border: rgba(255, 255, 255, 0.15);
+    --background: url('asset/gambar/halaman admin3.png');
+    --svg-filter: brightness(0) invert(1);
+    --themeIcon: '\f185';
+}
+
+:root[data-color-scheme="light"] {
+    --primary: #D8E2E9;
+    --secondary: #E8EEF2;
+    --tertiary: #FAFBFC;
+    --text: #27282B;
+    --yellow: #EB9B38;
+    --blue: #8383C0;
+    --text-primary: var(--text);
+    --text-secondary: rgba(39, 40, 43, 0.7);
+    --accent-yellow: var(--yellow);
+    --accent-blue: var(--blue);
+    --card-bg: rgba(255, 255, 255, 0.6);
+    --card-border: rgba(0, 0, 0, 0.1);
+    --background: url('asset/gambar/BADMIN1.jpg');
+    --svg-filter: brightness(0) invert(0);
+    --themeIcon: '\f186';
+}
+
+body {
+    font-family: var(--DinExp);
+    background-image: var(--background);
+    background-size: cover;
+    background-attachment: fixed;
+    color: var(--text);
+    margin: 50px;
+}
+
 .font-game { font-family: 'Press Start 2P', cursive; }
-.nav-link.active { color: #3b82f6; border-bottom-color: #3b82f6; }
+.font-nouvelle { font-family: 'Nouvelle Vague', cursive; }
+
+.nav-link.active { 
+    color: var(--yellow); 
+    border-bottom-color: var(--yellow);
+}
 .modal-overlay, .modal-content { transition: all 0.3s ease; }
 button:disabled { opacity: 0.7; cursor: not-allowed; }
 .hp-bar, .xp-bar { transition: width 0.5s ease-in-out; }
@@ -18,29 +91,40 @@ button:disabled { opacity: 0.7; cursor: not-allowed; }
     background-position: center;
     background-repeat: no-repeat;
 }
-/* --- MANTRA BARU UNTUK BACKGROUND ADMIN --- */
-.admin-bg {
-    background-image: url('asset/gambar/halaman admin3.png');
-    background-size: cover;
-    background-position: center center;
-    background-attachment: fixed; /* Biar background-nya diem pas di-scroll */
-}
-
-/* Bikin kartu-kartu konten jadi sedikit transparan biar nyatu sama background */
-.student-bg {
-    background-image: url('asset/gambar/halaman admin3.png'); /* Ganti dengan gambar background yang sesuai */
+/* --- MANTRA BARU UNTUK BACKGROUND STUDENT RPG --- */
+.student-rpg-bg {
+    background-image: url('https://zupimages.net/up/21/23/mh4a.png');
     background-size: cover;
     background-position: center center;
     background-attachment: fixed;
 }
 
-/* Efek transparan (glassmorphism) untuk kartu konten di halaman student */
-.student-bg #main-content .bg-white,
-.student-bg #main-content .bg-gray-50 {
-    /* Menggunakan !important untuk menimpa class dari Tailwind */
-    background-color: rgba(255, 255, 255, 0.85) !important; 
+/* --- MANTRA BARU UNTUK BACKGROUND ADMIN --- */
+.admin-bg {
+    background-image: url('asset/gambar/BADMIN1.jpg');
+    background-size: cover;
+    background-position: center center;
+    background-attachment: fixed; /* Biar background-nya diem pas di-scroll */
+}
+.rpg-hero-bg {
+    background: linear-gradient(0deg, #f3a083 0%, #9dc5c2 100%);
+}
+.rpg-card {
+    background-color: var(--card-bg);
     backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px); /* Untuk kompatibilitas Safari */
+    border-radius: 0.75rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    border: 1px solid var(--card-border);
+    color: var(--text);
+}
+
+.rpg-card-title {
+    font-family: 'Nouvelle Vague', cursive;
+    font-size: 1.5rem;
+    text-align: center;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--card-border);
+    background: linear-gradient(0deg, rgba(0,0,0,0.2) 0%, rgba(255,255,255,0.1) 100%);
 }
 
 /* --- MANTRA BARU: Animasi untuk Tombol Edit --- */
@@ -163,4 +247,36 @@ button:disabled { opacity: 0.7; cursor: not-allowed; }
 
 .day-selector button.selected {
     background-color: #3b82f6; color: white; border-color: #3b82f6;
+}
+
+/* ======================================================= */
+/*          MANTRA BARU: ANIMASI VEKTOR RPG                */
+/* ======================================================= */
+.vector {
+    position:absolute;
+    background-image: url('asset/gambar/bDQLP5X.png');
+    animation: rotate 280s linear infinite ;
+    background-size: cover;
+    filter: var(--svg-filter);
+    width: 585px;
+    height: 585px;
+    content: ' ';
+    z-index: 0; /* Pastikan berada di belakang konten */
+}
+
+.Vleft {
+    transform: rotate(356deg);
+    left: -200px;
+    bottom: -200px;
+}
+
+.Vright {
+    transform: rotate(97deg);
+    right: -200px;
+    bottom: -300px;
+}
+
+@keyframes rotate {
+    0% {transform: rotate(0);}
+    100% {transform: rotate(360deg);}
 }
