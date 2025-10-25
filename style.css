@@ -17,7 +17,7 @@ button:disabled { opacity: 0.7; cursor: not-allowed; }
 }
 /* --- MANTRA BARU UNTUK BACKGROUND LOGIN --- */
 .login-bg {
-    background-image: url('asset/gambar/background-login.jpg.png');
+    background-image: url('asset/gambar/pose2.jpg');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -36,6 +36,16 @@ button:disabled { opacity: 0.7; cursor: not-allowed; }
     background-size: cover;
     background-position: center center;
     background-attachment: fixed; /* Biar background-nya diem pas di-scroll */
+    &::before {
+    content: '';
+	position: fixed;
+	top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+	background-image: linear-gradient(to bottom right,#002f4b,#dc4225);
+	opacity: .6; 
+    }
 }
 .rpg-hero-bg {
     background: linear-gradient(0deg, #f3a083 0%, #9dc5c2 100%);
@@ -184,13 +194,13 @@ button:disabled { opacity: 0.7; cursor: not-allowed; }
 /*          MANTRA BARU: ANIMASI VEKTOR RPG                */
 /* ======================================================= */
 .vector {
-    position:absolute;
+    position:fixed;
     background-image: url('asset/gambar/bDQLP5X.png');
     animation: rotate 280s linear infinite ;
     background-size: cover;
-    filter: var(--svg-filter);
-    width: 585px;
-    height: 585px;
+    filter: brightness(0) invert(1);
+    width: 500px;
+    height: 500px;
     content: ' ';
     z-index: 0; /* Pastikan berada di belakang konten */
 }
@@ -204,7 +214,7 @@ button:disabled { opacity: 0.7; cursor: not-allowed; }
 .Vright {
     transform: rotate(97deg);
     right: -200px;
-    bottom: -300px;
+    top: -200px;
 }
 
 @keyframes rotate {
