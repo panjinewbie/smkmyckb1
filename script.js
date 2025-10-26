@@ -1,3 +1,19 @@
+// --- Theme Toggle Setup ---
+document.addEventListener('DOMContentLoaded', function() {
+    const root = document.documentElement;
+    const themeToggle = document.getElementById('theme-toggle');
+
+    if (themeToggle) {
+        themeToggle.addEventListener('click', function() {
+            if (root.getAttribute('data-color-scheme') === 'dark') {
+                root.setAttribute('data-color-scheme', 'light');
+            } else {
+                root.setAttribute('data-color-scheme', 'dark');
+            }
+        });
+    }
+});
+
 // --- Impor dan Konfigurasi Firebase ---
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
@@ -955,7 +971,26 @@ for (const effectKey in activeEffects) {
         }
         // --- AKHIR MANTRA ---
         renderActiveSkill(studentData, uid);
-        setTimeout(() => document.getElementById('student-main-content').classList.remove('opacity-0'), 100);
+
+        // --- MANTRA BARU: Sembunyikan loader & tampilkan konten di halaman siswa ---
+        const studentPage = document.getElementById('student-dashboard-page');
+        if (studentPage) {
+            const loader = document.getElementById('page-loader');
+            if (loader) {
+                loader.style.opacity = '0';
+                setTimeout(() => {
+                    loader.style.display = 'none';
+                }, 500); // Cocokkan dengan durasi transisi CSS
+            }
+            const mainContent = document.getElementById('student-main-content');
+            if (mainContent) {
+                // Tampilkan konten utama setelah jeda singkat agar transisi mulus
+                setTimeout(() => {
+                    mainContent.classList.remove('opacity-0');
+                }, 100);
+            }
+        }
+        
         createLucideIcons();
     });
     document.getElementById('bounty-list-container').addEventListener('click', async (e) => {
@@ -1508,7 +1543,7 @@ async function setupStudentShopPage(uid) {
                 const inStock = (item.stock || 0) > 0;
                 const isBuyable = canAfford && inStock;
                 const card = document.createElement('div');
-                card.className = 'bg-white p-3 rounded-lg shadow flex flex-col border hover:shadow-lg transition-shadow';
+                card.className = 'bg-white/90 backdrop-blur-sm p-3 rounded-lg shadow flex flex-col border hover:shadow-lg transition-shadow';
                 card.innerHTML = `
                     <img src="${item.imageBase64 || 'https://placehold.co/300x200/e2e8f0/3d4852?text=Item'}" class="w-full h-24 object-cover rounded-md mb-2">
                     <h4 class="text-md font-bold font-sans">${item.name}</h4>
@@ -2607,7 +2642,7 @@ function setupBountyBoardPage(uid) {
             const card = document.createElement('div');
            // --- MANTRA BARU: Beri border khusus untuk misi admin ---
             const cardClasses = bounty.isAdminBounty ? 'border-2 border-indigo-400' : '';
-            card.className = `bg-white p-4 rounded-lg shadow-lg flex flex-col ${cardClasses}`;
+            card.className = `bg-white/90 backdrop-blur-sm p-4 rounded-lg shadow-lg flex flex-col ${cardClasses}`;
             card.innerHTML = `
                 <img src="${bounty.imageUrl || 'https://placehold.co/300x200/e2e8f0/3d4852?text=Misi'}" class="w-full h-32 object-cover rounded-md mb-4">
                 <h4 class="text-lg font-bold font-sans">${bounty.title}</h4>
@@ -3970,10 +4005,10 @@ setTimeout(() => {
 
             let buttonsHtml = '';
             // Tombol Sebelumnya
-            buttonsHtml += `<button class="pagination-btn px-3 py-1 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50" data-page="${currentPage - 1}" ${currentPage === 1 ? 'disabled' : ''}>Sebelumnya</button>`;
+            buttonsHtml += `<button class="pagination-btn px-3 py-1 text-sm font-medium text-gray-600 bg-white/90 backdrop-blur-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50" data-page="${currentPage - 1}" ${currentPage === 1 ? 'disabled' : ''}>Sebelumnya</button>`;
 
             // Tombol Berikutnya
-            buttonsHtml += `<button class="pagination-btn px-3 py-1 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50" data-page="${currentPage + 1}" ${currentPage === totalPages ? 'disabled' : ''}>Berikutnya</button>`;
+            buttonsHtml += `<button class="pagination-btn px-3 py-1 text-sm font-medium text-gray-600 bg-white/90 backdrop-blur-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50" data-page="${currentPage + 1}" ${currentPage === totalPages ? 'disabled' : ''}>Berikutnya</button>`;
 
             paginationControls.innerHTML = `
                 <p class="text-sm text-gray-700">
@@ -4019,7 +4054,7 @@ setTimeout(() => {
                 const studentRow = document.createElement('tr');
                 const maxHp = (student.level || 1) * 100;
                 const hpPercent = (student.hp / maxHp) * 100;
-                studentRow.className = 'bg-white border-b hover:bg-gray-50';
+                studentRow.className = 'bg-white/90 backdrop-blur-sm border-b hover:bg-gray-50';
                 const avatar = student.fotoProfilBase64 ?
                     `<img src="${student.fotoProfilBase64}" alt="${student.nama}" class="w-10 h-10 rounded-full object-cover">` :
                     `<div class="w-10 h-10 bg-gray-700 text-white flex items-center justify-center rounded-full font-bold">${student.nama.charAt(0)}</div>`;
@@ -4374,7 +4409,7 @@ async function gameTick() {
             const questsData = snapshot.val();
             Object.entries(questsData).forEach(([questId, quest]) => {
                 const card = document.createElement('div');
-                card.className = 'bg-white p-4 rounded-lg shadow-lg flex flex-col transform transition duration-300 hover:scale-110 hover:shadow-xl';
+                card.className = 'bg-white/90 backdrop-blur-sm p-4 rounded-lg shadow-lg flex flex-col transform transition duration-300 hover:scale-110 hover:shadow-xl';
                 card.innerHTML = `
                     <img src="${quest.monsterImageBase64 || 'https://placehold.co/300x200/a0aec0/ffffff?text=Monster'}" class="w-full h-32 object-cover rounded-md mb-4">
                     <h4 class="text-lg font-bold">${quest.monsterName}</h4>
@@ -4486,7 +4521,7 @@ if (addAdminBountyButton && adminBountyModal && adminBountyForm && adminBountyLi
 
                 const takersCount = bounty.takers ? Object.keys(bounty.takers).length : 0;
                 const card = document.createElement('div');
-                card.className = 'bg-white p-4 rounded-lg shadow-lg flex flex-col';
+                card.className = 'bg-white/90 backdrop-blur-sm p-4 rounded-lg shadow-lg flex flex-col';
                 card.innerHTML = `
                     <h4 class="text-lg font-bold">${bounty.title}</h4>
                     <p class="text-sm text-gray-600 flex-grow my-2">${bounty.description}</p>
@@ -4989,7 +5024,7 @@ async function handleGiveAdminReward(bountyId, bountyData, closeModalCallback) {
             const itemsData = snapshot.val();
             Object.entries(itemsData).forEach(([itemId, item]) => {
                 const card = document.createElement('div');
-                card.className = 'bg-white p-4 rounded-lg shadow-lg flex flex-col';
+                card.className = 'bg-white/90 backdrop-blur-sm p-4 rounded-lg shadow-lg flex flex-col';
                 card.innerHTML = `
                     <img src="${item.imageBase64 || 'https://placehold.co/300x200/e2e8f0/3d4852?text=Item'}" class="w-full h-32 object-cover rounded-md mb-4">
                     <h4 class="text-lg font-bold">${item.name}</h4>
@@ -5643,8 +5678,8 @@ classSelect.innerHTML = '<option value="SEMUA_KELAS">Semua Kelas</option>'; // O
                 const hpPercent = Math.max(0, (p.currentHp / p.maxHp) * 100);
                 const isTurn = party[currentTurnIndex].id === p.id;
                 const turnClass = isTurn
-                    ? 'bg-white-100 border-blue-500' // Gaya giliran aktif (krem lebih gelap)
-                    : 'bg-white-50 border-gray-300'; // Gaya giliran tidak aktif (krem muda)
+                    ? 'bg-white/90 backdrop-blur-sm-100 border-blue-500' // Gaya giliran aktif (krem lebih gelap)
+                    : 'bg-white/90 backdrop-blur-sm-50 border-gray-300'; // Gaya giliran tidak aktif (krem muda)
                 const statusIcons = `
                     <div class="absolute top-0 right-0 flex gap-1 p-1">
                         ${p.statusEffects.racun ? '<i data-lucide="skull" class="w-4 h-4 text-red-500 bg-black bg-opacity-5 rounded-full p-0.5" title="Racun"></i>' : ''}
@@ -6066,7 +6101,7 @@ async function setupAttendancePage() {
         ]);
 
         if (!studentsSnap.exists()) {
-            attendanceContainer.innerHTML = '<div class="bg-white rounded-lg shadow-md p-10 text-center text-gray-500"><p>Belum ada siswa terdaftar.</p></div>';
+            attendanceContainer.innerHTML = '<div class="bg-white/90 backdrop-blur-sm rounded-lg shadow-md p-10 text-center text-gray-500"><p>Belum ada siswa terdaftar.</p></div>';
             return;
         }
 
@@ -6082,7 +6117,7 @@ async function setupAttendancePage() {
         attendanceContainer.innerHTML = '';
         for (const kelas in studentsByClass) {
             const classSection = document.createElement('div');
-            classSection.className = 'bg-white rounded-lg shadow-md';
+            classSection.className = 'bg-white/90 backdrop-blur-sm rounded-lg shadow-md';
             classSection.innerHTML = `<h3 class="text-lg font-bold border-b-2 border-blue-200 p-4">${kelas}</h3>`;
             const studentGrid = document.createElement('div');
             studentGrid.className = 'p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4';
@@ -6471,7 +6506,7 @@ function setupJournalPage() {
             journalListContainer.innerHTML = LOADER_HTML;
 
             if (!snapshot.exists()) {
-                journalListContainer.innerHTML = '<div class="bg-white rounded-lg shadow-md p-10 text-center text-gray-500"><p>Belum ada jurnal refleksi yang dibuat.</p></div>';
+                journalListContainer.innerHTML = '<div class="bg-white/90 backdrop-blur-sm rounded-lg shadow-md p-10 text-center text-gray-500"><p>Belum ada jurnal refleksi yang dibuat.</p></div>';
                 return;
             }
 
@@ -6483,14 +6518,14 @@ function setupJournalPage() {
             const filteredJournals = allJournals.filter(j => (!startDate || j.date >= startDate) && (!endDate || j.date <= endDate));
 
             if (filteredJournals.length === 0) {
-                journalListContainer.innerHTML = '<div class="bg-white rounded-lg shadow-md p-10 text-center text-gray-500"><p>Tidak ada jurnal yang cocok dengan filter.</p></div>';
+                journalListContainer.innerHTML = '<div class="bg-white/90 backdrop-blur-sm rounded-lg shadow-md p-10 text-center text-gray-500"><p>Tidak ada jurnal yang cocok dengan filter.</p></div>';
                 return;
             }
 
             journalListContainer.innerHTML = '';
             filteredJournals.forEach(j => {
                 const card = document.createElement('div');
-                card.className = 'bg-white p-5 rounded-lg shadow-md border-l-4 border-emerald-500 relative';
+                card.className = 'bg-white/90 backdrop-blur-sm p-5 rounded-lg shadow-md border-l-4 border-emerald-500 relative';
                 card.innerHTML = `<div class="flex justify-between items-start mb-3"><div><h4 class="font-bold text-lg">${j.subject}</h4><p class="text-sm text-gray-600">${j.kelas} | ${j.date} - ${j.day}</p></div><div class="flex gap-3 text-gray-500"><i data-lucide="${{ 'Cerah': 'sun', 'Berawan': 'cloud', 'Hujan': 'cloud-rain', 'Badai': 'cloud-lightning' }[j.weather] || 'sun'}" title="Cuaca: ${j.weather}"></i><i data-lucide="${{ 'Senang': 'smile', 'Biasa': 'meh', 'Sedih': 'frown', 'Marah': 'angry' }[j.feeling] || 'smile'}" title="Perasaan: ${j.feeling}"></i></div></div><div class="space-y-3 text-sm">${j.achievements ? `<p><strong>Pencapaian:</strong> ${j.achievements.replace(/\n/g, '<br>')}</p>` : ''}${j.notes ? `<p><strong>Catatan:</strong> ${j.notes.replace(/\n/g, '<br>')}</p>` : ''}${j.tomorrowPlan ? `<p><strong>Rencana Besok:</strong> ${j.tomorrowPlan.replace(/\n/g, '<br>')}</p>` : ''}</div><button data-id="${j.id}" class="delete-journal-btn text-red-500 hover:text-red-700 text-xs absolute top-3 right-3"><i data-lucide="trash-2" class="w-4 h-4"></i></button>`;
                 journalListContainer.appendChild(card);
             });
