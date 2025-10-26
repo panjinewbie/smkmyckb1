@@ -96,12 +96,12 @@
     <script type="module" src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="style.css">
-<link rel="icon" href="https://blogger.googleusercontent.com/img/a/AVvXsEiYeuamAA-439_rhfNSWoNA_HXYwDHMShHq_QTJsf3NORXy4xNu1v6ETybToshBjOPfVmTTrMpuIBXeFlc1d7YZja9G12s1olc2vzXTEI0og4p7qu1E6gn9HEbo6K473PlSZIAl46TADoe352csCDbViUKp7TnUSlYnNB7kC-sn6cXe8y5YsOTpH1srOT4">
+<link rel="icon" href="https://blogger.googleusercontent.com/img/a/AVvXsEj4aduMARtJ93mMAISSEbC1KBgkGWtuvJ-mygGnwzMJYwyNRHykESzKpdNYV9pCydnqPRGcQb5sqRvcD6cUQ6wWrgZTbqaFmawmssXca7nq1f7968CNopl9JsasZSDJS_Q4HZppsDqgLdAhFESdRBYqtkDUdoLOXEYdq9W4rvjwI9Nbjv5smwdNovNI-gE">
 </head>
 <body class="min-h-screen admin-bg">
 
     <div id="admin-dashboard-page" class="min-h-screen">
-        <header class="bg-white shadow-md sticky top-0 z-30">
+        <header class="bg-white/90 backdrop-blur-sm/80 backdrop-blur-sm shadow-md sticky top-0 z-30">
             <div class="container mx-auto px-4"><div class="h-20 flex items-center justify-between"><h1 class="text-2xl font-bold text-blue-600 font-game tracking-tighter">DREAMY</h1><div class="flex items-center space-x-2 md:space-x-4">
                 <!-- Notification Bell -->
                 <div class="relative">
@@ -115,7 +115,7 @@
                         <span id="notification-badge" class="absolute top-1 right-1 block h-2 w-2 rounded-full bg-red-500 ring-1 ring-white hidden"></span>
                     </button>
                     <!-- Notification Dropdown Panel -->
-                    <div id="notification-panel" class="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-lg shadow-xl z-40 hidden origin-top-right transition-transform transform opacity-0 scale-95">
+                    <div id="notification-panel" class="absolute right-0 mt-2 w-80 sm:w-96 bg-white/90 backdrop-blur-sm rounded-lg shadow-xl z-40 hidden origin-top-right transition-transform transform opacity-0 scale-95">
                         <div class="p-4 border-b flex justify-between items-center">
                             <h4 class="font-semibold text-gray-800">Notifikasi</h4>
                             <button id="mark-all-read-button" class="text-xs text-blue-600 hover:underline font-medium">Tandai semua dibaca</button>
@@ -145,11 +145,11 @@
         <main class="container mx-auto p-4 md:p-6">
             <div id="admin-dashboard-main">
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
-                    <div><div class="bg-white p-6 rounded-lg shadow-md flex items-center justify-between"><div><p class="text-sm text-gray-500">Total Siswa</p><p id="total-students" class="text-3xl font-bold">0</p></div><div class="bg-blue-100 p-3 rounded-full"><i data-lucide="users" class="w-6 h-6 text-blue-500"></i></div></div></div>
-                    <div><div class="bg-white p-6 rounded-lg shadow-md flex items-center justify-between"><div><p class="text-sm text-gray-500">Rata-rata Level</p><p id="average-level" class="text-3xl font-bold">0</p></div><div class="bg-green-100 p-3 rounded-full"><i data-lucide="trending-up" class="w-6 h-6 text-green-500"></i></div></div></div>
-                    <div><div class="bg-white p-6 rounded-lg shadow-md flex items-center justify-between"><div><p class="text-sm text-gray-500">Total Koin Beredar</p><p id="total-coins" class="text-3xl font-bold">0</p></div><div class="bg-yellow-100 p-3 rounded-full"><i data-lucide="coins" class="w-6 h-6 text-yellow-500"></i></div></div></div>
+                    <div><div class="bg-white/90 backdrop-blur-sm p-6 rounded-lg shadow-md flex items-center justify-between"><div><p class="text-sm text-gray-500">Total Siswa</p><p id="total-students" class="text-3xl font-bold">0</p></div><div class="bg-blue-100 p-3 rounded-full"><i data-lucide="users" class="w-6 h-6 text-blue-500"></i></div></div></div>
+                    <div><div class="bg-white/90 backdrop-blur-sm p-6 rounded-lg shadow-md flex items-center justify-between"><div><p class="text-sm text-gray-500">Rata-rata Level</p><p id="average-level" class="text-3xl font-bold">0</p></div><div class="bg-green-100 p-3 rounded-full"><i data-lucide="trending-up" class="w-6 h-6 text-green-500"></i></div></div></div>
+                    <div><div class="bg-white/90 backdrop-blur-sm p-6 rounded-lg shadow-md flex items-center justify-between"><div><p class="text-sm text-gray-500">Total Koin Beredar</p><p id="total-coins" class="text-3xl font-bold">0</p></div><div class="bg-yellow-100 p-3 rounded-full"><i data-lucide="coins" class="w-6 h-6 text-yellow-500"></i></div></div></div>
                 </div>
-                <div class="bg-white rounded-lg shadow-md">
+                <div class="bg-white/90 backdrop-blur-sm rounded-lg shadow-md">
     <div class="p-6 border-b border-gray-200 flex justify-between items-center">
         <div>
             <h2 class="text-xl font-semibold">Tinjauan Siswa</h2>
@@ -163,13 +163,13 @@
     <div class="p-4 grid grid-cols-1 md:grid-cols-2 gap-4 border-b">
         <div>
             <label for="dashboard-filter-kelas" class="block text-sm font-medium text-gray-700">Filter Kelas</label>
-            <select id="dashboard-filter-kelas" class="mt-1 w-full p-2 border border-gray-300 rounded-md bg-white">
+            <select id="dashboard-filter-kelas" class="mt-1 w-full p-2 border border-gray-300 rounded-md bg-white/90 backdrop-blur-sm">
                 <option value="semua">Semua Kelas</option>
             </select>
         </div>
         <div>
             <label for="dashboard-filter-guild" class="block text-sm font-medium text-gray-700">Filter Guild</label>
-            <select id="dashboard-filter-guild" class="mt-1 w-full p-2 border border-gray-300 rounded-md bg-white">
+            <select id="dashboard-filter-guild" class="mt-1 w-full p-2 border border-gray-300 rounded-md bg-white/90 backdrop-blur-sm">
                 <option value="semua">Semua Guild</option>
             </select>
         </div>
@@ -199,7 +199,7 @@
 
             <div id="attendance-page" class="hidden space-y-6">
                 <!-- Card untuk Aksi Absensi -->
-                <div class="bg-white rounded-lg shadow-md p-6">
+                <div class="bg-white/90 backdrop-blur-sm rounded-lg shadow-md p-6">
                     <div class="flex flex-wrap justify-between items-center gap-4 mb-6">
                         <div>
                             <h2 class="text-xl font-semibold">Aksi Absensi Harian</h2>
@@ -218,14 +218,14 @@
 
                 <!-- Container untuk daftar siswa -->
                 <div id="attendance-container" class="space-y-8">
-                    <div class="bg-white rounded-lg shadow-md p-10 text-center text-gray-500">
+                    <div class="bg-white/90 backdrop-blur-sm rounded-lg shadow-md p-10 text-center text-gray-500">
                         <i data-lucide="calendar-search" class="w-12 h-12 mx-auto mb-4 text-gray-300"></i>
                         <p>Pilih tanggal dan klik "Tampilkan Absensi" untuk memulai.</p>
                     </div>
                 </div>
 
                 <!-- Card untuk Rekap -->
-                <div class="bg-white rounded-lg shadow-md p-6">
+                <div class="bg-white/90 backdrop-blur-sm rounded-lg shadow-md p-6">
                     <div class="flex flex-wrap justify-between items-center gap-4 mb-6">
                         <div><h2 class="text-xl font-semibold">Rekapitulasi & Cetak</h2><p class="text-sm text-gray-500 mt-1">Pilih rentang tanggal untuk mencetak rekap.</p></div>
                         <button id="print-recap-button" class="bg-gray-700 hover:bg-gray-800 text-white font-bold py-2 px-4 rounded-lg flex items-center"><i data-lucide="printer" class="w-4 h-4 mr-2"></i>Cetak Rekap</button>
@@ -238,7 +238,7 @@
             </div>
             <div id="journal-page" class="hidden space-y-6">
                 <!-- Card untuk Aksi Jurnal -->
-                <div class="bg-white rounded-lg shadow-md p-6">
+                <div class="bg-white/90 backdrop-blur-sm rounded-lg shadow-md p-6">
                     <div class="flex flex-wrap justify-between items-center gap-4 mb-6">
                         <div>
                             <h2 class="text-xl font-semibold">Jurnal Refleksi Siswa</h2>
@@ -266,7 +266,7 @@
             </div>
             <div id="quests-page" class="hidden space-y-6">
                 <!-- Card 1: Quest Controls -->
-                <div class="bg-white rounded-lg shadow-md">
+                <div class="bg-white/90 backdrop-blur-sm rounded-lg shadow-md">
                     <div class="p-6 border-b border-gray-200">
                         <h2 class="text-xl font-semibold">Manajemen Quest</h2>
                         <p class="text-sm text-gray-500 mt-1">Buat Quest party battle, misi, dan uji keheningan.</p>
@@ -282,7 +282,7 @@
                 </div>
 
                 <!-- Card 2: Monster Management -->
-                <div class="bg-white rounded-lg shadow-md">
+                <div class="bg-white/90 backdrop-blur-sm rounded-lg shadow-md">
                     <div class="p-6 border-b border-gray-200">
                         <h2 class="text-xl font-semibold">Manajemen Monster</h2>
                         <p class="text-sm text-gray-500 mt-1">Jika anda punya nyali lawan para monster berpengetahuan.</p>
@@ -293,7 +293,7 @@
                 </div>
 
                 <!-- Card 3: Admin Bounty Board -->
-                <div class="bg-white rounded-lg shadow-md">
+                <div class="bg-white/90 backdrop-blur-sm rounded-lg shadow-md">
                     <div class="p-6 border-b border-gray-200">
                         <h2 class="text-xl font-semibold">Manajemen Bounty Board</h2>
                         <p class="text-sm text-gray-500 mt-1">Atur Bounty Board untuk admin.</p>
@@ -306,7 +306,7 @@
 
             <!-- Modal BARU untuk membuat misi admin (letakkan di dekat modal lainnya) -->
             <div id="admin-bounty-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40 hidden opacity-0 transition-opacity duration-300">
-                <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl m-4 transform scale-95 transition-transform duration-300 max-h-[90vh] flex flex-col">
+                <div class="bg-white/90 backdrop-blur-sm rounded-lg shadow-xl w-full max-w-2xl m-4 transform scale-95 transition-transform duration-300 max-h-[90vh] flex flex-col">
                     <div class="p-6 border-b flex justify-between items-center">
                         <h3 id="admin-bounty-modal-title" class="text-xl font-semibold">Buat Misi Bounty Baru</h3>
                         <button id="close-admin-bounty-modal-button" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
@@ -347,7 +347,7 @@
                 </div>
             </div>
             <div id="grade-bounty-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden opacity-0 transition-opacity duration-300">
-    <div class="bg-white rounded-lg shadow-xl w-full max-w-lg m-4 max-h-[80vh] flex flex-col">
+    <div class="bg-white/90 backdrop-blur-sm rounded-lg shadow-xl w-full max-w-lg m-4 max-h-[80vh] flex flex-col">
         <div class="p-6 border-b flex justify-between items-center">
             <div>
                 <h3 class="text-xl font-semibold">Pilih Penerima Hadiah</h3>
@@ -368,7 +368,7 @@
 
             <div id="shop-page" class="hidden space-y-6">
                 <!-- Bagian Analisis Penjualan -->
-                <div class="bg-white rounded-lg shadow-md mb-6">
+                <div class="bg-white/90 backdrop-blur-sm rounded-lg shadow-md mb-6">
                     <div class="p-6 border-b">
                         <h2 class="text-xl font-semibold">Analisis Penjualan</h2>
                         <p class="text-sm text-gray-500 mt-1">Grafik item yang paling sering dibeli oleh siswa.</p>
@@ -406,7 +406,7 @@
                 </div>
 
                 <!-- Bagian Manajemen Toko -->
-                <div class="bg-white rounded-lg shadow-md">
+                <div class="bg-white/90 backdrop-blur-sm rounded-lg shadow-md">
                     <div class="p-6 border-b border-gray-200 flex flex-wrap gap-4 justify-between items-center">
                         <div>
                             <h2 class="text-xl font-semibold">Manajemen Toko</h2>
@@ -422,7 +422,7 @@
                 </div>
             </div>
 <div id="magic-controls-page" class="hidden">
-                <div class="bg-white rounded-lg shadow-md p-6">
+                <div class="bg-white/90 backdrop-blur-sm rounded-lg shadow-md p-6">
                     <div class="mb-6">
                         <h2 class="text-xl font-semibold">Magic Controls</h2>
                         <p class="text-sm text-gray-500 mt-1">Berikan efek, hadiah, atau hukuman kepada siswa secara langsung.</p>
@@ -433,7 +433,7 @@
                             <h3 class="font-semibold text-lg">Ubah Stats</h3>
                             <div>
                                 <label for="stat-type" class="block text-sm font-medium text-gray-700">Jenis Stat</label>
-                                <select id="stat-type" class="mt-1 w-full p-2 border border-gray-300 rounded-md bg-white">
+                                <select id="stat-type" class="mt-1 w-full p-2 border border-gray-300 rounded-md bg-white/90 backdrop-blur-sm">
                                     <option value="hp">❤️ Health Points (HP)</option>
                                     <option value="mp">💧 Mana Points (MP)</option>
                                     <option value="xp">✨ Experience (XP)</option>
@@ -458,7 +458,7 @@
                             <h3 class="font-semibold text-lg">Beri Status Efek</h3>
                             <div>
                                 <label for="effect-type" class="block text-sm font-medium text-gray-700">Jenis Efek</label>
-                                <select id="effect-type" class="mt-1 w-full p-2 border border-gray-300 rounded-md bg-white">
+                                <select id="effect-type" class="mt-1 w-full p-2 border border-gray-300 rounded-md bg-white/90 backdrop-blur-sm">
                                     <option value="racun">☠️ Racun (HP -1/hari)</option>
                                     <option value="diam">🔇 Diam (Blok Aksi)</option>
                                     <option value="buff_admin_key">🔑 Kunci Misi Dari Dungeon Master</option>
@@ -481,13 +481,13 @@
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
         <div>
             <label for="magic-filter-kelas" class="block text-sm font-medium text-gray-700">Filter berdasarkan Kelas</label>
-            <select id="magic-filter-kelas" class="mt-1 w-full p-2 border border-gray-300 rounded-md bg-white">
+            <select id="magic-filter-kelas" class="mt-1 w-full p-2 border border-gray-300 rounded-md bg-white/90 backdrop-blur-sm">
                 <option value="semua">Semua Kelas</option>
             </select>
         </div>
         <div>
             <label for="magic-filter-guild" class="block text-sm font-medium text-gray-700">Filter berdasarkan Guild</label>
-            <select id="magic-filter-guild" class="mt-1 w-full p-2 border border-gray-300 rounded-md bg-white">
+            <select id="magic-filter-guild" class="mt-1 w-full p-2 border border-gray-300 rounded-md bg-white/90 backdrop-blur-sm">
                 <option value="semua">Semua Guild</option>
             </select>
         </div>
@@ -518,7 +518,7 @@
     </div>
 
     <div id="party-battle-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40 hidden modal-overlay opacity-0">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl m-4 modal-content transform scale-95 max-h-[90vh] flex flex-col">
+        <div class="bg-white/90 backdrop-blur-sm rounded-lg shadow-xl w-full max-w-2xl m-4 modal-content transform scale-95 max-h-[90vh] flex flex-col">
             <div class="p-6 border-b flex justify-between items-center">
                 <h3 class="text-xl font-semibold">Siapkan Pertarungan Kelompok</h3>
                 <button id="close-party-battle-modal-button" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
@@ -526,12 +526,12 @@
             <div class="p-6 space-y-4 overflow-y-auto">
                 <div>
     <label for="class-select" class="block text-sm font-medium text-gray-700 mb-2">Pilih Kelas yang Spesifik (Opsional):</label>
-    <select id="class-select" class="w-full p-2 border border-gray-300 rounded-md bg-white">
+    <select id="class-select" class="w-full p-2 border border-gray-300 rounded-md bg-white/90 backdrop-blur-sm">
         </select>
 </div>
                 <div>
                     <label for="guild-select" class="block text-sm font-medium text-gray-700 mb-2">Pilih Guild yang akan Bertarung:</label>
-                    <select id="guild-select" class="w-full p-2 border border-gray-300 rounded-md bg-white">
+                    <select id="guild-select" class="w-full p-2 border border-gray-300 rounded-md bg-white/90 backdrop-blur-sm">
                         <option value="Garuda">🦅 Garuda</option>
                         <option value="Burung Hantu">🦉 Burung Hantu</option>
                         <option value="Candi">🏛️ Candi</option>
@@ -562,7 +562,7 @@
 
 
     <div id="battle-modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 hidden modal-overlay opacity-0">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-4xl m-4 modal-content transform scale-95 max-h-[90vh] flex flex-col">
+        <div class="bg-white/90 backdrop-blur-sm rounded-lg shadow-xl w-full max-w-4xl m-4 modal-content transform scale-95 max-h-[90vh] flex flex-col">
             <div class="p-4 border-b flex justify-between items-center bg-gray-100 rounded-t-lg">
                 <h3 id="battle-modal-title" class="text-xl font-bold font-game tracking-wider">BATTLE!</h3>
                 <button id="close-battle-modal-button" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
@@ -600,7 +600,7 @@
     </div>
 
     <div id="monster-selection-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40 hidden modal-overlay opacity-0">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl m-4 modal-content transform scale-95 max-h-[90vh] flex flex-col">
+        <div class="bg-white/90 backdrop-blur-sm rounded-lg shadow-xl w-full max-w-2xl m-4 modal-content transform scale-95 max-h-[90vh] flex flex-col">
             <div class="p-6 border-b flex justify-between items-center">
                 <h3 class="text-xl font-semibold">Pilih Monster untuk Dilawan</h3>
                 <button id="close-monster-selection-modal-button" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
@@ -612,7 +612,7 @@
     </div>
 
     <div id="shop-item-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40 hidden modal-overlay opacity-0">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl m-4 modal-content transform scale-95 max-h-[90vh] flex flex-col">
+        <div class="bg-white/90 backdrop-blur-sm rounded-lg shadow-xl w-full max-w-2xl m-4 modal-content transform scale-95 max-h-[90vh] flex flex-col">
             <div class="p-6 border-b flex justify-between items-center">
                 <h3 id="shop-item-modal-title" class="text-xl font-semibold">Tambah Item Baru</h3>
                 <button id="close-shop-item-modal-button" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
@@ -630,7 +630,7 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label for="item-effect" class="block text-sm font-medium text-gray-700">Efek Item</label>
-<select id="item-effect" required class="mt-1 w-full p-2 border border-gray-300 rounded-md bg-white">
+<select id="item-effect" required class="mt-1 w-full p-2 border border-gray-300 rounded-md bg-white/90 backdrop-blur-sm">
     <optgroup label="Efek Instan & Bantuan">
        <option value="HEAL_HP">❤️ Pulihkan HP</option>
     <option value="HEAL_MP">💧 Pulihkan MP</option>
@@ -670,7 +670,7 @@
         </div>
     </div>
 
-    <div id="student-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-30 hidden modal-overlay opacity-0"><div class="bg-white rounded-lg shadow-xl w-full max-w-lg m-4 modal-content transform scale-95 max-h-[90vh] flex flex-col"><div class="p-6 border-b flex justify-between items-center"><h3 id="modal-title" class="text-xl font-semibold">Tambah Siswa Baru</h3>
+    <div id="student-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-30 hidden modal-overlay opacity-0"><div class="bg-white/90 backdrop-blur-sm rounded-lg shadow-xl w-full max-w-lg m-4 modal-content transform scale-95 max-h-[90vh] flex flex-col"><div class="p-6 border-b flex justify-between items-center"><h3 id="modal-title" class="text-xl font-semibold">Tambah Siswa Baru</h3>
         <button id="close-modal-button" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button></div>
         <form id="student-form" class="p-6 space-y-4 overflow-y-auto"><input type="hidden" id="student-id"><div id="auth-fields"><div class="mb-4"><label for="email-modal" class="block text-sm font-medium text-gray-700">Email Login Siswa</label>
             <input type="email" id="email-modal" class="mt-1 w-full p-2 border border-gray-300 rounded-md"></div>
@@ -678,20 +678,20 @@
             <hr class="my-4"><div><label for="nama" class="block text-sm font-medium text-gray-700">Nama Siswa</label>
                 <input type="text" id="nama" required class="mt-1 w-full p-2 border border-gray-300 rounded-md"></div>
             <div><label for="nis" class="block text-sm font-medium text-gray-700">NIS</label><input type="text" id="nis" required class="mt-1 w-full p-2 border border-gray-300 rounded-md"></div>
-            <div><label for="kelas" class="block text-sm font-medium text-gray-700">Kelas</label><select id="kelas" required class="mt-1 w-full p-2 border border-gray-300 rounded-md bg-white"><option value="X RPL">X RPL</option><option value="XI RPL">XI RPL</option>
+            <div><label for="kelas" class="block text-sm font-medium text-gray-700">Kelas</label><select id="kelas" required class="mt-1 w-full p-2 border border-gray-300 rounded-md bg-white/90 backdrop-blur-sm"><option value="X RPL">X RPL</option><option value="XI RPL">XI RPL</option>
                 <option value="XII RPL">XII RPL</option>
                 <option value="X DPB">X DPB</option>
                 <option value="XI DPB">XI DPB</option>
                 <option value="XII DPB">XII DPB</option></select></div>
                 <div><label for="peran" class="block text-sm font-medium text-gray-700">Peran Karakter</label>
-                <select id="peran" required class="mt-1 w-full p-2 border border-gray-300 rounded-md bg-white"><option value="Prajurit">Prajurit</option>
+                <select id="peran" required class="mt-1 w-full p-2 border border-gray-300 rounded-md bg-white/90 backdrop-blur-sm"><option value="Prajurit">Prajurit</option>
                 <option value="Penyihir">Penyihir</option><option value="Penyembuh">Penyembuh</option></select></div>
-                <div><label for="guild" class="block text-sm font-medium text-gray-700">Guild</label><select id="guild" required class="mt-1 w-full p-2 border border-gray-300 rounded-md bg-white"><option value="Garuda">🦅 Garuda</option>
+                <div><label for="guild" class="block text-sm font-medium text-gray-700">Guild</label><select id="guild" required class="mt-1 w-full p-2 border border-gray-300 rounded-md bg-white/90 backdrop-blur-sm"><option value="Garuda">🦅 Garuda</option>
                 <option value="Burung Hantu">🦉 Burung Hantu</option>
                 <option value="Candi">🏛️ Candi</option><option value="Obor">🔥 Obor</option>
                 <option value="Buku">📖 Buku</option><option value="Topi Toga">🎓 Topi Toga</option></select></div>
                 <div><label for="jenis-kelamin" class="block text-sm font-medium text-gray-700">Jenis Kelamin</label>
-    <select id="jenis-kelamin" required class="mt-1 w-full p-2 border border-gray-300 rounded-md bg-white">
+    <select id="jenis-kelamin" required class="mt-1 w-full p-2 border border-gray-300 rounded-md bg-white/90 backdrop-blur-sm">
         <option value="Pria">Pria</option>
         <option value="Wanita">Wanita</option>
     </select>
@@ -711,7 +711,7 @@
             <div class="pt-4 flex justify-end space-x-2"><button type="button" id="cancel-button" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg">Batal</button><button type="submit" id="submit-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">Simpan</button></div></form></div></div>
 
     <div id="quest-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40 hidden modal-overlay opacity-0">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl m-4 modal-content transform scale-95 max-h-[90vh] flex flex-col">
+        <div class="bg-white/90 backdrop-blur-sm rounded-lg shadow-xl w-full max-w-2xl m-4 modal-content transform scale-95 max-h-[90vh] flex flex-col">
             <div class="p-6 border-b flex justify-between items-center"><h3 id="quest-modal-title" class="text-xl font-semibold">Buat Monster Baru</h3><button id="close-quest-modal-button" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button></div>
             <form id="quest-form" class="p-6 space-y-4 overflow-y-auto">
                 <input type="hidden" id="quest-id">
@@ -766,7 +766,7 @@
     </div>
 
     <div id="qr-scanner-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-30 hidden modal-overlay opacity-0">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-lg m-4 modal-content transform scale-95">
+        <div class="bg-white/90 backdrop-blur-sm rounded-lg shadow-xl w-full max-w-lg m-4 modal-content transform scale-95">
             <div class="p-4 border-b flex justify-between items-center">
                 <h3 class="text-lg font-semibold">Pindai Kode QR Siswa</h3>
                 <button id="close-qr-scanner-modal-button" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
@@ -783,7 +783,7 @@
     <div id="toast-notification" class="fixed bottom-5 right-5 bg-green-500 text-white py-2 px-4 rounded-lg shadow-lg hidden transition-opacity duration-300"></div>
 
     <div id="noise-detector-modal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50 hidden opacity-0 transition-opacity duration-300">
-    <div class="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+    <div class="bg-white/90 backdrop-blur-sm rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
         <div class="p-4 border-b flex justify-between items-center">
             <h3 class="text-xl font-semibold">🤫 Uji Keheningan Kelas</h3>
             <button id="close-noise-detector-modal" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
@@ -794,7 +794,7 @@
                 <div>
                     <h4 class="font-semibold mb-2">1. Pilih Peserta Ujian</h4>
                     <div class="p-4 border rounded-md space-y-2">
-                         <select id="noise-filter-kelas" class="w-full p-2 border border-gray-300 rounded-md bg-white">
+                         <select id="noise-filter-kelas" class="w-full p-2 border border-gray-300 rounded-md bg-white/90 backdrop-blur-sm">
                             <option value="semua">Pilih Semua Kelas</option>
                         </select>
                         <div id="noise-student-list" class="space-y-1 max-h-48 overflow-y-auto pr-2">
@@ -848,7 +848,7 @@
     </div>
 </div>
 <div id="ivy-settings-modal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50 hidden opacity-0 transition-opacity duration-300">
-    <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+    <div class="bg-white/90 backdrop-blur-sm rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
         <div class="p-4 border-b flex justify-between items-center">
             <h3 class="text-xl font-semibold">Pengaturan Ivy</h3>
             <button id="close-ivy-settings-modal" class="text-gray-400 hover:text-gray-600">&times;</button>
@@ -884,7 +884,7 @@
                     <label for="ivy-gossip-toggle" class="block text-sm font-medium text-gray-700">Izinkan Ivy Menggosip?</label>
                     <label class="relative inline-flex items-center cursor-pointer">
                       <input type="checkbox" id="ivy-gossip-toggle" class="sr-only peer">
-                      <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                      <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white/90 backdrop-blur-sm after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
                     </label>
                 </div>
                 <textarea id="ivy-gossip" rows="4" class="w-full p-2 border border-gray-300 rounded-md transition-opacity" placeholder="Tulis gosip-gosip centil di sini..."></textarea>
@@ -926,7 +926,7 @@
     </div>
     <!-- Modal Jurnal Refleksi -->
 <div id="journal-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40 hidden modal-overlay opacity-0">
-    <div class="bg-white rounded-lg shadow-xl w-full max-w-3xl m-4 modal-content transform scale-95 max-h-[90vh] flex flex-col">
+    <div class="bg-white/90 backdrop-blur-sm rounded-lg shadow-xl w-full max-w-3xl m-4 modal-content transform scale-95 max-h-[90vh] flex flex-col">
         <div class="p-6 border-b flex justify-between items-center">
             <h3 id="journal-modal-title" class="text-xl font-semibold">Tambah Jurnal Refleksi Baru</h3>
             <button id="close-journal-modal-button" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
@@ -944,11 +944,11 @@
                 </div>
                 <div>
                     <label for="journal-class" class="block text-sm font-medium text-gray-700">Kelas</label>
-                    <select id="journal-class" required class="mt-1 w-full p-2 border border-gray-300 rounded-md bg-white"><option value="X RPL">X RPL</option><option value="XI RPL">XI RPL</option><option value="XII RPL">XII RPL</option><option value="X DPB">X DPB</option><option value="XI DPB">XI DPB</option><option value="XII DPB">XII DPB</option><option value="Umum">Umum/Semua Kelas</option></select>
+                    <select id="journal-class" required class="mt-1 w-full p-2 border border-gray-300 rounded-md bg-white/90 backdrop-blur-sm"><option value="X RPL">X RPL</option><option value="XI RPL">XI RPL</option><option value="XII RPL">XII RPL</option><option value="X DPB">X DPB</option><option value="XI DPB">XI DPB</option><option value="XII DPB">XII DPB</option><option value="Umum">Umum/Semua Kelas</option></select>
                 </div>
                 <div>
                     <label for="journal-subject" class="block text-sm font-medium text-gray-700">Mata Pelajaran</label>
-                    <select id="journal-subject" required class="mt-1 w-full p-2 border border-gray-300 rounded-md bg-white"><option value="RPL">RPL</option><option value="Web">Web</option><option value="Basis Data">Basis Data</option></select>
+                    <select id="journal-subject" required class="mt-1 w-full p-2 border border-gray-300 rounded-md bg-white/90 backdrop-blur-sm"><option value="RPL">RPL</option><option value="Web">Web</option><option value="Basis Data">Basis Data</option></select>
                 </div>
             </div>
 
