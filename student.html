@@ -13,13 +13,55 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script> 
     <script src="https://cdn.lordicon.com/lordicon.js"></script><!-- MANTRA BARU DISINI -->
     <link rel="stylesheet" href="style.css">
-<link rel="icon" href="https://blogger.googleusercontent.com/img/a/AVvXsEiYeuamAA-439_rhfNSWoNA_HXYwDHMShHq_QTJsf3NORXy4xNu1v6ETybToshBjOPfVmTTrMpuIBXeFlc1d7YZja9G12s1olc2vzXTEI0og4p7qu1E6gn9HEbo6K473PlSZIAl46TADoe352csCDbViUKp7TnUSlYnNB7kC-sn6cXe8y5YsOTpH1srOT4">
+<link rel="icon" href="https://blogger.googleusercontent.com/img/a/AVvXsEj4aduMARtJ93mMAISSEbC1KBgkGWtuvJ-mygGnwzMJYwyNRHykESzKpdNYV9pCydnqPRGcQb5sqRvcD6cUQ6wWrgZTbqaFmawmssXca7nq1f7968CNopl9JsasZSDJS_Q4HZppsDqgLdAhFESdRBYqtkDUdoLOXEYdq9W4rvjwI9Nbjv5smwdNovNI-gE">
 </head>
 <body class="min-h-screen student-rpg-bg">
 
+    <div id="page-loader" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(31, 41, 55, 0.9); display: flex; justify-content: center; align-items: center; z-index: 9999; transition: opacity 0.5s ease;">
+        <style>
+            .page-loader-graphic {
+                --fill-color: #5c3d99;
+                --shine-color: #5c3d9933;
+                transform: scale(0.5);
+                width: 100px;
+                height: auto;
+                position: relative;
+                filter: drop-shadow(0 0 10px var(--shine-color));
+            }
+            .page-loader-graphic #pegtopone { position: absolute; animation: flowe-one 1s linear infinite; }
+            .page-loader-graphic #pegtoptwo { position: absolute; opacity: 0; transform: scale(0) translateY(-200px) translateX(-100px); animation: flowe-two 1s linear infinite; animation-delay: 0.3s; }
+            .page-loader-graphic #pegtopthree { position: absolute; opacity: 0; transform: scale(0) translateY(-200px) translateX(100px); animation: flowe-three 1s linear infinite; animation-delay: 0.6s; }
+            .page-loader-graphic svg g path:first-child { fill: var(--fill-color); }
+            @keyframes flowe-one { 0% { transform: scale(0.5) translateY(-200px); opacity: 0; } 25% { transform: scale(0.75) translateY(-100px); opacity: 1; } 50% { transform: scale(1) translateY(0px); opacity: 1; } 75% { transform: scale(0.5) translateY(50px); opacity: 1; } 100% { transform: scale(0) translateY(100px); opacity: 0; } }
+            @keyframes flowe-two { 0% { transform: scale(0.5) rotateZ(-10deg) translateY(-200px) translateX(-100px); opacity: 0; } 25% { transform: scale(1) rotateZ(-5deg) translateY(-100px) translateX(-50px); opacity: 1; } 50% { transform: scale(1) rotateZ(0deg) translateY(0px) translateX(-25px); opacity: 1; } 75% { transform: scale(0.5) rotateZ(5deg) translateY(50px) translateX(0px); opacity: 1; } 100% { transform: scale(0) rotateZ(10deg) translateY(100px) translateX(25px); opacity: 0; } }
+            @keyframes flowe-three { 0% { transform: scale(0.5) rotateZ(10deg) translateY(-200px) translateX(100px); opacity: 0; } 25% { transform: scale(1) rotateZ(5deg) translateY(-100px) translateX(50px); opacity: 1; } 50% { transform: scale(1) rotateZ(0deg) translateY(0px) translateX(25px); opacity: 1; } 75% { transform: scale(0.5) rotateZ(-5deg) translateY(50px) translateX(0px); opacity: 1; } 100% { transform: scale(0) rotateZ(-10deg) translateY(100px) translateX(-25px); opacity: 0; } }
+        </style>
+        <div class="page-loader-graphic">
+            <svg id="pegtopone" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 100 100">
+                <defs>
+                    <filter id="shine"><feGaussianBlur stdDeviation="3"></feGaussianBlur></filter>
+                    <mask id="mask"><path d="M63,37c-6.7-4-4-27-13-27s-6.3,23-13,27-27,4-27,13,20.3,9,27,13,4,27,13,27,6.3-23,13-27,27-4,27-13-20.3-9-27-13Z" fill="white"></path></mask>
+                    <radialGradient id="gradient-1" cx="50" cy="66" fx="50" fy="66" r="30" gradientTransform="translate(0 35) scale(1 0.5)" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="black" stop-opacity="0.3"></stop><stop offset="50%" stop-color="black" stop-opacity="0.1"></stop><stop offset="100%" stop-color="black" stop-opacity="0"></stop></radialGradient>
+                    <radialGradient id="gradient-2" cx="55" cy="20" fx="55" fy="20" r="30" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="white" stop-opacity="0.3"></stop><stop offset="50%" stop-color="white" stop-opacity="0.1"></stop><stop offset="100%" stop-color="white" stop-opacity="0"></stop></radialGradient>
+                    <radialGradient id="gradient-3" cx="85" cy="50" fx="85" fy="50" xlink:href="#gradient-2"></radialGradient>
+                    <radialGradient id="gradient-4" cx="50" cy="58" fx="50" fy="58" r="60" gradientTransform="translate(0 47) scale(1 0.2)" xlink:href="#gradient-3"></radialGradient>
+                    <linearGradient id="gradient-5" x1="50" y1="90" x2="50" y2="10" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="black" stop-opacity="0.2"></stop><stop offset="40%" stop-color="black" stop-opacity="0"></stop></linearGradient>
+                </defs>
+                <g><path d="M63,37c-6.7-4-4-27-13-27s-6.3,23-13,27-27,4-27,13,20.3,9,27,13,4,27,13,27,6.3-23,13-27,27-4,27-13-20.3-9-27-13Z" fill="currentColor"></path><path d="M63,37c-6.7-4-4-27-13-27s-6.3,23-13,27-27,4-27,13,20.3,9,27,13,4,27,13,27,6.3-23,13-27,27-4,27-13-20.3-9-27-13Z" fill="url(#gradient-1)"></path><path d="M63,37c-6.7-4-4-27-13-27s-6.3,23-13,27-27,4-27,13,20.3,9,27,13,4,27,13,27,6.3-23,13-27,27-4,27-13-20.3-9-27-13Z" fill="none" stroke="white" opacity="0.3" stroke-width="3" filter="url(#shine)" mask="url(#mask)"></path><path d="M63,37c-6.7-4-4-27-13-27s-6.3,23-13,27-27,4-27,13,20.3,9,27,13,4,27,13,27,6.3-23,13-27,27-4,27-13-20.3-9-27-13Z" fill="url(#gradient-2)"></path><path d="M63,37c-6.7-4-4-27-13-27s-6.3,23-13,27-27,4-27,13,20.3,9,27,13,4,27,13,27,6.3-23,13-27,27-4,27-13-20.3-9-27-13Z" fill="url(#gradient-3)"></path><path d="M63,37c-6.7-4-4-27-13-27s-6.3,23-13,27-27,4-27,13,20.3,9,27,13,4,27,13,27,6.3-23,13-27,27-4,27-13-20.3-9-27-13Z" fill="url(#gradient-4)"></path><path d="M63,37c-6.7-4-4-27-13-27s-6.3,23-13,27-27,4-27,13,20.3,9,27,13,4,27,13,27,6.3-23,13-27,27-4,27-13-20.3-9-27-13Z" fill="url(#gradient-5)"></path></g>
+            </svg>
+            <svg id="pegtoptwo" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 100 100">
+                <g><path d="M63,37c-6.7-4-4-27-13-27s-6.3,23-13,27-27,4-27,13,20.3,9,27,13,4,27,13,27,6.3-23,13-27,27-4,27-13-20.3-9-27-13Z" fill="currentColor"></path><path d="M63,37c-6.7-4-4-27-13-27s-6.3,23-13,27-27,4-27,13,20.3,9,27,13,4,27,13,27,6.3-23,13-27,27-4,27-13-20.3-9-27-13Z" fill="url(#gradient-1)"></path><path d="M63,37c-6.7-4-4-27-13-27s-6.3,23-13,27-27,4-27,13,20.3,9,27,13,4,27,13,27,6.3-23,13-27,27-4,27-13-20.3-9-27-13Z" fill="none" stroke="white" opacity="0.3" stroke-width="3" filter="url(#shine)" mask="url(#mask)"></path><path d="M63,37c-6.7-4-4-27-13-27s-6.3,23-13,27-27,4-27,13,20.3,9,27,13,4,27,13,27,6.3-23,13-27,27-4,27-13-20.3-9-27-13Z" fill="url(#gradient-2)"></path><path d="M63,37c-6.7-4-4-27-13-27s-6.3,23-13,27-27,4-27,13,20.3,9,27,13,4,27,13,27,6.3-23,13-27,27-4,27-13-20.3-9-27-13Z" fill="url(#gradient-3)"></path><path d="M63,37c-6.7-4-4-27-13-27s-6.3,23-13,27-27,4-27,13,20.3,9,27,13,4,27,13,27,6.3-23,13-27,27-4,27-13-20.3-9-27-13Z" fill="url(#gradient-4)"></path><path d="M63,37c-6.7-4-4-27-13-27s-6.3,23-13,27-27,4-27,13,20.3,9,27,13,4,27,13,27,6.3-23,13-27,27-4,27-13-20.3-9-27-13Z" fill="url(#gradient-5)"></path></g>
+            </svg>
+            <svg id="pegtopthree" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 100 100">
+                <g><path d="M63,37c-6.7-4-4-27-13-27s-6.3,23-13,27-27,4-27,13,20.3,9,27,13,4,27,13,27,6.3-23,13-27,27-4,27-13-20.3-9-27-13Z" fill="currentColor"></path><path d="M63,37c-6.7-4-4-27-13-27s-6.3,23-13,27-27,4-27,13,20.3,9,27,13,4,27,13,27,6.3-23,13-27,27-4,27-13-20.3-9-27-13Z" fill="url(#gradient-1)"></path><path d="M63,37c-6.7-4-4-27-13-27s-6.3,23-13,27-27,4-27,13,20.3,9,27,13,4,27,13,27,6.3-23,13-27,27-4,27-13-20.3-9-27-13Z" fill="none" stroke="white" opacity="0.3" stroke-width="3" filter="url(#shine)" mask="url(#mask)"></path><path d="M63,37c-6.7-4-4-27-13-27s-6.3,23-13,27-27,4-27,13,20.3,9,27,13,4,27,13,27,6.3-23,13-27,27-4,27-13-20.3-9-27-13Z" fill="url(#gradient-2)"></path><path d="M63,37c-6.7-4-4-27-13-27s-6.3,23-13,27-27,4-27,13,20.3,9,27,13,4,27,13,27,6.3-23,13-27,27-4,27-13-20.3-9-27-13Z" fill="url(#gradient-3)"></path><path d="M63,37c-6.7-4-4-27-13-27s-6.3,23-13,27-27,4-27,13,20.3,9,27,13,4,27,13,27,6.3-23,13-27,27-4,27-13-20.3-9-27-13Z" fill="url(#gradient-4)"></path><path d="M63,37c-6.7-4-4-27-13-27s-6.3,23-13,27-27,4-27,13,20.3,9,27,13,4,27,13,27,6.3-23,13-27,27-4,27-13-20.3-9-27-13Z" fill="url(#gradient-5)"></path></g>
+            </svg>
+        </div>
+    </div>
+
+
     <div id="student-dashboard-page" class="min-h-screen">
         
-         <header class="bg-white/80 backdrop-blur-sm shadow-md sticky top-0 z-20">
+         <header class="bg-white/90 backdrop-blur-sm/80 backdrop-blur-sm shadow-md sticky top-0 z-20">
             <div class="container mx-auto px-4"><div class="h-20 flex items-center justify-between"><h1 class="text-2xl font-bold text-blue-600 font-game tracking-tighter">DREAMY</h1><div class="flex items-center space-x-2 md:space-x-4">
                  <div class="relative">
         <button id="student-notification-button" class="p-2 rounded-full relative">
@@ -30,7 +72,7 @@
 </lord-icon>
             <span id="student-notification-badge" class="absolute top-1 right-1 block h-2 w-2 rounded-full bg-red-500 ring-1 ring-white hidden"></span>
         </button>
-        <div id="student-notification-panel" class="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-lg shadow-xl z-40 hidden">
+        <div id="student-notification-panel" class="absolute right-0 mt-2 w-80 sm:w-96 bg-white/90 backdrop-blur-sm rounded-lg shadow-xl z-40 hidden">
             <div class="p-4 border-b flex justify-between items-center">
                 <h4 class="font-semibold text-gray-800">Notifikasi</h4>
                 <button id="student-mark-all-read-button" class="text-xs text-blue-600 hover:underline font-medium">Bersihkan Semua</button>
@@ -65,7 +107,7 @@
             <div class="flex flex-col md:flex-row items-center md:items-start gap-6 mb-6">
             <div class="grid grid-cols-1 lg:grid-cols-4 lg:grid-rows-3 gap-6 w-full">
                 <!-- Baris Atas: Info & Stats -->
-                <div class="lg:col-span-4 bg-white/80 backdrop-blur-sm p-6 rounded-lg shadow-md">
+                <div class="lg:col-span-4 bg-white/90 backdrop-blur-sm/80 backdrop-blur-sm p-6 rounded-lg shadow-md">
                     <div class="flex flex-col md:flex-row items-center md:items-start gap-6 mb-6">
                         <img id="student-avatar" src="https://placehold.co/128x128/e2e8f0/e2e8f0" class="w-32 h-32 rounded-full object-cover border-4 border-gray-700 shadow-lg">
                         <div class="text-center md:text-left">
@@ -95,20 +137,20 @@
                 </div>
 
                 <!-- Kolom Kiri: Inventori -->
-                <div class="lg:col-span-2 lg:row-span-2 bg-white/80 backdrop-blur-sm p-6 rounded-lg shadow-md"> <h3 class="text-xl font-semibold mb-4">Inventori</h3>
+                <div class="lg:col-span-2 lg:row-span-2 bg-white/90 backdrop-blur-sm/80 backdrop-blur-sm p-6 rounded-lg shadow-md"> <h3 class="text-xl font-semibold mb-4">Inventori</h3>
                     <div id="inventory-slots" class="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-5 xl:grid-cols-6 gap-4">
                         <!-- Slot inventori akan dimuat di sini -->
                     </div>
                 </div>
  <!-- Kanan Atas : Status Efek -->
-                <div class="lg:col-span-2 bg-white/80 backdrop-blur-sm p-6 rounded-lg shadow-md">
+                <div class="lg:col-span-2 bg-white/90 backdrop-blur-sm/80 backdrop-blur-sm p-6 rounded-lg shadow-md">
                     <h3 class="text-xl font-semibold mb-4">Status Efek Aktif</h3>
                     <div id="active-status-effects" class="flex flex-wrap gap-4 justify-center md:justify-start">
                         <p class="text-gray-500 text-sm">Tidak ada efek aktif saat ini.</p>
                     </div>
                 </div>
                 <!-- Kanan Bawah: Skill Aktif -->
-                <div class="lg:col-span-2 bg-white/80 backdrop-blur-sm p-6 rounded-lg shadow-md">
+                <div class="lg:col-span-2 bg-white/90 backdrop-blur-sm/80 backdrop-blur-sm p-6 rounded-lg shadow-md">
                     
                     <h3 class="text-xl font-semibold mb-4">Skill Aktif</h3>
                     <div id="active-skill-container" class="p-4 border rounded-lg bg-gray-50/80">
@@ -121,7 +163,7 @@
         </div>
         </main>
         <div id="bounty-board-page" class="container mx-auto p-4 md:p-6 hidden">
-    <div class="bg-white/80 backdrop-blur-sm rounded-lg shadow-md">
+    <div class="bg-white/90 backdrop-blur-sm/80 backdrop-blur-sm rounded-lg shadow-md">
         <div class="p-6 border-b border-gray-200 flex flex-wrap gap-4 justify-between items-center">
             <div>
                 <h2 class="text-xl font-semibold">Bounty Board</h2>
@@ -138,7 +180,7 @@
     
 </div>
 <div id="shop-page" class="container mx-auto p-4 md:p-6 hidden">
-            <div class="bg-white/80 backdrop-blur-sm rounded-lg shadow-md">
+            <div class="bg-white/90 backdrop-blur-sm/80 backdrop-blur-sm rounded-lg shadow-md">
                 <div class="p-6 border-b border-gray-200 flex flex-wrap gap-4 justify-between items-center">
                     <div>
                         <h2 class="text-xl font-semibold">Toko Item</h2>
@@ -156,7 +198,7 @@
             </div>
         </div>
 <div id="guild-page" class="container mx-auto p-4 md:p-6 hidden">
-    <div class="bg-white/80 backdrop-blur-sm rounded-lg shadow-md">
+    <div class="bg-white/90 backdrop-blur-sm/80 backdrop-blur-sm rounded-lg shadow-md">
         <div class="p-6 border-b border-gray-200">
             <h2 id="guild-name-header" class="text-2xl font-bold text-gray-800">Markas Guild</h2>
             <p class="text-gray-500 mt-1">Selamat datang di markasmu, petualang!</p>
@@ -189,7 +231,7 @@
     
     <!-- Modal Penggunaan Item -->
     <div id="use-item-modal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-300 z-50">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-sm p-6 text-center">
+        <div class="bg-white/90 backdrop-blur-sm rounded-lg shadow-xl w-full max-w-sm p-6 text-center">
             <img id="use-item-icon" src="" alt="Item Icon" class="w-24 h-24 mx-auto mb-4 rounded-lg object-cover bg-gray-200">
             <h3 id="use-item-name" class="text-2xl font-bold text-gray-800 mb-2">Nama Item</h3>
             <p id="use-item-description" class="text-gray-600 mb-1">Deskripsi singkat item ada di sini.</p>
@@ -207,7 +249,7 @@
     <div id="student-shop-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-300 z-50">
         <div class="bg-gray-100 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
             <!-- Header Modal -->
-            <div class="flex justify-between items-center p-4 border-b bg-white rounded-t-lg">
+            <div class="flex justify-between items-center p-4 border-b bg-white/90 backdrop-blur-sm rounded-t-lg">
                 <h3 class="text-xl font-bold text-gray-800">Toko Item</h3>
                 <div class="flex items-center gap-4">
                     <span class="font-semibold text-yellow-600 flex items-center gap-1">
@@ -233,7 +275,7 @@
 </footer>
 <!-- Modal Ngobrol dengan Ivy -->
 <div id="ivy-chat-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-300 z-50">
-    <div class="bg-white rounded-lg shadow-xl w-full max-w-md max-h-[80vh] flex flex-col">
+    <div class="bg-white/90 backdrop-blur-sm rounded-lg shadow-xl w-full max-w-md max-h-[80vh] flex flex-col">
         <div class="p-4 border-b flex justify-between items-center">
             <h3 class="text-lg font-semibold text-gray-800">Ngobrol dengan Ivy</h3>
             <button id="close-ivy-chat-modal-button" class="text-gray-400 hover:text-gray-600">
@@ -257,7 +299,7 @@
 </div>
 
     <div id="create-bounty-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-300 z-50">
-    <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+    <div class="bg-white/90 backdrop-blur-sm rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
         <div class="p-6 border-b flex justify-between items-center">
             <h3 class="text-xl font-semibold">Buat Misi Bounty Baru</h3>
             <button id="close-create-bounty-modal-button" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
@@ -295,7 +337,7 @@
 </div>
 <!-- Modal Selesaikan Misi Bounty -->
 <div id="complete-bounty-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 hidden opacity-0 transition-opacity duration-300">
-    <div class="bg-white rounded-lg shadow-xl w-full max-w-md max-h-[90vh] flex flex-col">
+    <div class="bg-white/90 backdrop-blur-sm rounded-lg shadow-xl w-full max-w-md max-h-[90vh] flex flex-col">
         <div class="p-6 border-b flex justify-between items-center">
             <h3 class="text-xl font-bold text-gray-800">Kelola Misi: <span id="complete-bounty-title"></span></h3>
             <button id="close-complete-bounty-modal-button" class="text-gray-400 hover:text-gray-600">
@@ -320,7 +362,7 @@
     </div>
 </div>
 <div id="target-student-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 hidden opacity-0 transition-opacity duration-300">
-    <div class="bg-white rounded-lg shadow-xl w-full max-w-md max-h-[80vh] flex flex-col">
+    <div class="bg-white/90 backdrop-blur-sm rounded-lg shadow-xl w-full max-w-md max-h-[80vh] flex flex-col">
         <div class="p-4 border-b flex justify-between items-center">
             <h3 id="target-modal-title" class="text-lg font-semibold text-gray-800">Pilih Target</h3>
             <button id="close-target-modal-button" class="text-gray-400 hover:text-gray-600">
@@ -334,7 +376,7 @@
 
 <!-- Modal Konfirmasi Umum (PENGGANTI POPUP) -->
 <div id="confirmation-modal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-300 z-50">
-    <div class="bg-white rounded-lg shadow-xl w-full max-w-sm p-6 text-center">
+    <div class="bg-white/90 backdrop-blur-sm rounded-lg shadow-xl w-full max-w-sm p-6 text-center">
         <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100 mb-4">
             <i data-lucide="alert-triangle" class="h-6 w-6 text-yellow-600"></i>
         </div>
