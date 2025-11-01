@@ -173,15 +173,40 @@ onAuthStateChanged(auth, async (user) => {
         if (isAdmin) {
             // Jika dia ADMIN
             if (isLoginPage || isStudentPage) {
-                window.location.href = 'admin.html'; // Paksa ke dasbor admin
+                window.location.replace('admin.html'); // Paksa ke dasbor admin
             } else if (isAdminPage) {
                 setupAdminDashboard(); // Jalankan fungsi admin
             }
         } else {
             // Jika dia SISWA
-            if (isLoginPage || isAdminPage) {
-                window.location.href = 'student.html'; // Paksa ke dasbor siswa
-            } else if (isStudentPage) {
+            const urlParams = new URLSearchParams(window.location.search);
+            const studentRef = ref(db, `students/${user.uid}`);
+
+            // --- PERBAIKAN LOGIKA: Cek jika siswa kembali dari Backroom SEBELUM cek HP ---
+            if (urlParams.has('escaped')) {
+                const studentData = (await get(studentRef)).val();
+                const updates = {
+                    hp: 10, // Pulihkan HP ke 10 agar tidak mental lagi
+                    coin: (studentData.coin || 0) + 10 // Tambah 10 koin
+                };
+                await update(studentRef, updates);
+                showToast("Kamu berhasil selamat dari Backroom! HP pulih & dapat 10 Koin!");
+                
+                // Hapus parameter dari URL agar tidak dieksekusi lagi saat refresh
+                const newUrl = window.location.pathname;
+                window.history.replaceState({}, document.title, newUrl);
+            }
+
+            // Setelah potensi pemulihan HP, baru cek kondisi HP saat ini
+            const currentStudentSnap = await get(studentRef);
+            if (currentStudentSnap.exists() && currentStudentSnap.val().hp <= 0) {
+                window.location.replace('backroom.html');
+                return;
+            }
+
+            if (isLoginPage || isAdminPage) { // Jika HP aman dan ada di halaman yang salah
+                window.location.replace('student.html'); // Paksa ke dasbor siswa
+            } else if (isStudentPage) { // Jika HP aman dan sudah di halaman yang benar
                 // --- MANTRA BARU: Cek efek status sebelum menampilkan dasbor ---
                 const isMuted = await checkAndApplyStatusEffects(user.uid);
                 if (!isMuted) {
@@ -192,7 +217,7 @@ onAuthStateChanged(auth, async (user) => {
     } else {
         // Jika PENGGUNA BELUM LOGIN
         if (isAdminPage || isStudentPage) {
-            window.location.href = 'index.html'; // Paksa kembali ke halaman login
+            window.location.replace('index.html'); // Paksa kembali ke halaman login
         }
     }
 });
@@ -6572,5 +6597,20 @@ function setupJournalPage() {
     setupSelectors();
     renderJournals();
 }
+// Panggil lucide.createIcons() secara global sekali untuk halaman login & student
+createLucideIcons();onchange = renderJournals;
+    filterEndDate.onchange = renderJournals;
+    printButton.onclick = handlePrint;
+    journalListContainer.addEventListener('click', async e => {
+        const deleteBtn = e.target.closest('.delete-journal-btn');
+        if (deleteBtn && confirm('Yakin ingin menghapus jurnal ini?')) {
+            await remove(ref(db, `reflectionJournals/${deleteBtn.dataset.id}`));
+            showToast('Jurnal berhasil dihapus.');
+        }
+    });
+
+    setupSelectors();
+    renderJournals();
+
 // Panggil lucide.createIcons() secara global sekali untuk halaman login & student
 createLucideIcons();
