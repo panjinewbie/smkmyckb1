@@ -186,8 +186,7 @@ onAuthStateChanged(auth, async (user) => {
             if (urlParams.has('escaped')) {
                 const studentData = (await get(studentRef)).val();
                 const updates = {
-                    hp: 10, // Pulihkan HP ke 10 agar tidak mental lagi
-                    coin: (studentData.coin || 0) + 10 // Tambah 10 koin
+                    hp: 10 // Pulihkan HP ke 10 agar tidak mental lagi
                 };
                 await update(studentRef, updates);
                 showToast("Kamu berhasil selamat dari Backroom! HP pulih & dapat 10 Koin!");
