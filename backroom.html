@@ -14368,9 +14368,9 @@ body:has(#bh:checked) input {
         randomTreasureTile = allTiles[randomIndex];
     } while (randomTreasureTile.querySelector('label')); // Pastikan tile ini juga kosong
 
-    const treasureLink = document.createElement('a');
-    treasureLink.href = "student.html"; // Kembali tanpa parameter 'escaped'
-    treasureLink.title = "Jalan pintas! (HP tidak pulih)";
+   const treasureLink = document.createElement('a');
+    treasureLink.href = "student.html?escaped=true"; // Kembali tanpa parameter 'escaped'
+    treasureLink.title = "Jalan pintas! (HP pulih)";
     treasureLink.innerHTML = `<img src="https://blogger.googleusercontent.com/img/a/AVvXsEj4aduMARtJ93mMAISSEbC1KBgkGWtuvJ-mygGnwzMJYwyNRHykESzKpdNYV9pCydnqPRGcQb5sqRvcD6cUQ6wWrgZTbqaFmawmssXca7nq1f7968CNopl9JsasZSDJS_Q4HZppsDqgLdAhFESdRBYqtkDUdoLOXEYdq9W4rvjwI9Nbjv5smwdNovNI-gE" style="width: 2rem; height: 2rem; position: absolute; bottom: 0.5rem; left: 0.5rem; z-index: 10; cursor: pointer;">`;
     randomTreasureTile.appendChild(treasureLink);
     console.log('Harta karun (jalan pintas) telah ditambahkan.');
@@ -14378,3 +14378,4 @@ body:has(#bh:checked) input {
 </script>
 </body>
 </html>
+
