@@ -106,6 +106,7 @@ let currentAiQuizState = {}; // Menyimpan state quiz yang sedang berjalan
 // --- MANTRA BARU: State untuk Solo Battle ---
 let currentSoloBattleState = {};
 let soloBattleTimerId = null;
+let acakKataTimerId = null;
 let currentAcakKataBattleState = {}; // <-- MANTRA BARU: State untuk Acak Kata Battle
 let dungeonBattleState = null; // <-- MANTRA BARU: State untuk melacak pertarungan dari dungeon
 
@@ -703,7 +704,7 @@ if(loginForm) {
         } catch (error) {
             loginNotification.textContent = 'Email atau password salah!';
             loginNotification.classList.remove('hidden');
-            loginNotification.classList.add('bg-red-500');
+            loginNotification.classList.add('bg-white-500');
             audioPlayer.error();
             loginButton.disabled = false;
             loginButton.textContent = 'Masuk Dunia DREAMY';
@@ -3240,11 +3241,17 @@ async function endSoloAiBattle(isVictory, isForfeit = false) {
             const dungeonModal = document.getElementById('dungeon-2d-modal');
             const dungeonIframe = document.getElementById('dungeon-2d-iframe');
 
-            // Tampilkan kembali modal dungeon
-            dungeonModal.classList.remove('hidden');
+            // --- PERBAIKAN BUG: Tampilkan kembali modal dungeon dengan benar ---
+            // Pastikan modal terlihat sebelum mengirim pesan
+            if (dungeonModal) {
+                dungeonModal.classList.remove('hidden');
+                dungeonModal.classList.remove('opacity-0'); // Hapus opacity juga jika ada
+            }
 
             // Kirim hasil pertarungan kembali ke iframe dungeon
-            dungeonIframe.contentWindow.postMessage({ type: 'dungeonBattleResult', victory: isVictory, monsterPos: dungeonBattleState.monsterPos }, '*');
+            if (dungeonIframe && dungeonIframe.contentWindow) {
+                dungeonIframe.contentWindow.postMessage({ type: 'dungeonBattleResult', victory: isVictory, monsterPos: dungeonBattleState.monsterPos }, '*');
+            }
 
             dungeonBattleState = null; // Reset state
             return; // Hentikan eksekusi lebih lanjut karena alur kembali ke dungeon
@@ -3333,12 +3340,30 @@ async function nextAcakKataTurn() {
     const questionTextEl = document.getElementById('acak-kata-battle-question-text');
     const answerInput = document.getElementById('acak-kata-battle-answer-input');
     const submitButton = document.getElementById('acak-kata-battle-submit-button');
+    const timerEl = document.getElementById('acak-kata-battle-timer'); // <-- MANTRA BARU
 
     questionTextEl.textContent = 'MEMINTA...';
     answerInput.value = '';
     answerInput.disabled = true;
     submitButton.disabled = true;
     currentAcakKataBattleState.isAnswerLocked = true;
+
+    // --- MANTRA BARU: Pengaturan Timer ---
+    let timeLeft = 60; 
+    if(timerEl) timerEl.textContent = timeLeft;
+    if(timerEl) timerEl.classList.remove('text-red-500');
+    
+    if (acakKataTimerId) clearInterval(acakKataTimerId);
+
+    acakKataTimerId = setInterval(() => {
+        timeLeft--;
+        if(timerEl) timerEl.textContent = timeLeft;
+        if (timeLeft <= 10 && timerEl) timerEl.classList.add('text-red-500');
+        if (timeLeft <= 0) {
+            handleAcakKataAnswer(true); // isTimeout = true
+        }
+    }, 1000);
+    // --- AKHIR MANTRA TIMER ---
 
     try {
         const settings = currentAcakKataBattleState.ivySettings;
@@ -3369,13 +3394,15 @@ async function nextAcakKataTurn() {
     } catch (error) {
         console.error("Gagal memuat soal Acak Kata:", error);
         questionTextEl.textContent = "ERROR";
+        clearInterval(acakKataTimerId); // Hentikan timer jika error
         setTimeout(() => endAcakKataBattle(false), 2000);
     }
 }
 
-async function handleAcakKataAnswer() {
+async function handleAcakKataAnswer(isTimeout = false) { // <-- MANTRA BARU: Tambah parameter
     if (currentAcakKataBattleState.isAnswerLocked) return;
     currentAcakKataBattleState.isAnswerLocked = true;
+    clearInterval(acakKataTimerId); // <-- MANTRA BARU: Hentikan timer
 
     const { student, monster, currentQuestionData } = currentAcakKataBattleState;
     const answerInput = document.getElementById('acak-kata-battle-answer-input');
@@ -3383,7 +3410,10 @@ async function handleAcakKataAnswer() {
     const logContainer = document.getElementById('acak-kata-battle-log-container');
 
     const addLog = (text, type) => {
+        if (!logContainer) return;
         const colorClass = type === 'damage' ? 'text-red-400' : type === 'heal' ? 'text-green-400' : 'text-gray-300';
+        const placeholder = logContainer.querySelector('.text-gray-400');
+        if(placeholder) placeholder.remove();
         logContainer.innerHTML += `<p class="${colorClass}">> ${text}</p>`;
         logContainer.scrollTop = logContainer.scrollHeight;
     };
@@ -3392,7 +3422,8 @@ async function handleAcakKataAnswer() {
     submitButton.disabled = true;
 
     const userGuess = answerInput.value.trim().toUpperCase();
-    const isCorrect = userGuess === currentQuestionData.answer;
+    // --- MANTRA BARU: Jawaban salah jika waktu habis ---
+    const isCorrect = !isTimeout && userGuess === currentQuestionData.answer;
 
     if (isCorrect) {
         audioPlayer.success();
@@ -3403,7 +3434,12 @@ async function handleAcakKataAnswer() {
         addLog(`⚔️ ${student.nama} menyerang, ${studentDamage} damage!`, 'normal');
     } else {
         audioPlayer.error();
-        addLog(`Jawaban SALAH! Jawaban benar: ${currentQuestionData.answer}`, 'damage');
+        // --- MANTRA BARU: Pesan log yang berbeda untuk timeout ---
+        if (isTimeout) {
+            addLog(`Waktu habis! Jawaban benar: ${currentQuestionData.answer}`, 'damage');
+        } else {
+            addLog(`Jawaban SALAH! Jawaban benar: ${currentQuestionData.answer}`, 'damage');
+        }
         await new Promise(res => setTimeout(res, 800));
         let monsterDamage = 10 + Math.floor(Math.random() * 6); // Damage 10-15
         student.currentHp = Math.max(0, student.currentHp - monsterDamage);
@@ -3422,6 +3458,7 @@ async function handleAcakKataAnswer() {
 }
 
 async function endAcakKataBattle(isVictory, isForfeit = false) {
+    clearInterval(acakKataTimerId); // <-- MANTRA BARU
     currentAcakKataBattleState.isAnswerLocked = true;
     const { uid, student, monster } = currentAcakKataBattleState;
     const questionContainer = document.getElementById('acak-kata-battle-question-container');
@@ -6596,20 +6633,5 @@ function setupJournalPage() {
     setupSelectors();
     renderJournals();
 }
-// Panggil lucide.createIcons() secara global sekali untuk halaman login & student
-createLucideIcons();onchange = renderJournals;
-    filterEndDate.onchange = renderJournals;
-    printButton.onclick = handlePrint;
-    journalListContainer.addEventListener('click', async e => {
-        const deleteBtn = e.target.closest('.delete-journal-btn');
-        if (deleteBtn && confirm('Yakin ingin menghapus jurnal ini?')) {
-            await remove(ref(db, `reflectionJournals/${deleteBtn.dataset.id}`));
-            showToast('Jurnal berhasil dihapus.');
-        }
-    });
-
-    setupSelectors();
-    renderJournals();
-
 // Panggil lucide.createIcons() secara global sekali untuk halaman login & student
 createLucideIcons();
