@@ -2062,12 +2062,16 @@ async function openDungeon2D(uid, studentData) {
     closeButton.onclick = closeModal;
     // --- MANTRA BARU: Kirim URL Avatar ke iframe ---
     const avatarUrl = studentData.fotoProfilBase64 || '';
+    const maxHp = (studentData.level || 1) * 100;
 
     // --- PERBAIKAN BESAR: Gunakan sessionStorage untuk menghindari URL terlalu panjang ---
     // 1. Siapkan data yang akan dikirim
     const dungeonData = {
         avatar: avatarUrl,
-        monsters: monsterImages
+        monsters: monsterImages,
+        hp: studentData.hp,
+        maxHp: maxHp,
+        coin: studentData.coin
     };
     // 2. Simpan data sebagai string JSON di sessionStorage
     sessionStorage.setItem('dungeonData', JSON.stringify(dungeonData));
@@ -2097,6 +2101,27 @@ async function handleDungeonMessage(event) {
         // Sembunyikan modal dungeon dan mulai pertarungan
         document.getElementById('dungeon-2d-modal').classList.add('hidden');
         startSoloAiBattle(uid);
+        return;
+    }
+
+    // --- MANTRA BARU: Menangani Waktu Habis (Racun) ---
+    if (event.data.type === 'dungeonTimeout') {
+        const { uid } = event.data;
+        if (!uid) return;
+
+        const modal = document.getElementById('dungeon-2d-modal');
+        modal.classList.add('opacity-0');
+        setTimeout(() => modal.classList.add('hidden'), 300);
+
+        // Berikan efek racun
+        const durationInDays = 1;
+        const expiryTimestamp = Date.now() + (durationInDays * 24 * 60 * 60 * 1000);
+        const updates = {};
+        updates[`/students/${uid}/statusEffects/racun`] = { expires: expiryTimestamp };
+        
+        await update(ref(db), updates);
+        showToast("Waktu habis! Kamu terkena kutukan Racun!", true);
+        audioPlayer.error();
         return;
     }
 
