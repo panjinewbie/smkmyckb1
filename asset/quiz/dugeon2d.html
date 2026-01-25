@@ -36,9 +36,6 @@ p {
 </style>
 </head>
 <body>
-    
-    <p>Use the arrow keys to move. Use WSAD to modify the world</p>
-    
     <div id="ui-layer">
         <div style="margin-bottom: 10px;">
             <strong>HP:</strong> <span id="hp-display">100</span>
@@ -427,20 +424,7 @@ function setup() {
      top: 50%;
      left: 50%;*/
      
-  // --- MANTRA BARU: Cari posisi exit yang valid (bukan tembok) ---
-  let found = false;
-  let dist = 5; // Mulai cari dari jarak 5 langkah
-  while(!found && dist < 100) {
-      // Cek apakah koordinat (dist, dist) adalah tembok
-      // Kita gunakan koordinat dunia (grid * 30)
-      if (!poll(dist * 30, dist * 30, ObstructionSeed, ObstructionPercentage)) {
-          exitX = dist;
-          exitY = dist;
-          found = true;
-          console.log("Exit placed at: ", exitX, exitY);
-      }
-      dist++;
-  }
+  placeExit(); // Acak posisi exit saat mulai
   startTimer(); // Mulai timer
   updateUI(); // Update UI dengan data awal
 }
@@ -727,6 +711,34 @@ function updateUI() {
     document.getElementById('time-display').innerText = timeLeft;
 }
 
+// --- MANTRA BARU: Fungsi Acak Posisi Exit ---
+function placeExit() {
+    let found = false;
+    let attempts = 0;
+    while(!found && attempts < 1000) {
+        // Acak koordinat antara -20 sampai 20
+        let rX = Math.floor(random(-20, 20));
+        let rY = Math.floor(random(-20, 20));
+        
+        // Pastikan jarak cukup jauh dari pemain (px, py)
+        if (dist(px, py, rX, rY) > 10) {
+            // Cek apakah bukan tembok
+            if (!poll(rX * 30, rY * 30, ObstructionSeed, ObstructionPercentage)) {
+                exitX = rX;
+                exitY = rY;
+                found = true;
+                console.log("Exit placed at: ", exitX, exitY);
+            }
+        }
+        attempts++;
+    }
+    // Fallback jika gagal (sangat jarang)
+    if (!found) {
+        exitX = px + 10;
+        exitY = py + 10;
+    }
+}
+
 function resetGame() {
     hp = maxHp;
     if(isDummy) coins = 50;
@@ -737,6 +749,7 @@ function resetGame() {
     removedEntities = {};
     gameOver = false;
     
+    placeExit(); // Acak ulang posisi exit saat reset
     loop();
     startTimer();
     updateUI();
