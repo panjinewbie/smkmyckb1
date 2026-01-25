@@ -882,7 +882,7 @@ function draw() {
       
       if (!removedEntities[key]) {
           // Cek Monster
-          if (pollEntity(wx, wy, "Monster", 2)) {
+          if (pollEntity(wx, wy, "Monster", 0)) {
               let drawX = x + ox + 15;
               let drawY = y + oy + 15;
               if (monsterImg && monsterImg.width > 1) {
@@ -977,7 +977,7 @@ function draw() {
               type: 'dungeonResult',
               uid: studentUid,
               status: 'win',
-              treasures: Math.floor(coins / 5) + 5 // Hadiah default + koin yang didapat
+              treasures: Math.floor(coins / 10) + 2 // Hadiah default + koin yang didapat
           }, '*');
       }
   }
