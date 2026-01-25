@@ -125,6 +125,16 @@
                         </div>
                     </div>
                 </div>
+                <!-- TOMBOL BARU: Chatbot Admin -->
+                <button id="open-admin-ivy-chat-button" class="p-2 rounded-full" title="Tanya Ivy tentang Siswa">
+                    <lord-icon
+                        src="https://cdn.lordicon.com/dwhxbrvz.json"
+                        trigger="hover"
+                        stroke="bold"
+                        colors="primary:#545454"
+                        style="width:30px;height:30px">
+                    </lord-icon>
+                </button>
                 <button id="open-ivy-settings-button" class="p-2 rounded-full"><lord-icon
     src="https://cdn.lordicon.com/asyunleq.json"
     trigger="hover"
@@ -973,6 +983,35 @@
                 <button type="submit" id="submit-journal-button" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-lg">Simpan Jurnal</button>
             </div>
         </form>
+    </div>
+</div>
+<!-- MODAL BARU: Chatbot Admin Ivy -->
+<div id="admin-ivy-chat-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-300 z-50">
+    <div class="bg-white/90 backdrop-blur-sm rounded-lg shadow-xl w-full max-w-md max-h-[80vh] flex flex-col">
+        <div class="p-4 border-b flex justify-between items-center bg-blue-50 rounded-t-lg">
+            <div class="flex items-center gap-2">
+                <div class="bg-blue-100 p-1 rounded-full">
+                    <lord-icon src="https://cdn.lordicon.com/dwhxbrvz.json" trigger="loop" delay="2000" style="width:24px;height:24px"></lord-icon>
+                </div>
+                <h3 class="text-lg font-semibold text-gray-800">Asisten Admin Ivy</h3>
+            </div>
+            <button id="close-admin-ivy-chat-modal-button" class="text-gray-400 hover:text-gray-600">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+        </div>
+        <div id="admin-ivy-chat-box" class="flex-grow p-4 overflow-y-auto bg-gray-50 space-y-3">
+            <div class="p-3 rounded-lg bg-white border border-gray-200 text-sm w-fit max-w-[85%] shadow-sm">
+                Halo Admin! Saya punya akses ke data seluruh siswa termasuk catatan khususnya. Mau tanya tentang siapa hari ini? 📝✨
+            </div>
+        </div>
+        <div class="p-3 border-t bg-white rounded-b-lg">
+            <form id="admin-ivy-chat-form" class="flex items-center gap-2">
+                <input type="text" id="admin-ivy-chat-input" class="w-full p-2 bg-gray-100 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" placeholder="Contoh: Siapa siswa yang sering sakit?" required autocomplete="off">
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold p-2 rounded-lg transition-colors">
+                    <i data-lucide="send" class="w-5 h-5"></i>
+                </button>
+            </form>
+        </div>
     </div>
 </div>
     <script type="module" src="script.js"></script>
