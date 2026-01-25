@@ -687,7 +687,7 @@ function checkEntityInteraction(targetPx, targetPy) {
 
     // Cek Treasure (Seed "Treasure", 3%)
     if (pollEntity(wx, wy, "Treasure", 1)) {
-        coins += 2;
+        coins += 1;
         updateUI();
         removedEntities[key] = true;
         return;
@@ -977,7 +977,7 @@ function draw() {
               type: 'dungeonResult',
               uid: studentUid,
               status: 'win',
-              treasures: Math.floor(coins / 10) + 2 // Hadiah default + koin yang didapat
+              treasures: Math.floor(coins / 10) + 0 // Hadiah default + koin yang didapat
           }, '*');
       }
   }
