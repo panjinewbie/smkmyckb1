@@ -1,500 +1,991 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dungeon Misi AI</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Press Start 2P', cursive;
-            background-color: #1a1a1a;
-            color: #ffffff;
-            /* Hapus overflow: hidden agar bisa discroll jika perlu di layar kecil */
-            overflow: hidden;
-        }
-        .game-container {
-            border: 4px solid #4a4a4a;
-            box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
-            /* MANTRA BARU: Paksa layout grid agar tidak memanjang */
-            display: grid;
-            grid-template-columns: repeat(15, 32px);
-        }
-        .grid-cell {
-            /* Ukuran petak disesuaikan agar pas di layar kecil */
-            width: 32px;
-            height: 32px;
-            font-size: 22px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background-size: cover;
-            image-rendering: pixelated; /* For sharp pixel art */
-            transition: filter 0.5s ease;
-        }
-        .player { background-image: url('https://placehold.co/32x32/3498db/ffffff?text='); background-size: cover; background-repeat: no-repeat; background-position: center; background-color: #444; }
-        .wall { background-image: url('https://placehold.co/32x32/444444/444444?text=🧱'); background-color: #444; }
-        .path { background-color: #555; }
-        .monster { background-size: cover; background-repeat: no-repeat; background-position: center; }
-        .treasure { background-image: url('https://placehold.co/32x32/f1c40f/ffffff?text=💎'); animation: sparkle 1.5s infinite; }
-        .exit { background-image: url('https://placehold.co/32x32/2ecc71/ffffff?text=🚪'); }
-        
-        /* --- EFEK KABUT BARU! --- */
-        .fog { background-color: #000; border: 1px solid #111; }
-        .visited { filter: brightness(0.4); } /* Petak yang sudah dilewati jadi lebih gelap */
-
-        @keyframes sparkle {
-            0%, 100% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.2); opacity: 0.7; }
-        }
-
-        .modal-content {
-            background-color: #2c2c2c;
-            border: 4px solid #4a4a4a;
-        }
-        .btn-answer {
-            background-color: #4a4a4a;
-            border: 2px solid #6a6a6a;
-            transition: all 0.2s;
-        }
-        .btn-answer:hover {
-            background-color: #6a6a6a;
-            border-color: #8a8a8a;
-        }
-        .btn-answer.correct {
-             background-color: #27ae60;
-             border-color: #2ecc71;
-        }
-        .btn-answer.incorrect {
-            background-color: #c0392b;
-            border-color: #e74c3c;
-        }
-
-        /* --- MANTRA BARU: Tombol Kontrol Arah --- */
-        .control-btn {
-            background-color: #4a4a4a;
-            border: 2px solid #6a6a6a;
-            border-radius: 0.5rem;
-            color: white;
-            font-size: 1.5rem;
-            width: 4rem;
-            height: 4rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s;
-            user-select: none; /* Mencegah teks terseleksi saat diklik cepat */
-        }
-        .control-btn:hover {
-            background-color: #6a6a6a; border-color: #8a8a8a;
-        }
-        .control-btn:active {
-            transform: scale(0.95); background-color: #8a8a8a;
-        }
-    </style>
+<title>Dungeon Quiz 3</title>
+<style>
+    body {
+  background-color: rgb(26, 31, 38);
+}
+p {
+  color: white;
+}
+#ui-layer {
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    color: white;
+    font-family: 'Courier New', Courier, monospace;
+    z-index: 10;
+    background: rgba(0, 0, 0, 0.5);
+    padding: 10px;
+    border-radius: 8px;
+}
+#hp-bar-container {
+    width: 150px;
+    height: 15px;
+    background: #333;
+    border: 1px solid #fff;
+    margin-top: 5px;
+}
+#hp-bar-fill {
+    width: 100%;
+    height: 100%;
+    background: #e74c3c;
+    transition: width 0.3s;
+}
+</style>
 </head>
-<body class="flex flex-col items-center justify-center min-h-screen p-2 md:p-4">
-
-    <h1 class="text-2xl md:text-3xl mb-4 text-yellow-400 drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">DUNGEON MISI AI</h1>
-
-    <div class="game-wrapper flex flex-col md:flex-row gap-4 md:gap-8 items-center">
-        <!-- Game Container -->
-        <div id="game-container" class="game-container bg-black"></div>
-
-        <!-- Status Panel -->
-        <div class="status-panel w-full md:w-64 p-4 rounded-lg" style="background-color: #2c2c2c; border: 4px solid #4a4a4a;">
-            <h2 class="text-xl mb-4 text-center border-b-2 border-gray-500 pb-2">STATUS</h2>
-            <div class="flex justify-between items-center text-lg">
-                <span>Harta Karun:</span>
-                <span id="treasure-count" class="text-yellow-400 text-2xl">0</span>
+<body>
+    
+    <p>Use the arrow keys to move. Use WSAD to modify the world</p>
+    
+    <div id="ui-layer">
+        <div style="margin-bottom: 10px;">
+            <strong>HP:</strong> <span id="hp-display">100</span>
+            <div id="hp-bar-container">
+                <div id="hp-bar-fill"></div>
             </div>
-             <div class="mt-4">
-                <h3 class="text-lg mb-2 text-center">CARA MAIN</h3>
-                <p class="text-center text-sm">Gunakan panah atau tombol di layar untuk bergerak.</p>
-            </div>
+        </div>
+        <div>
+            <strong>Coins:</strong> <span id="coin-display">0</span> 💰
+        </div>
+        <div>
+            <strong>Waktu:</strong> <span id="time-display">60</span>s ⏳
         </div>
     </div>
 
-    <!-- MANTRA BARU: Tombol Kontrol di Layar -->
-    <div class="mt-4 grid grid-cols-3 gap-2 w-48">
+    <!-- MANTRA BARU: Tombol Kontrol Layar (D-Pad) -->
+    <div id="mobile-controls" style="position: fixed; bottom: 20px; right: 20px; z-index: 1000; display: grid; grid-template-columns: 60px 60px 60px; grid-template-rows: 60px 60px; gap: 5px; touch-action: none;">
+        <!-- Empty top left -->
         <div></div>
-        <button id="btn-up" class="control-btn">⬆️</button>
+        <!-- Up -->
+        <button onmousedown="simulateMove(38)" ontouchstart="simulateMove(38)" style="width: 60px; height: 60px; background: rgba(255, 255, 255, 0.2); border: 2px solid rgba(255, 255, 255, 0.5); border-radius: 50%; color: white; font-size: 24px; display: flex; justify-content: center; align-items: center; cursor: pointer; user-select: none; -webkit-user-select: none;">▲</button>
+        <!-- Empty top right -->
         <div></div>
-        <button id="btn-left" class="control-btn">⬅️</button>
-        <button id="btn-down" class="control-btn">⬇️</button>
-        <button id="btn-right" class="control-btn">➡️</button>
+        <!-- Left -->
+        <button onmousedown="simulateMove(37)" ontouchstart="simulateMove(37)" style="width: 60px; height: 60px; background: rgba(255, 255, 255, 0.2); border: 2px solid rgba(255, 255, 255, 0.5); border-radius: 50%; color: white; font-size: 24px; display: flex; justify-content: center; align-items: center; cursor: pointer; user-select: none; -webkit-user-select: none;">◀</button>
+        <!-- Down -->
+        <button onmousedown="simulateMove(40)" ontouchstart="simulateMove(40)" style="width: 60px; height: 60px; background: rgba(255, 255, 255, 0.2); border: 2px solid rgba(255, 255, 255, 0.5); border-radius: 50%; color: white; font-size: 24px; display: flex; justify-content: center; align-items: center; cursor: pointer; user-select: none; -webkit-user-select: none;">▼</button>
+        <!-- Right -->
+        <button onmousedown="simulateMove(39)" ontouchstart="simulateMove(39)" style="width: 60px; height: 60px; background: rgba(255, 255, 255, 0.2); border: 2px solid rgba(255, 255, 255, 0.5); border-radius: 50%; color: white; font-size: 24px; display: flex; justify-content: center; align-items: center; cursor: pointer; user-select: none; -webkit-user-select: none;">▶</button>
     </div>
 
-    <!-- Modal (sama seperti sebelumnya) -->
-    <div id="quiz-modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center hidden z-50">
-        <div class="modal-content p-8 rounded-lg shadow-lg text-center w-full max-w-2xl">
-            <h2 class="text-2xl mb-2 text-red-500">MONSTER MUNCUL!</h2>
-            <p class="mb-6">Jawab pertanyaan ini untuk mengalahkannya!</p>
-            <div id="spinner" class="mb-4">
-                <p class="text-yellow-400 animate-pulse">Monster sedang merapal mantra pertanyaan...</p>
-            </div>
-            <div id="quiz-content" class="hidden">
-                <p id="question-text" class="text-lg mb-6"></p>
-                <div id="answer-options" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
-            </div>
-             <p id="feedback-text" class="mt-4 h-6 text-lg font-bold"></p>
-        </div>
-    </div>
+<script>
+  // Warn if overriding existing method
+  if(Array.prototype.equals)
+    console.warn("Overriding existing Array.prototype.equals. Possible causes: New API defines the method, there's a framework conflict or you've got double inclusions in your code.");
+// attach the .equals method to Array's prototype to call it on any array
+Array.prototype.equals = function (array) {
+    // if the other array is a falsy value, return
+    if (!array)
+        return false;
 
-    <div id="win-modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center hidden z-50">
-        <div class="modal-content p-8 rounded-lg shadow-lg text-center">
-            <h2 id="win-title" class="text-4xl mb-4 text-green-400">MISI SELESAI!</h2>
-            <p id="win-message" class="text-lg mb-6">Kamu berhasil keluar dari labirin!</p>
-            <button id="close-win-modal" class="btn-answer px-6 py-3 rounded-md">Keluar Dungeon</button>
-        </div>
-    </div>
+    // compare lengths - can save a lot of time 
+    if (this.length != array.length)
+        return false;
 
-    <script>
-        // --- MANTRA BARU: Komunikasi dengan Halaman Induk ---
-        const urlParams = new URLSearchParams(window.location.search);
-        const studentUid = urlParams.get('uid');
+    for (var i = 0, l=this.length; i < l; i++) {
+        // Check if we have nested arrays
+        if (this[i] instanceof Array && array[i] instanceof Array) {
+            // recurse into the nested arrays
+            if (!this[i].equals(array[i]))
+                return false;       
+        }           
+        else if (this[i] != array[i]) { 
+            // Warning - two different object instances will never be equal: {x:20} != {x:20}
+            return false;   
+        }           
+    }       
+    return true;
+}
+// Hide method from for-in loops
+Object.defineProperty(Array.prototype, "equals", {enumerable: false});
+                                         
+if(Array.prototype.contains)
+    console.warn("Overriding existing Array.prototype.contains. Possible causes: New API defines the method, there's a framework conflict or you've got double inclusions in your code.");
+// attach the .contains method to Array's prototype to call it on any array
+Array.prototype.contains = function (thing) {
+    // if the other array is a falsy value, return false
+    if (!this)
+        return false;
+    
+    //start by assuming the array doesn't contain the thing
+    var result = false;
+    for (var i = 0, l=this.length; i < l; i++) 
+      {
+      //if anything in the array is the thing then change our mind from before
+      
+      if (this[i] instanceof Array)
+        {if (this[i].equals(thing))
+          result = true;}
+        else
+          if (this[i]===thing)
+            result = true;
+      
+    
+      } 
+     //return the decision we left in the variable, result
+    return result;     
+}
+// Hide method from for-in loops
+Object.defineProperty(Array.prototype, "contains", {enumerable: false});
+  
+// attach the .indexOf method to Array's prototype to call it on any array
+Array.prototype.indexOf = function (thing) 
+  {
+    // if the other array is a falsy value, return -1
+    if (!this)
+        return -1;
+    
+    //start by assuming the array doesn't contain the thing
+    var result = -1;
+    for (var i = 0, l=this.length; i < l; i++) 
+      {
+      //if anything in the array is the thing then change our mind from before
+      if (this[i] instanceof Array)
+        if (this[i].equals(thing))
+          result = i;
+        else
+          if (this[i]===thing)
+            result = i;
+      
+    
+      } 
+     //return the decision we left in the variable, result
+    return result;
+}
+                                         
+// Hide method from for-in loops
+Object.defineProperty(Array.prototype, "indexOf", {enumerable: false});  
+</script>
+<!-- Thanks to SO user Tomáš Zato for js Array comparison
+ (http://stackoverflow.com/users/607407/tom%C3%A1%C5%A1-zato) -->
 
-        // --- PERBAIKAN BESAR: Ambil data dari sessionStorage, bukan dari URL ---
-        let studentAvatar = '';
-        let monsterImageUrls = ['https://placehold.co/32x32/e74c3c/ffffff?text=👹']; // Default
-        const storedData = sessionStorage.getItem('dungeonData');
-        if (storedData) {
-            const data = JSON.parse(storedData);
-            studentAvatar = data.avatar || '';
-            monsterImageUrls = data.monsters && data.monsters.length > 0 ? data.monsters : monsterImageUrls;
-            sessionStorage.removeItem('dungeonData'); // Hapus data setelah digunakan
+<script src="//cdnjs.cloudflare.com/ajax/libs/p5.js/0.3.3/p5.min.js"></script>
+<!-- Thanks to Processing JS for their powerful drawing module (http://processingjs.org/) -->
+<!--<script src="http://www.myersdaily.org/joseph/javascript/md5.js">-->
+<script>function md5cycle(x, k) {
+var a = x[0], b = x[1], c = x[2], d = x[3];
+
+a = ff(a, b, c, d, k[0], 7, -680876936);
+d = ff(d, a, b, c, k[1], 12, -389564586);
+c = ff(c, d, a, b, k[2], 17,  606105819);
+b = ff(b, c, d, a, k[3], 22, -1044525330);
+a = ff(a, b, c, d, k[4], 7, -176418897);
+d = ff(d, a, b, c, k[5], 12,  1200080426);
+c = ff(c, d, a, b, k[6], 17, -1473231341);
+b = ff(b, c, d, a, k[7], 22, -45705983);
+a = ff(a, b, c, d, k[8], 7,  1770035416);
+d = ff(d, a, b, c, k[9], 12, -1958414417);
+c = ff(c, d, a, b, k[10], 17, -42063);
+b = ff(b, c, d, a, k[11], 22, -1990404162);
+a = ff(a, b, c, d, k[12], 7,  1804603682);
+d = ff(d, a, b, c, k[13], 12, -40341101);
+c = ff(c, d, a, b, k[14], 17, -1502002290);
+b = ff(b, c, d, a, k[15], 22,  1236535329);
+
+a = gg(a, b, c, d, k[1], 5, -165796510);
+d = gg(d, a, b, c, k[6], 9, -1069501632);
+c = gg(c, d, a, b, k[11], 14,  643717713);
+b = gg(b, c, d, a, k[0], 20, -373897302);
+a = gg(a, b, c, d, k[5], 5, -701558691);
+d = gg(d, a, b, c, k[10], 9,  38016083);
+c = gg(c, d, a, b, k[15], 14, -660478335);
+b = gg(b, c, d, a, k[4], 20, -405537848);
+a = gg(a, b, c, d, k[9], 5,  568446438);
+d = gg(d, a, b, c, k[14], 9, -1019803690);
+c = gg(c, d, a, b, k[3], 14, -187363961);
+b = gg(b, c, d, a, k[8], 20,  1163531501);
+a = gg(a, b, c, d, k[13], 5, -1444681467);
+d = gg(d, a, b, c, k[2], 9, -51403784);
+c = gg(c, d, a, b, k[7], 14,  1735328473);
+b = gg(b, c, d, a, k[12], 20, -1926607734);
+
+a = hh(a, b, c, d, k[5], 4, -378558);
+d = hh(d, a, b, c, k[8], 11, -2022574463);
+c = hh(c, d, a, b, k[11], 16,  1839030562);
+b = hh(b, c, d, a, k[14], 23, -35309556);
+a = hh(a, b, c, d, k[1], 4, -1530992060);
+d = hh(d, a, b, c, k[4], 11,  1272893353);
+c = hh(c, d, a, b, k[7], 16, -155497632);
+b = hh(b, c, d, a, k[10], 23, -1094730640);
+a = hh(a, b, c, d, k[13], 4,  681279174);
+d = hh(d, a, b, c, k[0], 11, -358537222);
+c = hh(c, d, a, b, k[3], 16, -722521979);
+b = hh(b, c, d, a, k[6], 23,  76029189);
+a = hh(a, b, c, d, k[9], 4, -640364487);
+d = hh(d, a, b, c, k[12], 11, -421815835);
+c = hh(c, d, a, b, k[15], 16,  530742520);
+b = hh(b, c, d, a, k[2], 23, -995338651);
+
+a = ii(a, b, c, d, k[0], 6, -198630844);
+d = ii(d, a, b, c, k[7], 10,  1126891415);
+c = ii(c, d, a, b, k[14], 15, -1416354905);
+b = ii(b, c, d, a, k[5], 21, -57434055);
+a = ii(a, b, c, d, k[12], 6,  1700485571);
+d = ii(d, a, b, c, k[3], 10, -1894986606);
+c = ii(c, d, a, b, k[10], 15, -1051523);
+b = ii(b, c, d, a, k[1], 21, -2054922799);
+a = ii(a, b, c, d, k[8], 6,  1873313359);
+d = ii(d, a, b, c, k[15], 10, -30611744);
+c = ii(c, d, a, b, k[6], 15, -1560198380);
+b = ii(b, c, d, a, k[13], 21,  1309151649);
+a = ii(a, b, c, d, k[4], 6, -145523070);
+d = ii(d, a, b, c, k[11], 10, -1120210379);
+c = ii(c, d, a, b, k[2], 15,  718787259);
+b = ii(b, c, d, a, k[9], 21, -343485551);
+
+x[0] = add32(a, x[0]);
+x[1] = add32(b, x[1]);
+x[2] = add32(c, x[2]);
+x[3] = add32(d, x[3]);
+
+}
+
+function cmn(q, a, b, x, s, t) {
+a = add32(add32(a, q), add32(x, t));
+return add32((a << s) | (a >>> (32 - s)), b);
+}
+
+function ff(a, b, c, d, x, s, t) {
+return cmn((b & c) | ((~b) & d), a, b, x, s, t);
+}
+
+function gg(a, b, c, d, x, s, t) {
+return cmn((b & d) | (c & (~d)), a, b, x, s, t);
+}
+
+function hh(a, b, c, d, x, s, t) {
+return cmn(b ^ c ^ d, a, b, x, s, t);
+}
+
+function ii(a, b, c, d, x, s, t) {
+return cmn(c ^ (b | (~d)), a, b, x, s, t);
+}
+
+function md51(s) {
+txt = '';
+var n = s.length,
+state = [1732584193, -271733879, -1732584194, 271733878], i;
+for (i=64; i<=s.length; i+=64) {
+md5cycle(state, md5blk(s.substring(i-64, i)));
+}
+s = s.substring(i-64);
+var tail = [0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0];
+for (i=0; i<s.length; i++)
+tail[i>>2] |= s.charCodeAt(i) << ((i%4) << 3);
+tail[i>>2] |= 0x80 << ((i%4) << 3);
+if (i > 55) {
+md5cycle(state, tail);
+for (i=0; i<16; i++) tail[i] = 0;
+}
+tail[14] = n*8;
+md5cycle(state, tail);
+return state;
+}
+
+/* there needs to be support for Unicode here,
+ * unless we pretend that we can redefine the MD-5
+ * algorithm for multi-byte characters (perhaps
+ * by adding every four 16-bit characters and
+ * shortening the sum to 32 bits). Otherwise
+ * I suggest performing MD-5 as if every character
+ * was two bytes--e.g., 0040 0025 = @%--but then
+ * how will an ordinary MD-5 sum be matched?
+ * There is no way to standardize text to something
+ * like UTF-8 before transformation; speed cost is
+ * utterly prohibitive. The JavaScript standard
+ * itself needs to look at this: it should start
+ * providing access to strings as preformed UTF-8
+ * 8-bit unsigned value arrays.
+ */
+function md5blk(s) { /* I figured global was faster.   */
+var md5blks = [], i; /* Andy King said do it this way. */
+for (i=0; i<64; i+=4) {
+md5blks[i>>2] = s.charCodeAt(i)
++ (s.charCodeAt(i+1) << 8)
++ (s.charCodeAt(i+2) << 16)
++ (s.charCodeAt(i+3) << 24);
+}
+return md5blks;
+}
+
+var hex_chr = '0123456789abcdef'.split('');
+
+function rhex(n)
+{
+var s='', j=0;
+for(; j<4; j++)
+s += hex_chr[(n >> (j * 8 + 4)) & 0x0F]
++ hex_chr[(n >> (j * 8)) & 0x0F];
+return s;
+}
+
+function hex(x) {
+for (var i=0; i<x.length; i++)
+x[i] = rhex(x[i]);
+return x.join('');
+}
+
+function md5(s) {
+return hex(md51(s));
+}
+
+/* this function is much faster,
+so if possible we use it. Some IEs
+are the only ones I know of that
+need the idiotic second function,
+generated by an if clause.  */
+
+function add32(a, b) {
+return (a + b) & 0xFFFFFFFF;
+}
+
+if (md5('hello') != '5d41402abc4b2a76b9719d911017c592') {
+function add32(x, y) {
+var lsw = (x & 0xFFFF) + (y & 0xFFFF),
+msw = (x >> 16) + (y >> 16) + (lsw >> 16);
+return (msw << 16) | (lsw & 0xFFFF);
+}
+}
+</script>
+<!--Thanks to Joseph Myers for a fast js implementation of MD5 (http://www.myersdaily.org/joseph/javascript/md5-text.html)) -->
+</body>
+<script>
+  //These settings are configurable
+var ObstructionSeed = "Witty!"
+var ObstructionPercentage = 40
+
+var w = 500
+var h = 500
+
+var px = 0
+var py = 0
+var ox = 0
+var oy = 0
+
+var wallCount = 0
+var invertedH = []
+var invertedV = []
+
+var OnewayCount = 0
+var invertedHW = []
+var invertedVW = []
+
+// --- MANTRA BARU: Variabel untuk Pintu Keluar & Game Logic ---
+const urlParams = new URLSearchParams(window.location.search);
+const studentUid = urlParams.get('uid');
+var exitX = 0;
+var exitY = 0;
+var gameOver = false;
+
+// --- MANTRA BARU: Variabel Gameplay Tambahan ---
+var hp = 100;
+var maxHp = 100;
+var coins = 0;
+var removedEntities = {}; // Menyimpan entity yang sudah diambil/hancur "x,y"
+var playerAvatarImg = null;
+var monsterImg = null;
+var treasureImg = null;
+var trapImg = null;
+var timeLeft = 60; // Waktu 60 detik
+var timerInterval = null;
+var isDummy = false;
+var bossDefeated = false;
+
+function preload() {
+    // Coba muat gambar dari sessionStorage
+    try {
+        const data = sessionStorage.getItem('dungeonData');
+        if (data) {
+            const parsedData = JSON.parse(data);
+            if (parsedData.avatar) playerAvatarImg = loadImage(parsedData.avatar);
+            if (parsedData.monsters && parsedData.monsters.length > 0) monsterImg = loadImage(parsedData.monsters[0]);
+            if (parsedData.hp !== undefined) {
+                hp = parsedData.hp;
+                maxHp = parsedData.maxHp || 100;
+            }
+            if (parsedData.coin !== undefined) coins = parsedData.coin;
+        } else {
+            // --- MANTRA BARU: Data Dummy jika tidak login ---
+            console.log("Menggunakan Data Dummy");
+            isDummy = true;
+            hp = 100;
+            maxHp = 100;
+            coins = 50;
+            // Gambar akan menggunakan fallback emoji/bentuk di draw() jika null
         }
+    } catch (e) {
+        console.log("Gagal memuat data dungeon:", e);
+    }
+    // Placeholder jika gambar tidak ada (p5.js akan menangani null image dengan graceful biasanya, atau kita cek nanti)
+}
 
-        // --- MANTRA BARU: Ganti Avatar Pemain ---
-        if (studentAvatar) {
-            // Buat style baru secara dinamis untuk menimpa style default
-            const style = document.createElement('style');
-            style.innerHTML = `
-                .player { background-image: url('${studentAvatar}'); }
-            `;
-            document.head.appendChild(style);
+function setup() {
+  createCanvas(w, h)
+    /* position: absolute;
+     top: 50%;
+     left: 50%;*/
+     
+  // --- MANTRA BARU: Cari posisi exit yang valid (bukan tembok) ---
+  let found = false;
+  let dist = 5; // Mulai cari dari jarak 5 langkah
+  while(!found && dist < 100) {
+      // Cek apakah koordinat (dist, dist) adalah tembok
+      // Kita gunakan koordinat dunia (grid * 30)
+      if (!poll(dist * 30, dist * 30, ObstructionSeed, ObstructionPercentage)) {
+          exitX = dist;
+          exitY = dist;
+          found = true;
+          console.log("Exit placed at: ", exitX, exitY);
+      }
+      dist++;
+  }
+  startTimer(); // Mulai timer
+  updateUI(); // Update UI dengan data awal
+}
+
+// --- MANTRA BARU: Listener untuk Hasil Battle ---
+window.addEventListener('message', function(event) {
+    if (event.data.type === 'dungeonBattleResult') {
+        if (event.data.victory) {
+            bossDefeated = true;
+            loop(); // Lanjutkan game loop untuk memproses kemenangan
+        } else {
+            // Jika kalah, mundur satu langkah agar tidak langsung battle lagi
+            if (exitX > 0) px = exitX - 1;
+            if (exitY > 0) py = exitY - 1;
+            ox = 0; oy = 0;
+            startTimer(); // Lanjutkan waktu jika kalah/kabur
+            loop();
         }
+    }
+});
 
-        function sendResultToParent(status, treasures) {
-            window.parent.postMessage({
-                type: 'dungeonResult',
-                uid: studentUid,
-                status: status,
-                treasures: treasures
-            }, '*'); // Gunakan origin yang lebih spesifik di produksi
-        }
+function keyPressed() {
+    // Panggil fungsi logika game dengan input dari keyboard p5.js
+    gameInput(key, keyCode);
+}
 
-        // --- MANTRA BARU: Mendengarkan hasil pertarungan dari parent ---
-        window.addEventListener('message', (event) => {
-            if (event.data && event.data.type === 'dungeonBattleResult') {
-                const { victory, monsterPos } = event.data;
-                if (victory) {
-                    handleBattleWin(monsterPos);
-                } else {
-                    handleBattleLoss();
-                }
-            }
-        });
+// --- MANTRA BARU: Fungsi Input Game (Bisa dari Keyboard atau Tombol Layar) ---
+function simulateMove(code) {
+    gameInput('', code); // Panggil dengan key kosong untuk gerakan murni
+}
 
+function gameInput(k, kc) {
+  //y forward
+  //x back
 
-        // --- Konfigurasi Game ---
-        const gameContainer = document.getElementById('game-container');
-        const treasureCountEl = document.getElementById('treasure-count');
-        const quizModal = document.getElementById('quiz-modal');
-        const winModal = document.getElementById('win-modal');
-        const questionTextEl = document.getElementById('question-text');
-        const answerOptionsEl = document.getElementById('answer-options');
-        const spinner = document.getElementById('spinner');
-        const quizContent = document.getElementById('quiz-content');
-        const feedbackText = document.getElementById('feedback-text');
-        const closeWinModalButton = document.getElementById('close-win-modal');
+  if (gameOver) return; // Stop movement if game over
+  if (hp <= 0) return; // Stop if dead
 
-        // 0 = Jalan, 1 = Dinding, 2 = Pemain, 3 = Monster, 4 = Harta Karun, 5 = Pintu Keluar
-        const NUM_MONSTERS = 5;
-        const NUM_TREASURES = 7;
+  //Invertable Wall Colliders
+  //var leftWall = poll(w/2-15-30*px, h/2+15-30*py, ObstructionSeed, ObstructionPercentage) != invertedV.contains([w/2-15-30*px, h/2+15-30*py])
+  //var rightWall = poll(w/2+15-30*px, h/2+15-30*py, ObstructionSeed, ObstructionPercentage) != invertedV.contains([w/2+15-30*px, h/2+15-30*py])
+  //var bottomWall = poll(h/2+15-30*py, w/2-15-30*px, ObstructionSeed, ObstructionPercentage) != invertedH.contains([h/2+15-30*py, w/2-15-30*px])
+  //var topWall = poll(h/2-15-30*py, w/2-15-30*px, ObstructionSeed, ObstructionPercentage) != invertedH.contains([h/2-15-30*py, w/2-15-30*px])
 
-        const baseMaze = [
-            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-            [1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
-            [1, 0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 1],
-            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1],
-            [1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1],
-            [1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
-            [1, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1],
-            [1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1],
-            [1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 1, 0, 1],
-            [1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1],
-            [1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1],
-            [1, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1],
-            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-            [1, 0, 1, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 0, 0],
-            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-        ];
+  //One Way Wall Colliders
+  //leftWall = leftWall || (poll(w/2-15-30*px, h/2+15-30*py, ObstructionSeed+"w", ObstructionPercentage/4) && poll(w/2-15-30*px, h/2+15-30*py,ObstructionSeed+"wd",50))
+  //add respective polls arguments to direction poll
+  //rightWall = rightWall || (poll(w/2+15-30*px, h/2+15-30*py, ObstructionSeed+"w", ObstructionPercentage/4) && !poll(w/2+15-30*px, h/2+15-30*py,ObstructionSeed+"wd",50))
+  //bottomWall = bottomWall || (poll(h/2+15-30*py, w/2-15-30*px, ObstructionSeed+"w", ObstructionPercentage/4) && !poll(h/2+15-30*py, w/2-15-30*px,ObstructionSeed+"wd",50))
+  //topWall = topWall || (poll(h/2-15-30*py, w/2-15-30*px, ObstructionSeed+"w", ObstructionPercentage/4) && poll(h/2-15-30*py, w/2-15-30*px,ObstructionSeed+"wd",50))
 
-        let maze, playerPos, initialPlayerPos;
-        let monsters = [];
-        let treasureCollected = 0;
-        let gameActive = true;
-        let currentMonsterPos = null;
+  //Added arrow key support for Sydney
+  var moveUp = kc == 38 //|| k=="W"
+  var moveLeft = kc == 37 //|| k=="S"
+  var moveDown = kc == 40 //|| k=="A"
+  var moveRight = kc == 39 //|| k=="D"
 
-        function initializeLevel() {
-            maze = JSON.parse(JSON.stringify(baseMaze)); // Deep copy
+  var invertUp = k == "W"
+  var invertDown = k == "S"
+  var invertLeft = k == "A"
+  var invertRight = k == "D"
 
-            const emptyCells = [];
-            for (let y = 0; y < maze.length; y++) {
-                for (let x = 0; x < maze[y].length; x++) {
-                    if (maze[y][x] === 0) {
-                        emptyCells.push({ x, y });
-                    }
-                }
-            }
+  var IC = []
+  var HAxis = false;
 
-            // Shuffle empty cells
-            for (let i = emptyCells.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [emptyCells[i], emptyCells[j]] = [emptyCells[j], emptyCells[i]];
-            }
+  if (invertUp)
+    IC = [h / 2 - 15 - 30 * py, w / 2 - 15 - 30 * px]
+  if (invertDown)
+    IC = [h / 2 + 15 - 30 * py, w / 2 - 15 - 30 * px]
+  if (invertLeft)
+    IC = [w / 2 - 15 - 30 * px, h / 2 + 15 - 30 * py]
+  if (invertRight)
+    IC = [w / 2 + 15 - 30 * px, h / 2 + 15 - 30 * py]
 
-            const placeItem = (itemCode) => {
-                const pos = emptyCells.pop();
-                if (pos) {
-                    maze[pos.y][pos.x] = itemCode;
-                    return pos;
-                }
-                return null;
-            };
+  HAxis = invertUp || invertDown
 
-            playerPos = placeItem(2);
-            initialPlayerPos = { ...playerPos }; // Save initial position
+  //console.log(wallCount)
 
-            placeItem(5); // Exit
+  var Wall
+  var direction = true//(moveRight || moveDown) ? !poll(IC[0], IC[1], ObstructionSeed + "wd", 50) : poll(IC[0], IC[1], ObstructionSeed + "wd", 50)
+  
+  if (HAxis) {
+    Wall = poll(IC[0], IC[1], ObstructionSeed, ObstructionPercentage) != invertedH.contains(IC)
+    var BWall = ((poll(IC[0], IC[1], ObstructionSeed + "w", ObstructionPercentage / 4) && direction) && !invertedH.contains(IC))
+    //Wall = Wall || BWall
+    if (!IC.equals([]) && (Wall || wallCount > 0)) {
+      if (invertedH.contains(IC))
+        invertedH.splice(invertedH.indexOf(IC), 1) //uninvert
+      else if (!(BWall && !Wall))
+        invertedH.push(IC) //invert
+    }
+  } else {
+    Wall = poll(IC[0], IC[1], ObstructionSeed, ObstructionPercentage) != invertedV.contains(IC)
+    var BWall = ((poll(IC[0], IC[1], ObstructionSeed + "w", ObstructionPercentage / 4) && direction) && !invertedV.contains(IC))
+    //Wall = Wall || BWall
+    if (!IC.equals([]) && (Wall || wallCount > 0)) {
+      if (invertedV.contains(IC))
+        invertedV.splice(invertedV.indexOf(IC), 1) //uninvert
+      else if (!(BWall && !Wall))
+        invertedV.push(IC) //invert
+    }
+  }
+  if (!IC.equals([])) {
+    if (Wall)
+      wallCount++
+      else if (wallCount && !(BWall && !Wall))
+        wallCount--
+  }
 
-            monsters = []; // Reset monsters
-            for (let i = 0; i < NUM_MONSTERS; i++) {
-                const pos = placeItem(3);
-                if (pos) {
-                    monsters.push(pos);
-                }
-            }
+  if (moveUp)
+    IC = [h / 2 - 15 - 30 * py, w / 2 - 15 - 30 * px]
+  else if (moveDown)
+    IC = [h / 2 + 15 - 30 * py, w / 2 - 15 - 30 * px]
+  else if (moveLeft)
+    IC = [w / 2 - 15 - 30 * px, h / 2 + 15 - 30 * py]
+  else if (moveRight)
+    IC = [w / 2 + 15 - 30 * px, h / 2 + 15 - 30 * py]
+  else
+    IC = []
 
-            for (let i = 0; i < NUM_TREASURES; i++) {
-                placeItem(4);
-            }
-        }
+  direction = (moveRight || moveDown) ? !poll(IC[0], IC[1], ObstructionSeed + "wd", 50) : poll(IC[0], IC[1], ObstructionSeed + "wd", 50)
+  HAxis = moveUp || moveDown
+  var InvertD = moveDown || moveRight
 
-        // --- SISTEM KABUT BARU! ---
-        const FOG = 0;
-        const VISITED = 1;
-        const VISIBLE = 2;
-        const visibilityRadius = 2.5; // Jarak pandang pemain
-        let visibility = [];
+  if (!IC.equals([])) {
+    if (HAxis) {
+      Wall = poll(IC[0], IC[1], ObstructionSeed, ObstructionPercentage) != invertedH.contains(IC)
+      Wall = Wall || ((poll(IC[0], IC[1], ObstructionSeed + "w", ObstructionPercentage / 4) && direction) && !invertedH.contains(IC))
+    } else {
+      Wall = poll(IC[0], IC[1], ObstructionSeed, ObstructionPercentage) != invertedV.contains(IC)
+      Wall = Wall || ((poll(IC[0], IC[1], ObstructionSeed + "w", ObstructionPercentage / 4) && direction) && !invertedV.contains(IC))
+    }
+    //Wall = Wall || (poll(IC[0], IC[1], ObstructionSeed + "w", ObstructionPercentage / 4) && InvertD != poll(IC[0], IC[1], ObstructionSeed + "wd", 50))
 
-        function initializeVisibility() {
-            visibility = Array(maze.length).fill(0).map(() => Array(maze[0].length).fill(FOG));
-        }
+  } else {
+    Wall = false;
+  }
 
-        function updateVisibility() {
-            for (let y = 0; y < maze.length; y++) {
-                for (let x = 0; x < maze[0].length; x++) {
-                    if (visibility[y][x] === VISIBLE) {
-                        visibility[y][x] = VISITED;
-                    }
-                }
-            }
+  //console.log([(poll(IC[0], IC[1], ObstructionSeed + "w", ObstructionPercentage / 4), poll(IC[0], IC[1], ObstructionSeed + "wd", 50))])
 
-            for (let y = playerPos.y - Math.ceil(visibilityRadius); y <= playerPos.y + Math.ceil(visibilityRadius); y++) {
-                for (let x = playerPos.x - Math.ceil(visibilityRadius); x <= playerPos.x + Math.ceil(visibilityRadius); x++) {
-                    if (y >= 0 && y < maze.length && x >= 0 && x < maze[0].length) {
-                        const distance = Math.sqrt(Math.pow(playerPos.x - x, 2) + Math.pow(playerPos.y - y, 2));
-                        if (distance <= visibilityRadius) {
-                             visibility[y][x] = VISIBLE;
-                        }
-                    }
-                }
-            }
-        }
-
-        // --- Fungsi Utama Game ---
-
-        function drawMaze() {
-            // MANTRA BARU YANG LEBIH AMAN!
-            gameContainer.replaceChildren(); 
-            for (let y = 0; y < maze.length; y++) {
-                for (let x = 0; x < maze[y].length; x++) {
-                    const cell = document.createElement('div');
-                    cell.classList.add('grid-cell');
-                    
-                    const visibilityStatus = visibility[y][x];
-
-                    if (visibilityStatus === FOG) {
-                        cell.classList.add('fog');
-                    } else {
-                        switch (maze[y][x]) {
-                            case 1: cell.classList.add('wall'); break;
-                            case 0: cell.classList.add('path'); break;
-                            case 2: cell.classList.add('player'); break;                            
-                            case 3:
-                                cell.classList.add('monster');
-                                const randomMonsterImg = monsterImageUrls[Math.floor(Math.random() * monsterImageUrls.length)];
-                                cell.style.backgroundImage = `url('${randomMonsterImg}')`;
-                                break;
-                            case 4: cell.classList.add('treasure'); break;
-                            case 5: cell.classList.add('exit'); break;
-                        }
-                        if (visibilityStatus === VISITED) {
-                             cell.classList.add('visited');
-                        }
-                    }
-                    gameContainer.appendChild(cell);
-                }
-            }
-        }
-
-        function moveMonsters() {
-            const monstersToMove = [...monsters];
-            for (const monster of monstersToMove) {
-                if (!gameActive) break;
-
-                if (visibility[monster.y][monster.x] !== VISIBLE) {
-                    continue;
-                }
-
-                const dx = playerPos.x - monster.x;
-                const dy = playerPos.y - monster.y;
-
-                // If adjacent, ATTACK!
-                if (Math.abs(dx) <= 1 && Math.abs(dy) <= 1) {
-                    handleInteraction(3, monster.x, monster.y);
-                    continue;
-                }
-
-                // If not adjacent, move closer
-                let newX = monster.x;
-                let newY = monster.y;
-
-                if (Math.abs(dx) > Math.abs(dy)) {
-                    newX += Math.sign(dx);
-                } else if (dy !== 0) {
-                    newY += Math.sign(dy);
-                } else if (dx !== 0) {
-                    newX += Math.sign(dx);
-                }
-
-                // Check if the new position is a path (0).
-                if (maze[newY] && maze[newY][newX] === 0) {
-                    maze[monster.y][monster.x] = 0; // Clear old position
-                    monster.x = newX;
-                    monster.y = newY;
-                    maze[newY][newX] = 3; // Move to new position
-                }
-            }
-        }
-
-        function movePlayer(dx, dy) {
-            if (!gameActive) return;            
-             const newX = playerPos.x + dx;
-            const newY = playerPos.y + dy;
-            if (newY < 0 || newY >= maze.length || newX < 0 || newX >= maze[0].length || maze[newY][newX] === 1) return;
-
-            const targetCell = maze[newY][newX];
-
-            if (targetCell === 3) {
-                handleInteraction(3, newX, newY);
-                return;
-            }
-
-            maze[playerPos.y][playerPos.x] = 0;
-            playerPos = { x: newX, y: newY };
-            maze[playerPos.y][playerPos.x] = 2; // Place player on map before monster turn
-
-            if (targetCell === 4 || targetCell === 5) {
-                handleInteraction(targetCell, newX, newY);
-            }
-
-            if (gameActive) {
-                moveMonsters();
-            }
-            
-            updateVisibility();
-            drawMaze();
-        }
-
-        function handleInteraction(cellType, x, y) {
-            switch (cellType) {
-                case 3:
-                    // --- PERUBAHAN BESAR: Minta pertarungan ke parent, bukan showQuiz() ---
-                    gameActive = false; // Jeda permainan
-                    window.parent.postMessage({ type: 'dungeonBattleStart', uid: studentUid, monsterPos: { x, y } }, '*');
-                    break;
-                case 4:
-                    treasureCollected++;
-                    treasureCountEl.textContent = treasureCollected;
-                    maze[y][x] = 0; // Clear treasure from maze
-                    break;
-                case 5:
-                    showWinScreen("MISI SELESAI!", `Kamu berhasil keluar dengan membawa ${treasureCollected} harta karun!`, 'win');
-                    gameActive = false;
-                    break;
-            }
-        }
+  //shortened
+  /*
+  if (invertUp && (topWall || wallCount>0))
+    {
+      if (invertedH.contains([h/2-15-30*py, w/2-15-30*px]))
+        invertedH.splice(invertedH.indexOf([h/2-15-30*py, w/2-15-30*px]),1) //uninvert
+      else
+        invertedH.push([h/2-15-30*py, w/2-15-30*px]) //invert
         
-        // --- FUNGSI BARU: Menangani hasil pertarungan ---
-        function handleBattleWin(monsterPos) {
-            // Hapus monster dari peta dan dari daftar
-            if (monsterPos) {
-                maze[monsterPos.y][monsterPos.x] = 0; 
-                monsters = monsters.filter(m => m.x !== monsterPos.x || m.y !== monsterPos.y);
+      if (topWall)
+         wallCount++
+      else
+        wallCount--
+    }
+  if (invertDown && (bottomWall || wallCount>0))
+    {
+      if (invertedH.contains([h/2+15-30*py, w/2-15-30*px]))
+        invertedH.splice(invertedH.indexOf([h/2+15-30*py, w/2-15-30*px]),1)
+      else
+        invertedH.push([h/2+15-30*py, w/2-15-30*px])
+        
+      if (bottomWall)
+         wallCount++
+      else
+        wallCount--  
+    }
+  if (invertLeft && (leftWall || wallCount>0))
+    {
+      if (invertedV.contains([w/2-15-30*px, h/2+15-30*py]))
+        invertedV.splice(invertedV.indexOf([w/2-15-30*px, h/2+15-30*py]),1)
+      else
+        invertedV.push([w/2-15-30*px, h/2+15-30*py])
+      if (leftWall)
+         wallCount++
+      else
+        wallCount--
+    }
+  if (invertRight && (rightWall || wallCount>0))
+    {
+      if (invertedV.contains([w/2+15-30*px, h/2+15-30*py]))
+        invertedV.splice(invertedV.indexOf([w/2+15-30*px, h/2+15-30*py]),1)
+      else
+        invertedV.push([w/2+15-30*px, h/2+15-30*py])
+      if (rightWall)
+         wallCount++
+      else
+        wallCount--
+    }*/
+
+  if (moveUp && !Wall) {
+    checkEntityInteraction(px, py + 1);
+    py += 1
+    oy = -30
+  } else if (moveLeft && !Wall) {
+    checkEntityInteraction(px + 1, py);
+    px += 1
+    ox = -30
+  } else if (moveDown && !Wall) {
+    checkEntityInteraction(px, py - 1);
+    py -= 1
+    oy = 30
+  } else if (moveRight && !Wall) {
+    checkEntityInteraction(px - 1, py);
+    px -= 1
+    ox = 30
+  }
+
+}
+
+// --- MANTRA BARU: Logika Interaksi Entity ---
+function checkEntityInteraction(targetPx, targetPy) {
+    const key = targetPx + "," + targetPy;
+    if (removedEntities[key]) return; // Sudah diambil/hancur
+
+    // Cek tipe entity di koordinat target (gunakan koordinat dunia pixel)
+    // Ingat: poll menggunakan (x, y). Di sini kita punya grid coordinates.
+    // Konversi grid ke world: x = targetPx * 30, y = targetPy * 30
+    // TAPI tunggu, di draw loop: poll(x - 30 * px, ...). 
+    // Jika px=0, x=0. Jika px=1, x=-30.
+    // Jadi World Coordinate = Grid Coordinate * 30?
+    // Mari cek poll di draw: poll(x - 30*px, y - 30*py).
+    // Saat menggambar tile di grid (0,0) relatif terhadap player, argumennya adalah (0,0).
+    // Jika player di (0,0), tile (0,0) adalah (0,0).
+    // Jika player di (1,0), tile (1,0) relatif player adalah (0,0).
+    // Argumen poll: (0 - 30*1) = -30.
+    // Jadi poll menggunakan World Coordinate.
+    // World X = (w/2) - 30 * GridX. (Kita gunakan pusat tile sekarang)
+    
+    const centerOffset = w / 2;
+    const wx = centerOffset - 30 * targetPx;
+    const wy = centerOffset - 30 * targetPy;
+
+    // Cek Trap (Seed "Trap", 5%)
+    if (pollEntity(wx, wy, "Trap", 1)) {
+        hp -= 5;
+        updateUI();
+        removedEntities[key] = true;
+        // Efek visual/suara bisa ditambahkan
+        if (hp <= 0) {
+            handleGameOver();
+        }
+        return;
+    }
+
+    // Cek Treasure (Seed "Treasure", 3%)
+    if (pollEntity(wx, wy, "Treasure", 1)) {
+        coins += 2;
+        updateUI();
+        removedEntities[key] = true;
+        return;
+    }
+
+    // Cek Time Potion (Seed "TimePotion", 5%)
+    if (pollEntity(wx, wy, "TimePotion", 2)) {
+        timeLeft += 15;
+        updateUI();
+        removedEntities[key] = true;
+        return;
+    }
+}
+
+// --- MANTRA BARU: Timer Logic ---
+function startTimer() {
+    if (timerInterval) clearInterval(timerInterval);
+    timerInterval = setInterval(() => {
+        if (!gameOver) {
+            timeLeft--;
+            updateUI();
+            if (timeLeft <= 0) {
+                if (isDummy) {
+                    resetGame();
+                } else {
+                    handleTimeOut();
+                }
             }
-            gameActive = true; // Lanjutkan permainan
-            drawMaze();
         }
+    }, 1000);
+}
 
-        function handleBattleLoss() {
-            // Kembalikan pemain ke posisi awal
-            maze[playerPos.y][playerPos.x] = 0;
-            playerPos = { ...initialPlayerPos };
-            maze[playerPos.y][playerPos.x] = 2;
-            
-            initializeVisibility(); // Reset kabut
-            updateVisibility();
-            
-            gameActive = true; // Lanjutkan permainan
-            drawMaze();
-        }
+function updateUI() {
+    document.getElementById('hp-display').innerText = Math.max(0, hp);
+    document.getElementById('hp-bar-fill').style.width = (Math.max(0, hp) / maxHp * 100) + "%";
+    document.getElementById('coin-display').innerText = coins;
+    document.getElementById('time-display').innerText = timeLeft;
+}
 
-        function showWinScreen(title, message, status) {
-            winModal.classList.remove('hidden');
-            document.getElementById('win-title').textContent = title;
-            document.getElementById('win-message').textContent = message;
-            
-            closeWinModalButton.onclick = () => {
-                // Kirim hasil ke parent window
-                sendResultToParent(status, treasureCollected);
-            };
-        }
+function resetGame() {
+    hp = maxHp;
+    if(isDummy) coins = 50;
+    timeLeft = 60;
+    px = 0; py = 0; ox = 0; oy = 0;
+    wallCount = 0;
+    invertedH = []; invertedV = [];
+    removedEntities = {};
+    gameOver = false;
+    
+    loop();
+    startTimer();
+    updateUI();
+}
 
-        // --- Event Listener ---
-        window.addEventListener('keydown', (e) => {
-            switch (e.key) {
-                case 'ArrowUp': movePlayer(0, -1); break;
-                case 'ArrowDown': movePlayer(0, 1); break;
-                case 'ArrowLeft': movePlayer(-1, 0); break;
-                case 'ArrowRight': movePlayer(1, 0); break;
-            }
-        });
+function handleTimeOut() {
+    gameOver = true;
+    if (timerInterval) clearInterval(timerInterval);
+    noLoop();
+    background(0);
+    fill(255, 0, 0);
+    textSize(30);
+    textAlign(CENTER);
+    text("TERKENA RACUN!", w/2, h/2);
+    
+    if (studentUid) {
+        window.parent.postMessage({
+            type: 'dungeonTimeout',
+            uid: studentUid
+        }, '*');
+    }
+}
 
-        // --- MANTRA BARU: Event Listener untuk Tombol di Layar ---
-        document.getElementById('btn-up').onclick = () => movePlayer(0, -1);
-        document.getElementById('btn-down').onclick = () => movePlayer(0, 1);
-        document.getElementById('btn-left').onclick = () => movePlayer(-1, 0);
-        document.getElementById('btn-right').onclick = () => movePlayer(1, 0);
+function handleGameOver(message = "GAME OVER") {
+    gameOver = true;
+    if (timerInterval) clearInterval(timerInterval);
+    noLoop();
+    // Gambar layar kalah
+    background(0);
+    fill(255, 0, 0);
+    textSize(30);
+    textAlign(CENTER);
+    text(message, w/2, h/2);
+    
+    if (studentUid) {
+        window.parent.postMessage({
+            type: 'dungeonResult',
+            uid: studentUid,
+            status: 'loss',
+            treasures: 0
+        }, '*');
+    }
+}
 
-        // --- Inisialisasi Game ---
-        initializeLevel();
-        initializeVisibility();
-        updateVisibility();
-        drawMaze();
-    </script>
+function poll(x, y, seed, percentage) {
+  if (seed == undefined) {
+    seed = "Witty!"
+  }
+  if (percentage == undefined) {
+    percentage = 40
+  }
+  return (~"0123456789abcdef".substring(0, 16 * percentage / 100).indexOf(md5(x + " " + y + " " + seed)[0])) != 0
+}
+
+// --- MANTRA BARU: Fungsi Poll Khusus Entity (Lebih Akurat untuk Persentase Kecil) ---
+function pollEntity(x, y, seed, percentage) {
+    let hash = md5(x + " " + y + " " + seed);
+    let val = parseInt(hash.substring(0, 4), 16); // Ambil 4 karakter hex (16 bit)
+    return val < (65535 * percentage / 100);
+}
+
+function draw() {
+  background(26, 31, 38)
+  stroke(255, 255, 255)
+  strokeWeight(3)
+  
+  // --- MANTRA BARU: Gambar Pintu Keluar ---
+  var screenExitX = w/2 + (exitX - px) * 30 + ox;
+  var screenExitY = h/2 + (exitY - py) * 30 + oy;
+  
+  // Gambar Exit jika dalam layar
+  if (screenExitX > -50 && screenExitX < w + 50 && screenExitY > -50 && screenExitY < h + 50) {
+      fill(0, 255, 0); // Hijau
+      noStroke();
+      rect(screenExitX - 10, screenExitY - 10, 20, 20);
+      fill(255);
+      textSize(10);
+      textAlign(CENTER);
+      text("EXIT", screenExitX, screenExitY - 15);
+      stroke(255); // Reset stroke
+  }
+
+  for (var i=0; i<wallCount; i++)
+    {
+      line(10+10*i,h-10,10+10*i,h-20)
+    }
+  
+  for (var x = -(w % 30) - 15; x <= w; x += 30) {
+    for (var y = -(h % 30) - 15; y <= h; y += 30) {
+      //x -= px
+      //y -= py
+
+      //Math.Floor(((w/2)-(-(w%30)-15))/30)
+      var alpha = 255 - (abs(x - w / 2) + abs(y - h / 2))
+      stroke(255, 255, 255, alpha)
+
+      //Vertical Field
+      if (poll(x - 30 * px, y - 30 * py, ObstructionSeed, ObstructionPercentage) != invertedV.contains([x - 30 * px, y - 30 * py]))
+        line(x + ox, y + oy, x + ox, y - 27 + oy)
+      else if (poll(x - 30 * px, y - 30 * py, ObstructionSeed + "w", ObstructionPercentage / 4) && !invertedV.contains([x - 30 * px, y - 30 * py])) {
+        var d = -1 + 2 * poll(x - 30 * px, y - 30 * py, ObstructionSeed + "wd", 50)
+        stroke(0, 56, 204, alpha)
+        line(x + ox, y + oy, x + ox + 5 * d, y - 27 / 2 + oy)
+        line(x + ox + 5 * d, y - 27 / 2 + oy, x + ox, y - 27 + oy)
+      }
+
+      stroke(255, 255, 255, 255 - (abs(x - w / 2) + abs(y - h / 2)))
+        //Horizontal Field
+      if (poll(y - 30 * py, x - 30 * px, ObstructionSeed, ObstructionPercentage) != invertedH.contains([y - 30 * py, x - 30 * px]))
+        line(x + ox, y + oy, x + ox + 28, y + oy)
+      else if (poll(y - 30 * py, x - 30 * px, ObstructionSeed + "w", ObstructionPercentage / 4) && !invertedH.contains([y - 30 * py, x - 30 * px])) {
+        var d = -1 + 2 * poll(y - 30 * py, x - 30 * px, ObstructionSeed + "wd", 50)
+        stroke(0, 56, 204, alpha)
+        line(x + ox, y + oy, x + ox + 28 / 2, y + oy + 5 * d)
+        line(x + ox + 28 / 2, y + oy + 5 * d, x + ox + 28, y + oy)
+      }
+      
+      // --- MANTRA BARU: Gambar Entity (Monster, Trap, Treasure) ---
+      // Kita perlu menghitung koordinat dunia untuk tile ini
+      // x dan y di loop ini adalah koordinat layar relatif terhadap offset px/py
+      // World Coord = (x - ox) + 30*px ? Tidak, x di loop sudah termasuk offset px secara implisit di poll
+      // poll dipanggil dengan (x - 30*px). Jadi World X = x - 30*px.
+      
+      // Gunakan pusat tile untuk entity (geser +15 pixel dari sudut kiri atas tile)
+      let wx = x + 15 - 30 * px;
+      let wy = y + 15 - 30 * py;
+      
+      // Kita perlu membulatkan ke grid terdekat karena loop x/y mungkin tidak pas di grid 30
+      // Tapi poll menggunakan koordinat float/int apa adanya.
+      // Sebenarnya loop x/y ini untuk menggambar garis grid.
+      // Entity berada di titik grid (kelipatan 30).
+      // Mari kita cek apakah wx/wy adalah kelipatan 30 (atau dekat).
+      // Karena x += 30, wx juga lompat 30.
+      // Kita bisa cek entity di koordinat ini.
+      
+      // Kunci untuk removedEntities
+      // Kita harus konversi wx/wy kembali ke grid index untuk key yang konsisten
+      // wx = centerOffset - 30 * gx  =>  30 * gx = centerOffset - wx  => gx = (centerOffset - wx) / 30
+      const centerOffset = w / 2;
+      let gx = Math.round((centerOffset - wx) / 30);
+      let gy = Math.round((centerOffset - wy) / 30);
+      let key = gx + "," + gy;
+      
+      if (!removedEntities[key]) {
+          // Cek Monster
+          if (pollEntity(wx, wy, "Monster", 2)) {
+              let drawX = x + ox + 15;
+              let drawY = y + oy + 15;
+              if (monsterImg && monsterImg.width > 1) {
+                  image(monsterImg, drawX - 10, drawY - 10, 20, 20);
+              } else {
+                  fill(255, 0, 0); noStroke(); textAlign(CENTER, CENTER);
+                  text("👹", drawX, drawY);
+              }
+          }
+          // Cek Trap
+          else if (pollEntity(wx, wy, "Trap", 1)) {
+              let drawX = x + ox + 15;
+              let drawY = y + oy + 15;
+              if (trapImg && trapImg.width > 1) {
+                  image(trapImg, drawX - 10, drawY - 10, 20, 20);
+              } else {
+                  fill(255, 100, 0); noStroke(); textAlign(CENTER, CENTER);
+                  text("💣", drawX, drawY);
+              }
+          }
+          // Cek Treasure
+          else if (pollEntity(wx, wy, "Treasure", 1)) {
+              let drawX = x + ox + 15;
+              let drawY = y + oy + 15;
+              if (treasureImg && treasureImg.width > 1) {
+                  image(treasureImg, drawX - 10, drawY - 10, 20, 20);
+              } else {
+                  fill(255, 215, 0); noStroke(); textAlign(CENTER, CENTER);
+                  text("💎", drawX, drawY);
+              }
+          }
+          // Cek Time Potion
+          else if (pollEntity(wx, wy, "TimePotion", 2)) {
+              let drawX = x + ox + 15;
+              let drawY = y + oy + 15;
+              fill(26, 31, 38); noStroke(); ellipse(drawX, drawY, 25, 25);
+              fill(255); textAlign(CENTER, CENTER);
+              text("⏳", drawX, drawY);
+          }
+      }
+    }
+  }
+  
+  // --- MANTRA BARU: Gambar Player (Wajah Pengguna) ---
+  // Gambar player terakhir agar di atas segalanya
+  if (playerAvatarImg) {
+      image(playerAvatarImg, w / 2 - 15, h / 2 - 15, 30, 30);
+  } else {
+      fill(0, 0, 255);
+      stroke(255);
+      ellipse(w / 2, h / 2, 10, 10);
+  }
+
+  if (oy != 0) {
+    if (oy > 0)
+      oy -= 6
+    if (oy < 0)
+      oy += 6
+  } else {
+    if (ox > 0)
+      ox -= 6
+    if (ox < 0)
+      ox += 6
+  }
+  
+  // --- MANTRA BARU: Cek Kondisi Menang ---
+  if (px === exitX && py === exitY && !gameOver) {
+      // --- MANTRA BARU: Lawan Monster Boss sebelum keluar ---
+      if (!bossDefeated) {
+          if (timerInterval) clearInterval(timerInterval); // Hentikan waktu saat battle
+          noLoop();
+          if (studentUid) {
+              window.parent.postMessage({ type: 'dungeonBattleStart', uid: studentUid, monsterPos: { x: px, y: py } }, '*');
+          } else {
+              bossDefeated = true; // Dummy mode menang otomatis
+              loop();
+          }
+          return;
+      }
+
+      gameOver = true;
+      if (timerInterval) clearInterval(timerInterval);
+      fill(255, 255, 0);
+      textSize(30);
+      textAlign(CENTER);
+      text("YOU WON!", w/2, h/2);
+      noLoop(); // Hentikan game loop
+      
+      // Kirim pesan ke parent window
+      if (studentUid) {
+          window.parent.postMessage({
+              type: 'dungeonResult',
+              uid: studentUid,
+              status: 'win',
+              treasures: Math.floor(coins / 5) + 5 // Hadiah default + koin yang didapat
+          }, '*');
+      }
+  }
+}
+
+document.addEventListener('keydown', function(ev) { ev.preventDefault(); }, true);
+
+// Allow inversion of blue walls in seperate inversion cache. Display inversion caches and have picker  
+</script>
 </body>
 </html>
