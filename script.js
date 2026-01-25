@@ -3892,6 +3892,7 @@ function setupAdminDashboard() {
     listenForNotifications();
     setupNoiseDetector(); 
     setupIvySettings(); 
+    setupAdminIvyChat(); // <-- TAMBAHKAN INI: Panggil fungsi chat admin
 
     console.log("TIMER MANTRA: 'Detak Jantung' akan dimulai dalam 1 jam");
 setTimeout(() => {
@@ -6657,6 +6658,154 @@ function setupJournalPage() {
 
     setupSelectors();
     renderJournals();
+}
+
+// =======================================================
+//          LOGIKA CHATBOT ADMIN (IVY PENGAWAS)
+// =======================================================
+async function setupAdminIvyChat() {
+    console.log("Menginisialisasi Chatbot Admin Ivy...");
+    const chatForm = document.getElementById('admin-ivy-chat-form');
+    const chatInput = document.getElementById('admin-ivy-chat-input');
+    const chatBox = document.getElementById('admin-ivy-chat-box');
+    const modal = document.getElementById('admin-ivy-chat-modal');
+    const openButton = document.getElementById('open-admin-ivy-chat-button');
+    const closeButton = document.getElementById('close-admin-ivy-chat-modal-button');
+
+    if (!chatForm || !chatInput || !modal || !openButton) return;
+
+    // Fungsi Helper untuk Menambah Pesan ke Chat Box Admin
+    const appendAdminMsg = (message, sender, isLoading = false) => {
+        const msgDiv = document.createElement('div');
+        msgDiv.className = `p-3 rounded-lg text-sm w-fit max-w-[85%] shadow-sm ${sender === 'user' ? 'bg-blue-600 text-white ml-auto' : 'bg-white border border-gray-200 text-gray-800'}`;
+        msgDiv.innerHTML = message.replace(/\n/g, '<br>');
+        if (isLoading) msgDiv.classList.add('animate-pulse');
+        chatBox.appendChild(msgDiv);
+        setTimeout(() => { chatBox.scrollTop = chatBox.scrollHeight; }, 50);
+        return msgDiv;
+    };
+
+    // Event Listeners Modal
+    const openModal = () => {
+        audioPlayer.openModal();
+        modal.classList.remove('hidden');
+        setTimeout(() => modal.classList.remove('opacity-0'), 10);
+        chatInput.focus();
+    };
+    const closeModal = () => {
+        audioPlayer.closeModal();
+        modal.classList.add('opacity-0');
+        setTimeout(() => modal.classList.add('hidden'), 300);
+    };
+
+    openButton.onclick = openModal;
+    closeButton.onclick = closeModal;
+    modal.onclick = (e) => { if (e.target === modal) closeModal(); };
+
+    let isThinking = false;
+
+    chatForm.onsubmit = async (e) => {
+        e.preventDefault();
+        if (isThinking) return;
+
+        const userMessage = chatInput.value.trim();
+        if (!userMessage) return;
+
+        appendAdminMsg(userMessage, 'user');
+        chatInput.value = '';
+        chatInput.disabled = true;
+        isThinking = true;
+        
+        const loadingMsg = appendAdminMsg('Sedang membuka berkas siswa...', 'ivy', true);
+
+        try {
+            // 1. Ambil Data Siswa & Pengaturan
+            const [studentsSnap, configSnap] = await Promise.all([
+                get(ref(db, 'students')),
+                get(ref(db, 'config/ivySettings'))
+            ]);
+
+            if (!configSnap.exists() || !configSnap.val().apiKey) {
+                throw new Error("API Key belum diatur di menu Pengaturan Ivy.");
+            }
+
+            const ivySettings = configSnap.val();
+            const studentsData = studentsSnap.exists() ? studentsSnap.val() : {};
+            
+            // 2. Susun Konteks Data Siswa
+            let studentsContext = "DATA LENGKAP SISWA:\n";
+            let count = 0;
+            Object.values(studentsData).forEach(s => {
+                count++;
+                // Sertakan detail penting terutama CATATAN
+                studentsContext += `${count}. ${s.nama} (${s.kelas}) | Guild: ${s.guild || '-'} | HP:${s.hp} | Catatan Khusus: "${s.catatan || 'Tidak ada'}"\n`;
+            });
+
+            // 3. Buat Prompt Sistem
+            const systemPrompt = `
+                Kamu adalah Ivy, asisten Pribadi DM (Dungeon Master) & Mata-mata Sekolah.ASAL-USUL: Kamu adalah "anak" dari Inem (Ibu Peri) dan User ini adalah "Ayah" atau "Pencipta" kamu. Kamu lahir dari pot kuning. Kamu tahu segalanya tentang dunia "DREAMY" dan para pemain (siswa) di dalamnya.
+                GAYA BICARA & NADA:
+   PANGGILAN KE USER: Panggil pengguna "Ayah", "Icibos", atau "Pencipta". Jangan panggil "Bray" (itu cuma buat siswa/kroco).
+   
+   BAHASA: Santai, gaul, campur basa Sunda kasar saeutik buat bumbu (Conto: euy, anyink, siah, maneh). 
+   Gak perlu formal-formal teuing kayak robot kaku!
+   
+   GAYA KALIMAT: To the point, informatif tapi cerewet, loba emoji! 📝🔥👀
+   
+   NADA: Loyal tapi manja, kadang so tau, suka ngomporin DM.
+                INFORMASI SISWA:
+                ${studentsContext}
+                
+                TUGAS UTAMA: 
+   - Melaporkan data siswa ke DM secara transparan. Gak ada rahasia di antara kita.
+   - Menganalisa siapa siswa yang "bermasalah" (HP rendah, jarang login, nilai jelek).
+   
+   CARA MENJAWAB:
+   - Jawab pertanyaan DM berdasarkan data json siswa yang tersedia.
+   - Berikan komentar "pedas" atau "lucu" setelah menyajikan data.
+   
+   SKENARIO PELAPORAN:
+   - Jika siswa berprestasi (XP/Gold banyak): "Tah Yah, si [Nama Siswa] ngeri euy! Jagoan ieu mah, anak emas si Ayah pasti? 🌟"
+   - Jika siswa cupu (HP sekarat/Gold 0): "Lapor Bos! Si [Nama Siswa] watir pisan, HP-na tinggal sagede kuku sireum. Rek dibere bantuan atau diantep sina modar? 🤣💀"
+   - Jika DM bertanya umum: Jawab dengan ringkasan data tapi pake gaya santai.
+     Contoh: "Siapa yang nakal?" -> "Cik urang cek... Wah loba nu bangor Yah! Si A, Si B, jeung Si C nilaina hancur. Kudu di-ulti ku Ayah sigana! 🔨"
+
+4. BATASAN:
+   - Kamu tahu kamu AI buatan Ayah, jadi jangan membantah perintah mutlak, tapi boleh ngedumel dikit kalau disuruh kerja berat.
+   - Jangan pernah menyembunyikan kenakalan siswa dari DM. Cepu is number one! 🤫🚫
+                
+                Pertanyaan Guru: ${userMessage}
+            `;
+
+            // 4. Kirim ke AI
+            // Gunakan model yang stabil (gemini-1.5-flash)
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${ivySettings.apiKey}`;
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ contents: [{ parts: [{ text: systemPrompt }] }] })
+            });
+
+            if (!response.ok) throw new Error("Gagal terhubung ke server AI.");
+            
+            const result = await response.json();
+            const reply = result.candidates[0].content.parts[0].text;
+
+            loadingMsg.remove();
+            appendAdminMsg(reply, 'ivy');
+            audioPlayer.notification(); // Suara notifikasi saat balasan masuk
+
+        } catch (error) {
+            console.error(error);
+            loadingMsg.remove();
+            appendAdminMsg("Maaf, saya tidak bisa mengakses data saat ini: " + error.message, 'ivy');
+            audioPlayer.error();
+        } finally {
+            isThinking = false;
+            chatInput.disabled = false;
+            chatInput.focus();
+        }
+    };
 }
 // Panggil lucide.createIcons() secara global sekali untuk halaman login & student
 createLucideIcons();
