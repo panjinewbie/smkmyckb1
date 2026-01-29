@@ -4164,12 +4164,13 @@ setTimeout(() => {
 
                 studentRow.innerHTML = `
                     <td class="px-6 py-3 font-medium text-gray-900 whitespace-nowrap flex items-center">${avatar}<div class="ml-4">${statusEffectsHtml}<div class="font-bold">${student.nama}</div><div class="text-xs text-gray-500">NIS: ${student.nis} | ${student.kelas} | ${student.guild || 'No Guild'}</div></div></td>
-                    <td class="px-6 py-3 text-center text-lg font-bold">${student.level || 1}</td>
-                    <td class="px-6 py-3 text-center">${student.xp || 0}</td>
-                    <td class="px-6 py-3"><div class="w-full bg-gray-200 rounded-full h-4 relative"><div class="bg-red-500 h-4 rounded-full" style="width: ${hpPercent}%"></div><span class="absolute inset-0 text-center text-xs font-bold text-white">${student.hp || maxHp}/${maxHp}</span></div></td>
-                    <td class="px-6 py-3 text-center font-semibold text-yellow-600 flex items-center justify-center gap-1"><i data-lucide="coins" class="w-4 h-4"></i><span>${student.coin || 0}</span></td>
+                    <td class="px-6 py-3 text-center text-lg font-bold no-print">${student.level || 1}</td>
+                    <td class="px-6 py-3 text-center no-print">${student.xp || 0}</td>
+                    <td class="px-6 py-3 no-print"><div class="w-full bg-gray-200 rounded-full h-4 relative"><div class="bg-red-500 h-4 rounded-full" style="width: ${hpPercent}%"></div><span class="absolute inset-0 text-center text-xs font-bold text-white">${student.hp || maxHp}/${maxHp}</span></div></td>
+                    <td class="px-6 py-3 text-center font-semibold text-yellow-600 flex items-center justify-center gap-1 no-print"><i data-lucide="coins" class="w-4 h-4"></i><span>${student.coin || 0}</span></td>
+                    <td class="px-6 py-3 text-center print-only text-sm text-gray-600 italic">${student.catatan || '-'}</td>
                     
-                    <td class="px-6 py-3 text-center space-x-1">
+                    <td class="px-6 py-3 text-center space-x-1 no-print">
                         <button class="battle-init-btn p-2 bg-red-100 text-red-600 hover:bg-red-200 rounded-lg" data-id="${key}" title="Mulai Battle"><i data-lucide="swords" class="w-4 h-4"></i></button>
                         <button class="edit-btn p-2 bg-blue-100 text-blue-600 hover:bg-blue-200 rounded-lg" data-id="${key}" title="Edit Siswa"><i data-lucide="edit" class="w-4 h-4"></i></button>
                         <button class="delete-btn p-2 bg-gray-100 text-gray-600 hover:bg-gray-200 rounded-lg" data-id="${key}" title="Hapus Siswa"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
