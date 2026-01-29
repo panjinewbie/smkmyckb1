@@ -81,6 +81,30 @@
         #battle-options-container .option.incorrect { background: #ef4444; border-color: #ef4444; color: white; }
         #battle-options-container .option.disabled { opacity: 0.6; cursor: not-allowed; }
 
+        .print-only { display: none; }
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #admin-dashboard-main, #admin-dashboard-main * {
+                visibility: visible;
+            }
+            #admin-dashboard-main {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+            }
+            /* Sembunyikan elemen yang tidak perlu saat mencetak */
+            header, nav, #print-student-button, #add-student-button, #dashboard-filter-kelas, #dashboard-filter-guild, #pagination-controls, .loading-container, button, .no-print {
+                display: none !important;
+            }
+            /* Pastikan tabel terlihat jelas */
+            table { width: 100%; border-collapse: collapse; }
+            th, td { border: 1px solid #000; padding: 8px; color: black; }
+            .print-only { display: table-cell !important; }
+        }
+
     </style>
     <script src="https://cdn.lordicon.com/lordicon.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -165,9 +189,14 @@
             <h2 class="text-xl font-semibold">Tinjauan Siswa</h2>
             <p class="text-sm text-gray-500 mt-1">Data dari Firebase.</p>
         </div>
-        <button id="add-student-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg flex items-center">
-            <i data-lucide="user-plus" class="w-4 h-4 mr-2"></i>Tambah Siswa
-        </button>
+        <div class="flex gap-2">
+            <button id="print-student-button" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg flex items-center">
+                <i data-lucide="printer" class="w-4 h-4 mr-2"></i>Cetak Siswa
+            </button>
+            <button id="add-student-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg flex items-center">
+                <i data-lucide="user-plus" class="w-4 h-4 mr-2"></i>Tambah Siswa
+            </button>
+        </div>
     </div>
 
     <div class="p-4 grid grid-cols-1 md:grid-cols-2 gap-4 border-b">
@@ -188,11 +217,12 @@
         <table class="w-full text-sm text-left text-gray-500"><thead class="text-xs text-gray-700 uppercase bg-gray-50">
     <tr>
         <th scope="col" class="px-6 py-3">Siswa</th>
-        <th scope="col" class="px-6 py-3 text-center">Level</th>
-        <th scope="col" class="px-6 py-3 text-center">XP</th>
-        <th scope="col" class="px-6 py-3 text-center">HP</th>
-        <th scope="col" class="px-6 py-3 text-center">Koin</th>
-        <th scope="col" class="px-6 py-3 text-center">Aksi</th></tr>
+        <th scope="col" class="px-6 py-3 text-center no-print">Level</th>
+        <th scope="col" class="px-6 py-3 text-center no-print">XP</th>
+        <th scope="col" class="px-6 py-3 text-center no-print">HP</th>
+        <th scope="col" class="px-6 py-3 text-center no-print">Koin</th>
+        <th scope="col" class="px-6 py-3 text-center print-only">Catatan</th>
+        <th scope="col" class="px-6 py-3 text-center no-print">Aksi</th></tr>
         </thead>
         <tbody id="student-table-body">
                     <tr><td colspan="6">
@@ -1015,5 +1045,14 @@
     </div>
 </div>
     <script type="module" src="script.js"></script>
+    <script>
+        // Script untuk menangani tombol Cetak Siswa
+        document.addEventListener('DOMContentLoaded', () => {
+            const printBtn = document.getElementById('print-student-button');
+            if (printBtn) {
+                printBtn.addEventListener('click', () => window.print());
+            }
+        });
+    </script>
 </body>
 </html>
