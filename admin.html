@@ -149,6 +149,42 @@
                         </div>
                     </div>
                 </div>
+                <!-- TOMBOL BARU: Chat Siswa -->
+                <div class="relative">
+                    <button id="admin-chat-button" class="p-2 rounded-full relative" title="Chat dengan Siswa">
+                        <lord-icon
+                            src="https://cdn.lordicon.com/bpptgtfr.json"
+                            trigger="hover"
+                            colors="primary:#545454"
+                            style="width:25px;height:25px">
+                        </lord-icon>
+                        <span id="admin-chat-badge" class="absolute top-1 right-1 block h-2 w-2 rounded-full bg-blue-500 ring-1 ring-white hidden"></span>
+                    </button>
+                    <!-- Chat Popup Modal -->
+                    <div id="admin-chat-panel" class="absolute right-0 mt-2 w-96 bg-white/90 backdrop-blur-sm rounded-lg shadow-xl z-40 hidden flex flex-col max-h-96">
+                        <div class="p-4 border-b flex justify-between items-center">
+                            <h4 class="font-semibold text-gray-800">Chat dengan Siswa</h4>
+                            <button id="admin-chat-close" class="text-gray-500 hover:text-gray-700">
+                                <i data-lucide="x" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                        <div id="admin-chat-recipients" class="p-4 border-b max-h-32 overflow-y-auto bg-gray-50">
+                            <p class="text-sm text-gray-500">Pilih siswa untuk dikirim chat...</p>
+                        </div>
+                        <div id="admin-chat-messages" class="flex-1 p-4 overflow-y-auto space-y-3">
+                            <!-- Chat messages akan ditampilkan di sini -->
+                        </div>
+                        <div class="p-4 border-t bg-white">
+                            <div class="flex gap-2">
+                                <input type="text" id="admin-chat-input" class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ketik pesan...">
+                                <button id="admin-chat-send" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg">
+                                    <i data-lucide="send" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- TOMBOL BARU: Chatbot Admin -->
                 <button id="open-admin-ivy-chat-button" class="p-2 rounded-full" title="Tanya Ivy tentang Siswa">
                     <lord-icon
