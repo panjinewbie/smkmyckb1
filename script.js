@@ -6822,3 +6822,491 @@ async function setupAdminIvyChat() {
 }
 // Panggil lucide.createIcons() secara global sekali untuk halaman login & student
 createLucideIcons();
+
+// ========================================================
+// === SISTEM CHAT GAMIFIKASI DREAMY ===
+// ========================================================
+
+// Store untuk tracking chat state saat ini
+let currentChatState = {
+    currentUserId: null,
+    currentUserRole: null, // 'admin' atau 'student'
+    selectedRecipientId: null,
+    selectedRecipientName: null,
+    selectedRecipientLevel: null
+};
+
+// Inisialisasi Chat System
+function initializeChatSystem() {
+    onAuthStateChanged(auth, async (user) => {
+        if (!user) return;
+
+        const roleRef = ref(db, `roles/${user.uid}`);
+        const roleSnap = await get(roleRef);
+        const isAdmin = roleSnap.exists() && roleSnap.val().isAdmin;
+
+        currentChatState.currentUserId = user.uid;
+        currentChatState.currentUserRole = isAdmin ? 'admin' : 'student';
+
+        // Setup UI buttons & listeners berdasarkan role
+        if (isAdmin) {
+            setupAdminChatUI();
+        } else {
+            setupStudentChatUI(user.uid);
+        }
+    });
+}
+
+// ========== ADMIN CHAT FUNCTIONS ==========
+function setupAdminChatUI() {
+    const chatButton = document.getElementById('admin-chat-button');
+    const chatPanel = document.getElementById('admin-chat-panel');
+    const closeBtn = document.getElementById('admin-chat-close');
+    const chatInput = document.getElementById('admin-chat-input');
+    const sendBtn = document.getElementById('admin-chat-send');
+    const recipientsContainer = document.getElementById('admin-chat-recipients');
+
+    if (!chatButton) return;
+
+    // Toggle chat panel
+    chatButton.addEventListener('click', () => {
+        if (chatPanel.classList.contains('hidden')) {
+            chatPanel.classList.remove('hidden');
+            chatPanel.classList.add('chat-panel-animation');
+            loadAdminStudentsList();
+        } else {
+            chatPanel.classList.add('hidden');
+        }
+    });
+
+    closeBtn?.addEventListener('click', () => {
+        chatPanel.classList.add('hidden');
+    });
+
+    // Send message
+    sendBtn?.addEventListener('click', () => {
+        const message = chatInput.value.trim();
+        if (!message || !currentChatState.selectedRecipientId) {
+            showToast('Pilih siswa dan ketik pesan terlebih dahulu!', 'error');
+            return;
+        }
+
+        sendChatMessageFromAdmin(message, currentChatState.selectedRecipientId);
+        chatInput.value = '';
+    });
+
+    chatInput?.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendBtn?.click();
+        }
+    });
+
+    loadAdminStudentsList();
+}
+
+function loadAdminStudentsList() {
+    const studentsRef = ref(db, 'students');
+    const recipientsContainer = document.getElementById('admin-chat-recipients');
+    if (!recipientsContainer) return;
+
+    get(studentsRef).then((snap) => {
+        if (!snap.exists()) {
+            recipientsContainer.innerHTML = '<p class="text-sm text-gray-500">Tidak ada siswa.</p>';
+            return;
+        }
+
+        const students = snap.val();
+        recipientsContainer.innerHTML = '';
+        
+        Object.entries(students).forEach(([uid, data]) => {
+            const item = document.createElement('button');
+            item.className = 'chat-recipient-item block w-full';
+            if (currentChatState.selectedRecipientId === uid) {
+                item.classList.add('selected');
+            }
+            
+            item.innerHTML = `
+                <div class="flex justify-between items-center">
+                    <span class="font-semibold">${data.nama}</span>
+                    <span class="text-xs bg-gray-200 px-2 py-1 rounded">${data.kelas || '-'}</span>
+                </div>
+                <p class="text-xs text-gray-600 mt-1">Level ${data.level || 1}</p>
+            `;
+
+            item.addEventListener('click', () => {
+                currentChatState.selectedRecipientId = uid;
+                currentChatState.selectedRecipientName = data.nama;
+                currentChatState.selectedRecipientLevel = data.level || 1;
+                
+                // Update UI
+                document.querySelectorAll('.chat-recipient-item').forEach(el => {
+                    el.classList.remove('selected');
+                });
+                item.classList.add('selected');
+                
+                // Load conversation
+                loadAdminChatHistory(uid);
+            });
+
+            recipientsContainer.appendChild(item);
+        });
+    }).catch(err => console.error("Error loading students for chat:", err));
+}
+
+function loadAdminChatHistory(recipientId) {
+    const messagesContainer = document.getElementById('admin-chat-messages');
+    if (!messagesContainer) return;
+
+    const chatRef = ref(db, `chats/${currentChatState.currentUserId}_${recipientId}`);
+    
+    // Real-time listener
+    onValue(chatRef, (snap) => {
+        messagesContainer.innerHTML = '';
+        
+        if (!snap.exists()) {
+            messagesContainer.innerHTML = '<p class="text-sm text-gray-400 text-center py-4">Belum ada chat. Mulai percakapan!</p>';
+            return;
+        }
+
+        const messages = snap.val();
+        Object.entries(messages).forEach(([_, msg]) => {
+            const isAdmin = msg.senderId === currentChatState.currentUserId;
+            const messageEl = document.createElement('div');
+            messageEl.className = `chat-message ${isAdmin ? 'sent' : 'received'}`;
+            messageEl.innerHTML = `
+                <div class="chat-bubble ${isAdmin ? 'sent' : 'received'}">
+                    ${msg.text}
+                    <div class="chat-message-time">${formatTime(msg.timestamp)}</div>
+                </div>
+            `;
+            messagesContainer.appendChild(messageEl);
+        });
+
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    });
+}
+
+function sendChatMessageFromAdmin(messageText, recipientId) {
+    const chatRef = ref(db, `chats/${currentChatState.currentUserId}_${recipientId}`);
+    const messageKey = push(chatRef).key;
+
+    const messageData = {
+        senderId: currentChatState.currentUserId,
+        senderName: 'Admin',
+        recipientId: recipientId,
+        text: messageText,
+        timestamp: Date.now(),
+        read: false,
+        isFromAdmin: true
+    };
+
+    set(ref(db, `chats/${currentChatState.currentUserId}_${recipientId}/${messageKey}`), messageData)
+        .then(() => {
+            showToast('Pesan terkirim!');
+            // Save complete message data to notification for student to read
+            set(ref(db, `chatNotifications/${recipientId}/${messageKey}`), messageData);
+        })
+        .catch(err => {
+            console.error("Error sending message:", err);
+            showToast('Gagal mengirim pesan!', 'error');
+        });
+}
+
+// ========== STUDENT CHAT FUNCTIONS ==========
+function setupStudentChatUI(userId) {
+    const chatButton = document.getElementById('student-chat-button');
+    const chatPanel = document.getElementById('student-chat-panel');
+    const closeBtn = document.getElementById('student-chat-close');
+    
+    // Tab switching
+    const tabReceive = document.getElementById('student-chat-tab-receive');
+    const tabSend = document.getElementById('student-chat-tab-send');
+    const receiveContent = document.getElementById('student-chat-receive-content');
+    const sendContent = document.getElementById('student-chat-send-content');
+
+    if (!chatButton) return;
+
+    // Toggle chat panel
+    chatButton.addEventListener('click', async () => {
+        if (chatPanel.classList.contains('hidden')) {
+            chatPanel.classList.remove('hidden');
+            chatPanel.classList.add('chat-panel-animation');
+            
+            // Load student data untuk check level
+            const studentRef = ref(db, `students/${userId}`);
+            const studentSnap = await get(studentRef);
+            if (studentSnap.exists()) {
+                const studentLevel = studentSnap.val().level || 1;
+                enableStudentChatFeatures(userId, studentLevel);
+            }
+        } else {
+            chatPanel.classList.add('hidden');
+        }
+    });
+
+    closeBtn?.addEventListener('click', () => {
+        chatPanel.classList.add('hidden');
+    });
+
+    // Tab switching logic
+    tabReceive?.addEventListener('click', () => {
+        tabReceive.classList.add('bg-blue-500', 'text-white');
+        tabReceive.classList.remove('bg-gray-300', 'text-gray-700');
+        tabSend.classList.remove('bg-blue-500', 'text-white');
+        tabSend.classList.add('bg-gray-300', 'text-gray-700');
+        
+        receiveContent.classList.remove('hidden');
+        sendContent.classList.add('hidden');
+        
+        loadStudentReceivedMessages(userId);
+    });
+
+    tabSend?.addEventListener('click', () => {
+        tabSend.classList.add('bg-blue-500', 'text-white');
+        tabSend.classList.remove('bg-gray-300', 'text-gray-700');
+        tabReceive.classList.remove('bg-blue-500', 'text-white');
+        tabReceive.classList.add('bg-gray-300', 'text-gray-700');
+        
+        sendContent.classList.remove('hidden');
+        receiveContent.classList.add('hidden');
+    });
+
+    loadStudentReceivedMessages(userId);
+}
+
+function enableStudentChatFeatures(userId, studentLevel) {
+    const tabSend = document.getElementById('student-chat-tab-send');
+    const sendContent = document.getElementById('student-chat-send-content');
+    const inputArea = document.getElementById('student-chat-input-area');
+    const friendSearch = document.getElementById('student-chat-friend-search');
+    const friendsList = document.getElementById('student-chat-friends-list');
+    const chatInput = document.getElementById('student-chat-input');
+    const sendBtn = document.getElementById('student-chat-send');
+    const clearBtn = document.getElementById('student-chat-clear-recipient');
+    const recipientName = document.getElementById('student-chat-recipient-name');
+
+    const canChat = studentLevel >= 6;
+
+    if (!canChat) {
+        tabSend.disabled = true;
+        tabSend.classList.add('opacity-50', 'cursor-not-allowed');
+        tabSend.title = `Hanya siswa level 6+ yang bisa chat dengan teman (Level kamu: ${studentLevel})`;
+        sendContent.innerHTML = `
+            <div class="p-4 text-center">
+                <p class="text-gray-600 font-semibold">Fitur Terkunci 🔒</p>
+                <p class="text-sm text-gray-500 mt-2">Kamu bisa membuka fitur ini saat mencapai Level 6!</p>
+                <p class="text-xs text-gray-400 mt-4">Level saat ini: ${studentLevel} / 6</p>
+            </div>
+        `;
+        return;
+    }
+
+    // Student level 6+ - Enable full chat features
+    inputArea.classList.remove('hidden');
+    
+    // Load friends list
+    const studentsRef = ref(db, 'students');
+    get(studentsRef).then((snap) => {
+        if (!snap.exists()) return;
+
+        const students = snap.val();
+        friendsList.innerHTML = '';
+
+        Object.entries(students).forEach(([uid, data]) => {
+            if (uid === userId) return; // Skip self
+
+            const item = document.createElement('button');
+            item.className = 'chat-friend-item w-full';
+            item.innerHTML = `
+                <span>${data.nama}</span>
+                <span class="level-badge">Lv${data.level || 1}</span>
+            `;
+
+            item.addEventListener('click', () => {
+                currentChatState.selectedRecipientId = uid;
+                currentChatState.selectedRecipientName = data.nama;
+                currentChatState.selectedRecipientLevel = data.level || 1;
+
+                recipientName.value = `${data.nama} (Lv${data.level || 1})`;
+                inputArea.classList.remove('hidden');
+                
+                loadStudentChatHistory(userId, uid);
+            });
+
+            friendsList.appendChild(item);
+        });
+    });
+
+    // Clear recipient
+    clearBtn?.addEventListener('click', () => {
+        currentChatState.selectedRecipientId = null;
+        currentChatState.selectedRecipientName = null;
+        recipientName.value = '';
+        chatInput.value = '';
+        inputArea.classList.add('hidden');
+    });
+
+    // Send message
+    sendBtn?.addEventListener('click', () => {
+        const message = chatInput.value.trim();
+        if (!message) {
+            showToast('Ketik pesan terlebih dahulu!', 'error');
+            return;
+        }
+        if (!currentChatState.selectedRecipientId) {
+            showToast('Pilih teman untuk dikirim chat!', 'error');
+            return;
+        }
+
+        sendChatMessageFromStudent(userId, message, currentChatState.selectedRecipientId);
+        chatInput.value = '';
+    });
+
+    chatInput?.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendBtn?.click();
+        }
+    });
+
+    // Search friends
+    friendSearch?.addEventListener('input', (e) => {
+        const searchTerm = e.target.value.toLowerCase();
+        document.querySelectorAll('.chat-friend-item').forEach(item => {
+            const name = item.textContent.toLowerCase();
+            item.style.display = name.includes(searchTerm) ? 'flex' : 'none';
+        });
+    });
+}
+
+function loadStudentReceivedMessages(userId) {
+    const messagesContainer = document.getElementById('student-chat-received-messages');
+    if (!messagesContainer) return;
+
+    const chatNotificationsRef = ref(db, `chatNotifications/${userId}`);
+    
+    onValue(chatNotificationsRef, (snap) => {
+        messagesContainer.innerHTML = '';
+
+        if (!snap.exists()) {
+            messagesContainer.innerHTML = '<div class="p-4 text-center text-gray-400"><p>Belum ada pesan dari guru atau teman lain.</p></div>';
+            return;
+        }
+
+        const notifications = snap.val();
+        const messages = [];
+
+        // Setiap notification sudah berisi full message data
+        Object.entries(notifications).forEach(([key, notifData]) => {
+            // notifData bisa berisi pesan lengkap atau hanya timestamp
+            if (notifData && typeof notifData === 'object' && notifData.text) {
+                messages.push(notifData);
+            }
+        });
+
+        if (messages.length === 0) {
+            messagesContainer.innerHTML = '<div class="p-4 text-center text-gray-400"><p>Belum ada pesan.</p></div>';
+            return;
+        }
+
+        messages.forEach((msg) => {
+            const messageEl = document.createElement('div');
+            messageEl.className = 'bg-blue-50 p-3 rounded-lg border-l-4 border-blue-500 mb-2';
+            messageEl.innerHTML = `
+                <p class="font-semibold text-sm text-blue-900">${msg.senderName || 'Admin'}</p>
+                <p class="text-gray-700 text-sm mt-1">${msg.text}</p>
+                <p class="text-xs text-gray-500 mt-1">${msg.timestamp ? formatTime(msg.timestamp) : 'Baru saja'}</p>
+            `;
+            messagesContainer.appendChild(messageEl);
+        });
+    });
+}
+
+function loadStudentChatHistory(userId, friendId) {
+    const messagesContainer = document.getElementById('admin-chat-messages') || document.createElement('div');
+    
+    // Find the correct chat reference (could be userId_friendId or friendId_userId)
+    const chatRef1 = ref(db, `chats/${userId}_${friendId}`);
+    const chatRef2 = ref(db, `chats/${friendId}_${userId}`);
+
+    // Try first path
+    get(chatRef1).then((snap) => {
+        if (snap.exists()) {
+            displayChatHistory(snap.val(), userId, messagesContainer);
+        } else {
+            // Try second path
+            get(chatRef2).then((snap2) => {
+                if (snap2.exists()) {
+                    displayChatHistory(snap2.val(), userId, messagesContainer);
+                }
+            });
+        }
+    });
+}
+
+function displayChatHistory(messages, userId, container) {
+    container.innerHTML = '';
+    Object.entries(messages).forEach(([_, msg]) => {
+        const isSent = msg.senderId === userId;
+        const messageEl = document.createElement('div');
+        messageEl.className = `chat-message ${isSent ? 'sent' : 'received'}`;
+        messageEl.innerHTML = `
+            <div class="chat-bubble ${isSent ? 'sent' : 'received'}">
+                ${msg.text}
+                <div class="chat-message-time">${formatTime(msg.timestamp)}</div>
+            </div>
+        `;
+        container.appendChild(messageEl);
+    });
+    container.scrollTop = container.scrollHeight;
+}
+
+function sendChatMessageFromStudent(userId, messageText, friendId) {
+    // Create bidirectional chat reference
+    const chatRef = ref(db, `chats/${userId}_${friendId}`);
+    const messageKey = push(chatRef).key;
+
+    const messageData = {
+        senderId: userId,
+        senderName: 'Student', // Will be updated with actual name
+        recipientId: friendId,
+        text: messageText,
+        timestamp: Date.now(),
+        read: false,
+        isFromStudent: true
+    };
+
+    // Get student name for display
+    const studentRef = ref(db, `students/${userId}`);
+    get(studentRef).then((snap) => {
+        if (snap.exists()) {
+            messageData.senderName = snap.val().nama || 'Student';
+        }
+
+        set(ref(db, `chats/${userId}_${friendId}/${messageKey}`), messageData)
+            .then(() => {
+                showToast('Pesan terkirim!');
+                // Save complete message data to notification for recipient to read
+                set(ref(db, `chatNotifications/${friendId}/${messageKey}`), messageData);
+            })
+            .catch(err => {
+                console.error("Error sending message:", err);
+                showToast('Gagal mengirim pesan!', 'error');
+            });
+    });
+}
+
+function formatTime(timestamp) {
+    const date = new Date(timestamp);
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${hours}:${minutes}`;
+}
+
+// Initialize chat system when page loads
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => {
+        initializeChatSystem();
+    }, 500);
+});
