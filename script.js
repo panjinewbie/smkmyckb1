@@ -4168,7 +4168,7 @@ setTimeout(() => {
                     <td class="px-6 py-3 text-center no-print">${student.xp || 0}</td>
                     <td class="px-6 py-3 no-print"><div class="w-full bg-gray-200 rounded-full h-4 relative"><div class="bg-red-500 h-4 rounded-full" style="width: ${hpPercent}%"></div><span class="absolute inset-0 text-center text-xs font-bold text-white">${student.hp || maxHp}/${maxHp}</span></div></td>
                     <td class="px-6 py-3 text-center font-semibold text-yellow-600 flex items-center justify-center gap-1 no-print"><i data-lucide="coins" class="w-4 h-4"></i><span>${student.coin || 0}</span></td>
-                    <td class="px-6 py-3 text-center print-only text-sm text-gray-600 italic">${student.catatan || '-'}</td>
+                    <td class="px-6 py-3 text-left print-only text-sm text-gray-600 italic">${student.catatan || '-'}</td>
                     
                     <td class="px-6 py-3 text-center space-x-1 no-print">
                         <button class="battle-init-btn p-2 bg-red-100 text-red-600 hover:bg-red-200 rounded-lg" data-id="${key}" title="Mulai Battle"><i data-lucide="swords" class="w-4 h-4"></i></button>
@@ -4946,6 +4946,10 @@ async function handleGiveAdminReward(bountyId, bountyData, closeModalCallback) {
                         }
                         successMessage = `${action.operation === 'add' ? 'Menambahkan' : 'Mengurangi'} ${value} ${stat.toUpperCase()} untuk ${uids.length} siswa.`;
                         
+                        // --- ADD NOTIFICATION HERE ---
+                        const notifMsg = `Admin ${action.operation === 'add' ? 'memberikan' : 'mengurangi'} ${value} ${stat.toUpperCase()} kepadamu melalui Sihir nya.`;
+                        addNotification(notifMsg, 'magic_control', {}, uid);
+                        
                     } else if (action.type === 'effect') {
                         const effect = document.getElementById('effect-type').value;
                         
@@ -4965,9 +4969,17 @@ async function handleGiveAdminReward(bountyId, bountyData, closeModalCallback) {
                                 updates[`/students/${uid}/hp`] = 10;
                             }
                             successMessage = `Memberikan efek ${effect} ke ${uids.length} siswa (durasi ${durationInDays} hari).`;
+                            
+                            // --- ADD NOTIFICATION HERE ---
+                            const notifMsg = `Admin memberikan efek status: ${effect} kepadamu melalui Sihir nya.`;
+                            addNotification(notifMsg, 'magic_control', {}, uid);
                         } else {
                             updates[`/students/${uid}/statusEffects/${effect}`] = null; // Hapus efek
                             successMessage = `Menghapus efek ${effect} dari ${uids.length} siswa.`;
+                            
+                            // --- ADD NOTIFICATION HERE ---
+                            const notifMsg = `Admin menghapus efek status: ${effect} darimu melalui Sihir nya.`;
+                            addNotification(notifMsg, 'magic_control', {}, uid);
                         }
                     }
                 }
