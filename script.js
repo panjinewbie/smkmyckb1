@@ -4125,19 +4125,22 @@ setTimeout(() => {
             return kelasMatch && guildMatch;
         });
 
-            // --- Logika Pagination ---
-            const startIndex = (currentPage - 1) * itemsPerPage;
-            const endIndex = startIndex + itemsPerPage;
-            const paginatedStudents = filteredStudents.slice(startIndex, endIndex);
+        // --- Logika Pagination ---
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        const endIndex = startIndex + itemsPerPage;
+        const paginatedStudents = filteredStudents.slice(startIndex, endIndex);
 
         studentTableBody.innerHTML = '';
         let totalStudents = 0, totalLevel = 0, totalCoins = 0;
 
-            if (paginatedStudents.length === 0) {
+        if (paginatedStudents.length === 0) {
             studentTableBody.innerHTML = '<tr><td colspan="7" class="text-center p-8 text-gray-400">Tidak ada siswa yang cocok.</td></tr>';
         } else {
-                paginatedStudents.forEach(([key, student]) => {
-                // --- (Kode untuk membuat baris tabel tetap sama, tidak perlu diubah) ---
+            paginatedStudents.forEach(([key, student]) => {
+                // --- Tambahkan indikator online/offline ---
+                const isOnline = student.presence === true;
+                const statusDot = `<span title="${isOnline ? 'Online' : 'Offline'}" class="inline-block w-3 h-3 rounded-full mr-2 align-middle ${isOnline ? 'bg-green-500' : 'bg-red-500'} border border-white shadow"></span>`;
+
                 const studentRow = document.createElement('tr');
                 const maxHp = (student.level || 1) * 100;
                 const hpPercent = (student.hp / maxHp) * 100;
@@ -4163,7 +4166,7 @@ setTimeout(() => {
                 } else { statusEffectsHtml = '<span class="text-xs text-gray-400">-</span>'; }
 
                 studentRow.innerHTML = `
-                    <td class="px-6 py-3 font-medium text-gray-900 whitespace-nowrap flex items-center">${avatar}<div class="ml-4">${statusEffectsHtml}<div class="font-bold">${student.nama}</div><div class="text-xs text-gray-500">NIS: ${student.nis} | ${student.kelas} | ${student.guild || 'No Guild'}</div></div></td>
+                    <td class="px-6 py-3 font-medium text-gray-900 whitespace-nowrap flex items-center">${statusDot}${avatar}<div class="ml-4">${statusEffectsHtml}<div class="font-bold">${student.nama}</div><div class="text-xs text-gray-500">NIS: ${student.nis} | ${student.kelas} | ${student.guild || 'No Guild'}</div></div></td>
                     <td class="px-6 py-3 text-center text-lg font-bold no-print">${student.level || 1}</td>
                     <td class="px-6 py-3 text-center no-print">${student.xp || 0}</td>
                     <td class="px-6 py-3 no-print"><div class="w-full bg-gray-200 rounded-full h-4 relative"><div class="bg-red-500 h-4 rounded-full" style="width: ${hpPercent}%"></div><span class="absolute inset-0 text-center text-xs font-bold text-white">${student.hp || maxHp}/${maxHp}</span></div></td>
@@ -4179,18 +4182,18 @@ setTimeout(() => {
             });
         }
 
-            // Update summary stats berdasarkan SEMUA siswa yang terfilter, bukan hanya yang di halaman ini
-            filteredStudents.forEach(([_, student]) => {
-                totalStudents++;
-                totalLevel += (student.level || 1);
-                totalCoins += (student.coin || 0);
-            });
+        // Update summary stats berdasarkan SEMUA siswa yang terfilter, bukan hanya yang di halaman ini
+        filteredStudents.forEach(([_, student]) => {
+            totalStudents++;
+            totalLevel += (student.level || 1);
+            totalCoins += (student.coin || 0);
+        });
 
         document.getElementById('total-students').textContent = totalStudents;
         document.getElementById('average-level').textContent = totalStudents > 0 ? (totalLevel / totalStudents).toFixed(1) : '0';
         document.getElementById('total-coins').textContent = totalCoins;
         createLucideIcons();
-            renderPaginationControls(filteredStudents.length); // Render kontrol berdasarkan jumlah total item yang terfilter
+        renderPaginationControls(filteredStudents.length); // Render kontrol berdasarkan jumlah total item yang terfilter
     };
 
         // Pasang pendengar di filter dan panggil renderTable pertama kali
