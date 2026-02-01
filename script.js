@@ -7436,4 +7436,77 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => {
         initializeChatSystem();
     }, 500);
+});// ...existing code...
+
+// Fungsi untuk menampilkan pesan yang diterima
+function displayReceivedMessages(messages) {
+    const container = document.getElementById('student-chat-received-messages');
+    container.innerHTML = '';
+    
+    if (messages.length === 0) {
+        container.innerHTML = '<p class="text-sm text-gray-400 text-center py-4">Tidak ada pesan.</p>';
+        return;
+    }
+    
+    messages.forEach(msg => {
+        const messageEl = document.createElement('div');
+        messageEl.className = 'p-3 bg-blue-50 rounded-lg border-l-4 border-blue-500 cursor-pointer hover:bg-blue-100';
+        messageEl.innerHTML = `
+            <p class="text-sm font-semibold text-gray-800">${msg.senderName}</p>
+            <p class="text-sm text-gray-600">${msg.message}</p>
+            <p class="text-xs text-gray-400 mt-1">${new Date(msg.timestamp).toLocaleString()}</p>
+        `;
+        
+        // Tandai pesan sebagai sudah dibaca saat diklik
+        messageEl.addEventListener('click', () => {
+            markMessageAsRead(msg.id);
+            messageEl.classList.add('opacity-60');
+        });
+        
+        container.appendChild(messageEl);
+    });
+    
+    // Periksa apakah ada pesan yang belum dibaca
+    checkUnreadMessages();
+}
+
+// Fungsi untuk menandai pesan sebagai dibaca
+function markMessageAsRead(messageId) {
+    // Kirim ke server untuk menandai sebagai dibaca
+    fetch(`/api/messages/${messageId}/read`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' }
+    })
+    .then(res => res.json())
+    .then(() => {
+        // Update UI setelah berhasil
+        checkUnreadMessages();
+    })
+    .catch(err => console.error('Error marking message as read:', err));
+}
+
+// Fungsi untuk memeriksa apakah ada pesan yang belum dibaca
+function checkUnreadMessages() {
+    const chatBadge = document.getElementById('student-chat-badge');
+    const receivedMessagesContainer = document.getElementById('student-chat-received-messages');
+    
+    // Cek apakah ada pesan yang belum dibaca (tidak memiliki class 'opacity-60')
+    const unreadMessages = receivedMessagesContainer.querySelectorAll('div:not(.opacity-60)');
+    
+    if (unreadMessages.length > 0) {
+        chatBadge.classList.remove('hidden');
+    } else {
+        chatBadge.classList.add('hidden');
+    }
+}
+
+// Saat membuka tab Pesan Masuk, tandai semua sebagai dibaca
+document.getElementById('student-chat-tab-receive')?.addEventListener('click', () => {
+    const messages = document.querySelectorAll('#student-chat-received-messages > div');
+    messages.forEach(msg => {
+        msg.classList.add('opacity-60');
+    });
+    checkUnreadMessages();
 });
+
+// ...existing code...
