@@ -222,3 +222,129 @@ button:disabled { opacity: 0.7; cursor: not-allowed; }
     0% {transform: rotate(0);}
     100% {transform: rotate(360deg);}
 }
+
+/* --- CHAT FEATURE STYLING --- */
+.chat-message {
+    animation: slideIn 0.3s ease-out;
+    display: flex;
+    margin-bottom: 12px;
+}
+
+.chat-message.sent {
+    justify-content: flex-end;
+}
+
+.chat-message.received {
+    justify-content: flex-start;
+}
+
+.chat-bubble {
+    max-width: 70%;
+    padding: 10px 14px;
+    border-radius: 12px;
+    word-wrap: break-word;
+    font-size: 0.95rem;
+    line-height: 1.4;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.chat-bubble.sent {
+    background-color: #3b82f6;
+    color: white;
+    border-bottom-right-radius: 4px;
+}
+
+.chat-bubble.received {
+    background-color: #e5e7eb;
+    color: #1f2937;
+    border-bottom-left-radius: 4px;
+}
+
+.chat-message-time {
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin-top: 4px;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.chat-recipient-item {
+    padding: 8px 12px;
+    background-color: #f3f4f6;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 0.9rem;
+    text-align: left;
+}
+
+.chat-recipient-item:hover {
+    background-color: #e0e7ff;
+    border-color: #3b82f6;
+    transform: translateX(2px);
+}
+
+.chat-recipient-item.selected {
+    background-color: #3b82f6;
+    color: white;
+    border-color: #1d4ed8;
+}
+
+.chat-friend-item {
+    padding: 8px 12px;
+    background-color: #f3f4f6;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 0.9rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.chat-friend-item:hover {
+    background-color: #e0e7ff;
+    border-color: #3b82f6;
+}
+
+.chat-friend-item.level-locked {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.level-badge {
+    display: inline-block;
+    background-color: #fbbf24;
+    color: #78350f;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    margin-left: 8px;
+}
+
+.chat-panel-animation {
+    animation: popIn 0.2s ease-out;
+}
+
+@keyframes popIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95) translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
