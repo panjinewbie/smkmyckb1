@@ -6836,7 +6836,8 @@ let currentChatState = {
     currentUserRole: null, // 'admin' atau 'student'
     selectedRecipientId: null,
     selectedRecipientName: null,
-    selectedRecipientLevel: null
+    selectedRecipientLevel: null,
+    selectedRecipientIsAdmin: false // Flag baru untuk cek jika penerima adalah admin
 };
 
 // Inisialisasi Chat System
@@ -6865,6 +6866,7 @@ function setupAdminChatUI() {
     const chatButton = document.getElementById('admin-chat-button');
     const chatPanel = document.getElementById('admin-chat-panel');
     const closeBtn = document.getElementById('admin-chat-close');
+    const deleteBtn = document.getElementById('admin-chat-delete');
     const chatInput = document.getElementById('admin-chat-input');
     const sendBtn = document.getElementById('admin-chat-send');
     const recipientsContainer = document.getElementById('admin-chat-recipients');
@@ -6877,6 +6879,12 @@ function setupAdminChatUI() {
             chatPanel.classList.remove('hidden');
             chatPanel.classList.add('chat-panel-animation');
             loadAdminStudentsList();
+            
+            if (currentChatState.selectedRecipientId) {
+                deleteBtn?.classList.remove('hidden');
+            } else {
+                deleteBtn?.classList.add('hidden');
+            }
         } else {
             chatPanel.classList.add('hidden');
         }
@@ -6884,6 +6892,43 @@ function setupAdminChatUI() {
 
     closeBtn?.addEventListener('click', () => {
         chatPanel.classList.add('hidden');
+    });
+
+    // Delete chat history
+    deleteBtn?.addEventListener('click', async () => {
+        if (!currentChatState.selectedRecipientId) return;
+        
+        if (confirm(`Yakin ingin menghapus semua riwayat chat dengan ${currentChatState.selectedRecipientName}?`)) {
+            try {
+                const adminId = currentChatState.currentUserId;
+                const studentId = currentChatState.selectedRecipientId;
+
+                // 1. Hapus node chat utama (dua arah untuk memastikan bersih)
+                await remove(ref(db, `chats/${adminId}_${studentId}`));
+                await remove(ref(db, `chats/${studentId}_${adminId}`));
+
+                // 2. Hapus notifikasi di sisi siswa agar chat hilang dari "Pesan Masuk" mereka
+                const notifRef = ref(db, `chatNotifications/${studentId}`);
+                const notifSnap = await get(notifRef);
+                if (notifSnap.exists()) {
+                    const updates = {};
+                    notifSnap.forEach(child => {
+                        const msg = child.val();
+                        // Hapus pesan yang melibatkan admin ini
+                        if (msg.senderId === adminId || msg.recipientId === adminId) {
+                            updates[child.key] = null;
+                        }
+                    });
+                    if (Object.keys(updates).length > 0) await update(notifRef, updates);
+                }
+
+                showToast('Riwayat chat berhasil dihapus.');
+                document.getElementById('admin-chat-messages').innerHTML = '<p class="text-sm text-gray-400 text-center py-4">Belum ada chat. Mulai percakapan!</p>';
+            } catch (error) {
+                console.error("Error deleting chat:", error);
+                showToast('Gagal menghapus chat.', true);
+            }
+        }
     });
 
     // Send message
@@ -6942,6 +6987,9 @@ function loadAdminStudentsList() {
                 currentChatState.selectedRecipientName = data.nama;
                 currentChatState.selectedRecipientLevel = data.level || 1;
                 
+                // Show delete button
+                document.getElementById('admin-chat-delete')?.classList.remove('hidden');
+
                 // Update UI
                 document.querySelectorAll('.chat-recipient-item').forEach(el => {
                     el.classList.remove('selected');
@@ -7027,6 +7075,8 @@ function setupStudentChatUI(userId) {
     const tabSend = document.getElementById('student-chat-tab-send');
     const receiveContent = document.getElementById('student-chat-receive-content');
     const sendContent = document.getElementById('student-chat-send-content');
+    const conversationContent = document.getElementById('student-chat-conversation');
+    const inputArea = document.getElementById('student-chat-input-area');
 
     if (!chatButton) return;
 
@@ -7061,6 +7111,8 @@ function setupStudentChatUI(userId) {
         
         receiveContent.classList.remove('hidden');
         sendContent.classList.add('hidden');
+        conversationContent?.classList.add('hidden');
+        inputArea?.classList.add('hidden');
         
         loadStudentReceivedMessages(userId);
     });
@@ -7073,6 +7125,8 @@ function setupStudentChatUI(userId) {
         
         sendContent.classList.remove('hidden');
         receiveContent.classList.add('hidden');
+        conversationContent?.classList.add('hidden');
+        inputArea?.classList.add('hidden');
     });
 
     loadStudentReceivedMessages(userId);
@@ -7081,6 +7135,7 @@ function setupStudentChatUI(userId) {
 function enableStudentChatFeatures(userId, studentLevel) {
     const tabSend = document.getElementById('student-chat-tab-send');
     const sendContent = document.getElementById('student-chat-send-content');
+    const conversationContent = document.getElementById('student-chat-conversation');
     const inputArea = document.getElementById('student-chat-input-area');
     const friendSearch = document.getElementById('student-chat-friend-search');
     const friendsList = document.getElementById('student-chat-friends-list');
@@ -7106,40 +7161,71 @@ function enableStudentChatFeatures(userId, studentLevel) {
     }
 
     // Student level 6+ - Enable full chat features
-    inputArea.classList.remove('hidden');
+    // inputArea.classList.remove('hidden'); // Jangan tampilkan dulu sebelum pilih teman
     
-    // Load friends list
+    // Load friends list (Students AND Admins)
     const studentsRef = ref(db, 'students');
-    get(studentsRef).then((snap) => {
-        if (!snap.exists()) return;
+    const rolesRef = ref(db, 'roles');
 
-        const students = snap.val();
+    Promise.all([get(studentsRef), get(rolesRef)]).then(([studentsSnap, rolesSnap]) => {
         friendsList.innerHTML = '';
 
-        Object.entries(students).forEach(([uid, data]) => {
-            if (uid === userId) return; // Skip self
-
-            const item = document.createElement('button');
-            item.className = 'chat-friend-item w-full';
-            item.innerHTML = `
-                <span>${data.nama}</span>
-                <span class="level-badge">Lv${data.level || 1}</span>
-            `;
-
-            item.addEventListener('click', () => {
-                currentChatState.selectedRecipientId = uid;
-                currentChatState.selectedRecipientName = data.nama;
-                currentChatState.selectedRecipientLevel = data.level || 1;
-
-                recipientName.value = `${data.nama} (Lv${data.level || 1})`;
-                inputArea.classList.remove('hidden');
-                
-                loadStudentChatHistory(userId, uid);
+        // 1. Tambahkan Admin/Guru ke daftar teman
+        if (rolesSnap.exists()) {
+            const roles = rolesSnap.val();
+            Object.entries(roles).forEach(([uid, role]) => {
+                if (role.isAdmin) {
+                    const item = document.createElement('button');
+                    item.className = 'chat-friend-item w-full bg-purple-50 border-purple-200 mb-1';
+                    item.innerHTML = `
+                        <span class="font-bold text-purple-700">Guru / Admin</span>
+                        <span class="level-badge bg-purple-200 text-purple-800">Staff</span>
+                    `;
+                    item.addEventListener('click', () => {
+                        selectRecipient(uid, "Guru / Admin", 99, true);
+                    });
+                    friendsList.appendChild(item);
+                }
             });
+        }
 
-            friendsList.appendChild(item);
-        });
+        // 2. Tambahkan Siswa Lain
+        if (studentsSnap.exists()) {
+            const students = studentsSnap.val();
+            Object.entries(students).forEach(([uid, data]) => {
+                if (uid === userId) return; // Skip self
+
+                const item = document.createElement('button');
+                item.className = 'chat-friend-item w-full';
+                item.innerHTML = `
+                    <span>${data.nama}</span>
+                    <span class="level-badge">Lv${data.level || 1}</span>
+                `;
+
+                item.addEventListener('click', () => {
+                    selectRecipient(uid, data.nama, data.level || 1, false);
+                });
+
+                friendsList.appendChild(item);
+            });
+        }
     });
+
+    function selectRecipient(uid, name, level, isAdmin) {
+        currentChatState.selectedRecipientId = uid;
+        currentChatState.selectedRecipientName = name;
+        currentChatState.selectedRecipientLevel = level;
+        currentChatState.selectedRecipientIsAdmin = isAdmin;
+
+        recipientName.value = `${name} ${isAdmin ? '(Staff)' : '(Lv' + level + ')'}`;
+        
+        // UI Toggle: Sembunyikan list, tampilkan chat history & input
+        sendContent.classList.add('hidden');
+        conversationContent.classList.remove('hidden');
+        inputArea.classList.remove('hidden');
+        
+        loadStudentChatHistory(userId, uid);
+    }
 
     // Clear recipient
     clearBtn?.addEventListener('click', () => {
@@ -7147,7 +7233,10 @@ function enableStudentChatFeatures(userId, studentLevel) {
         currentChatState.selectedRecipientName = null;
         recipientName.value = '';
         chatInput.value = '';
+        
         inputArea.classList.add('hidden');
+        conversationContent.classList.add('hidden');
+        sendContent.classList.remove('hidden'); // Kembali ke list teman
     });
 
     // Send message
@@ -7227,7 +7316,8 @@ function loadStudentReceivedMessages(userId) {
 }
 
 function loadStudentChatHistory(userId, friendId) {
-    const messagesContainer = document.getElementById('admin-chat-messages') || document.createElement('div');
+    const messagesContainer = document.getElementById('student-chat-conversation');
+    if (!messagesContainer) return;
     
     // Find the correct chat reference (could be userId_friendId or friendId_userId)
     const chatRef1 = ref(db, `chats/${userId}_${friendId}`);
@@ -7266,8 +7356,13 @@ function displayChatHistory(messages, userId, container) {
 }
 
 function sendChatMessageFromStudent(userId, messageText, friendId) {
-    // Create bidirectional chat reference
-    const chatRef = ref(db, `chats/${userId}_${friendId}`);
+    // Tentukan path: Jika penerima adalah Admin, gunakan path ADMIN_STUDENT agar Admin bisa melihatnya di panel mereka.
+    let chatPath = `chats/${userId}_${friendId}`;
+    if (currentChatState.selectedRecipientIsAdmin) {
+        chatPath = `chats/${friendId}_${userId}`;
+    }
+
+    const chatRef = ref(db, chatPath);
     const messageKey = push(chatRef).key;
 
     const messageData = {
@@ -7287,7 +7382,7 @@ function sendChatMessageFromStudent(userId, messageText, friendId) {
             messageData.senderName = snap.val().nama || 'Student';
         }
 
-        set(ref(db, `chats/${userId}_${friendId}/${messageKey}`), messageData)
+        set(ref(db, `${chatPath}/${messageKey}`), messageData)
             .then(() => {
                 showToast('Pesan terkirim!');
                 // Save complete message data to notification for recipient to read
