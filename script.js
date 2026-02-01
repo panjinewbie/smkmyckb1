@@ -6855,6 +6855,7 @@ function initializeChatSystem() {
         // Setup UI buttons & listeners berdasarkan role
         if (isAdmin) {
             setupAdminChatUI();
+            listenForAdminChatNotifications(user.uid);
         } else {
             setupStudentChatUI(user.uid);
         }
@@ -6878,6 +6879,10 @@ function setupAdminChatUI() {
         if (chatPanel.classList.contains('hidden')) {
             chatPanel.classList.remove('hidden');
             chatPanel.classList.add('chat-panel-animation');
+            
+            const badge = document.getElementById('admin-chat-badge');
+            if (badge) badge.classList.add('hidden');
+
             loadAdminStudentsList();
             
             if (currentChatState.selectedRecipientId) {
@@ -7064,6 +7069,20 @@ function sendChatMessageFromAdmin(messageText, recipientId) {
         });
 }
 
+function listenForAdminChatNotifications(userId) {
+    const badge = document.getElementById('admin-chat-badge');
+    if (!badge) return;
+
+    const chatNotificationsRef = ref(db, `chatNotifications/${userId}`);
+    onValue(chatNotificationsRef, (snap) => {
+        const chatPanel = document.getElementById('admin-chat-panel');
+        if (snap.exists() && chatPanel && chatPanel.classList.contains('hidden')) {
+            badge.classList.remove('hidden');
+            audioPlayer.notification();
+        }
+    });
+}
+
 // ========== STUDENT CHAT FUNCTIONS ==========
 function setupStudentChatUI(userId) {
     const chatButton = document.getElementById('student-chat-button');
@@ -7086,6 +7105,9 @@ function setupStudentChatUI(userId) {
             chatPanel.classList.remove('hidden');
             chatPanel.classList.add('chat-panel-animation');
             
+            const badge = document.getElementById('student-chat-badge');
+            if (badge) badge.classList.add('hidden');
+
             // Load student data untuk check level
             const studentRef = ref(db, `students/${userId}`);
             const studentSnap = await get(studentRef);
@@ -7274,6 +7296,7 @@ function enableStudentChatFeatures(userId, studentLevel) {
 
 function loadStudentReceivedMessages(userId) {
     const messagesContainer = document.getElementById('student-chat-received-messages');
+    const badge = document.getElementById('student-chat-badge');
     if (!messagesContainer) return;
 
     const chatNotificationsRef = ref(db, `chatNotifications/${userId}`);
@@ -7284,6 +7307,12 @@ function loadStudentReceivedMessages(userId) {
         if (!snap.exists()) {
             messagesContainer.innerHTML = '<div class="p-4 text-center text-gray-400"><p>Belum ada pesan dari guru atau teman lain.</p></div>';
             return;
+        }
+
+        const chatPanel = document.getElementById('student-chat-panel');
+        if (badge && chatPanel && chatPanel.classList.contains('hidden')) {
+            badge.classList.remove('hidden');
+            audioPlayer.notification();
         }
 
         const notifications = snap.val();
