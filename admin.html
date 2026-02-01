@@ -120,7 +120,7 @@
     <script type="module" src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="style.css">
-<link rel="icon" href="asset/gambar/logomymadival.png">
+<link rel="icon" href="asset/gambar/logo my madival.png">
 </head>
 <body class="min-h-screen admin-bg">
 
@@ -129,7 +129,7 @@
             <div class="container mx-auto px-4"><div class="h-20 flex items-center justify-between"><h1 class="text-2xl font-bold text-blue-600 font-game tracking-tighter">DREAMY</h1><div class="flex items-center space-x-2 md:space-x-4">
                 <!-- Notification Bell -->
                 <div class="relative">
-                    <button id="notification-button" class="p-2 rounded-full ">
+                    <button id="notification-button" class="p-2 rounded-full "title="Pemberitahuan">
                         <lord-icon
     src="https://cdn.lordicon.com/ahxaipjb.json"
     trigger="hover"
@@ -164,9 +164,14 @@
                     <div id="admin-chat-panel" class="absolute right-0 mt-2 w-96 bg-white/90 backdrop-blur-sm rounded-lg shadow-xl z-40 hidden flex flex-col max-h-96">
                         <div class="p-4 border-b flex justify-between items-center">
                             <h4 class="font-semibold text-gray-800">Chat dengan Siswa</h4>
-                            <button id="admin-chat-close" class="text-gray-500 hover:text-gray-700">
-                                <i data-lucide="x" class="w-4 h-4"></i>
-                            </button>
+                            <div class="flex items-center gap-2">
+                                <button id="admin-chat-delete" class="text-red-500 hover:text-red-700 hidden" title="Hapus Riwayat Chat">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                                <button id="admin-chat-close" class="text-gray-500 hover:text-gray-700">
+                                    <i data-lucide="x" class="w-4 h-4"></i>
+                                </button>
+                            </div>
                         </div>
                         <div id="admin-chat-recipients" class="p-4 border-b max-h-32 overflow-y-auto bg-gray-50">
                             <p class="text-sm text-gray-500">Pilih siswa untuk dikirim chat...</p>
