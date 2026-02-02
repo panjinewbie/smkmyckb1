@@ -247,11 +247,12 @@ function renderActiveSkill(studentData, uid) {
         
         skillDiv.innerHTML = `
             <div class="flex-grow">
-                <h4 class="font-bold text-lg font-sans">${skill.name} <span class="text-sm font-normal text-gray-500 font-sans">(Lv. ${skillLevel})</span></h4>
-                <p class="text-sm py-2 font-mono text-gray-600 mt-1">${skill.desc}</p>
+            <h4 class="font-bold text-lg font-sans">${skill.name} <span class="text-sm font-normal text-gray-500 font-sans">(Lv. ${skillLevel})</span></h4>
+            <p class="text-sm py-2 font-mono text-gray-600 mt-1">${skill.desc}</p>
             </div>
-            <button class="use-skill-btn bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg flex-shrink-0 disabled:bg-gray-400 disabled:cursor-not-allowed" ${!hasEnoughMp ? 'disabled' : ''}>
-                Gunakan (MP: ${skill.mpCost})
+            <button class="use-skill-btn bg-blue-600 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded-lg flex-shrink-0 text-sm disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2" ${!hasEnoughMp ? 'disabled' : ''}>
+            <i data-lucide="zap" class="w-4 h-4"></i>
+            ${skill.mpCost}
             </button>
         `;
 
