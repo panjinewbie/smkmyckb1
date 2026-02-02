@@ -230,28 +230,41 @@ function renderActiveSkill(studentData, uid) {
         return;
     }
 
-    const skillIndex = Math.min(level - 1, 4); // Skill max di level 5
-    const skill = SKILL_BOOK[peran].active[skillIndex];
+    container.innerHTML = ''; // Bersihkan container
+    const maxSkillIndex = Math.min(level - 1, 4); // Skill max di level 5 (index 4)
+    let skillsFound = false;
 
-    if (!skill) {
-        container.innerHTML = '<p class="text-center text-gray-400 font-sans">Skill belum terbuka.</p>';
-        return;
-    }
+    for (let i = 0; i <= maxSkillIndex; i++) {
+        const skill = SKILL_BOOK[peran].active[i];
+        if (!skill) continue;
+        
+        skillsFound = true;
+        const hasEnoughMp = mp >= skill.mpCost;
+        const skillLevel = i + 1;
 
-    const hasEnoughMp = mp >= skill.mpCost;
-    container.innerHTML = `
-        <div class="flex flex-col sm:flex-row items-center gap-4">
+        const skillDiv = document.createElement('div');
+        skillDiv.className = "flex flex-col sm:flex-row items-center gap-4 border-b border-gray-200 pb-4 mb-4 last:border-0 last:mb-0 last:pb-0";
+        
+        skillDiv.innerHTML = `
             <div class="flex-grow">
-                <h4 class="font-bold text-lg font-sans">${skill.name} <span class="text-sm font-normal text-gray-500 font-sans">(Lv. ${level})</span></h4>
+                <h4 class="font-bold text-lg font-sans">${skill.name} <span class="text-sm font-normal text-gray-500 font-sans">(Lv. ${skillLevel})</span></h4>
                 <p class="text-sm py-2 font-mono text-gray-600 mt-1">${skill.desc}</p>
             </div>
-            <button id="use-active-skill-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg flex-shrink-0 disabled:bg-gray-400 disabled:cursor-not-allowed" ${!hasEnoughMp ? 'disabled' : ''}>
+            <button class="use-skill-btn bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg flex-shrink-0 disabled:bg-gray-400 disabled:cursor-not-allowed" ${!hasEnoughMp ? 'disabled' : ''}>
                 Gunakan (MP: ${skill.mpCost})
             </button>
-        </div>
-    `;
+        `;
 
-    document.getElementById('use-active-skill-button').onclick = () => handleUseActiveSkill(uid, studentData, skill);
+        // Attach event listener to the button inside this specific div
+        const btn = skillDiv.querySelector('.use-skill-btn');
+        btn.onclick = () => handleUseActiveSkill(uid, studentData, skill);
+
+        container.appendChild(skillDiv);
+    }
+
+    if (!skillsFound) {
+        container.innerHTML = '<p class="text-center text-gray-400 font-sans">Skill belum terbuka.</p>';
+    }
 }
 
 // --- FUNGSI BARU: Logika Inti Penggunaan Skill Aktif ---
