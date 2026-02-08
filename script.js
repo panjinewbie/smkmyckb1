@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', function () {
 // --- Impor dan Konfigurasi Firebase ---
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
-import { getDatabase, ref, set, get, onValue, push, update, remove, query, orderByChild, equalTo, onDisconnect } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
+import { getDatabase, ref, set, get, onValue, push, update, remove, query, orderByChild, equalTo, onDisconnect, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyCA2Dwl7FPBDcbAtS5iTyTADx0YY5byxo8",
@@ -806,8 +806,19 @@ function setupStudentDashboard(uid) {
     const connectedRef = ref(db, ".info/connected");
     onValue(connectedRef, (snap) => {
         if (snap.val() === true) {
-            set(userStatusDatabaseRef, true);
-            onDisconnect(userStatusDatabaseRef).set(false);
+            // Update presence dan waktu online saat ini
+            const onlineUpdates = {
+                presence: true,
+                lastOnline: serverTimestamp()
+            };
+            update(ref(db, `/students/${uid}`), onlineUpdates);
+
+            // Siapkan update untuk saat disconnect (offline + waktu terakhir)
+            const offlineUpdates = {
+                presence: false,
+                lastOnline: serverTimestamp()
+            };
+            onDisconnect(ref(db, `/students/${uid}`)).update(offlineUpdates);
         }
     });
     document.getElementById('student-logout-button').onclick = async () => {
@@ -4167,8 +4178,22 @@ function setupAdminDashboard() {
             } else {
                 paginatedStudents.forEach(([key, student]) => {
                     // --- Tambahkan indikator online/offline ---
+                    // --- Tambahkan indikator online/offline & Waktu ---
                     const isOnline = student.presence === true;
-                    const statusDot = `<span title="${isOnline ? 'Online' : 'Offline'}" class="inline-block w-3 h-3 rounded-full mr-2 align-middle ${isOnline ? 'bg-green-500' : 'bg-red-500'} border border-white shadow"></span>`;
+                    let timeDisplay = '';
+                    if (student.lastOnline) {
+                        const date = new Date(student.lastOnline);
+                        const timeStr = date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+                        // Cek apakah tanggalnya hari ini
+                        const isToday = date.toDateString() === new Date().toDateString();
+                        const dateStr = isToday ? '' : `${date.getDate()}/${date.getMonth() + 1} `;
+                        timeDisplay = `<span class="text-[10px] text-gray-400 block -mt-1">${dateStr}${timeStr}</span>`;
+                    }
+
+                    const statusDot = `<div class="flex flex-col items-center mr-2 min-w-[30px]">
+                        <span title="${isOnline ? 'Online' : 'Offline'}" class="inline-block w-3 h-3 rounded-full ${isOnline ? 'bg-green-500' : 'bg-red-500'} border border-white shadow mb-1"></span>
+                        ${timeDisplay}
+                    </div>`;
 
                     const studentRow = document.createElement('tr');
                     const maxHp = (student.level || 1) * 100;
