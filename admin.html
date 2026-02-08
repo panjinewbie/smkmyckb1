@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,108 +10,274 @@
         /* Anda bisa menata ukuran pemindai di sini */
         #qr-reader-wrapper {
             width: 100%;
-            max-width: 400px; /* Batasi lebar maksimum agar tidak terlalu besar di layar lebar */
-            border: 2px dashed #9ca3af; /* Garis putus-putus agar terlihat seperti area scan */
+            max-width: 400px;
+            /* Batasi lebar maksimum agar tidak terlalu besar di layar lebar */
+            border: 2px dashed #9ca3af;
+            /* Garis putus-putus agar terlihat seperti area scan */
             border-radius: 8px;
             position: relative;
-            overflow: hidden; /* Sembunyikan bagian video yang mungkin keluar dari border */
-            background: #111827; /* Latar belakang gelap agar kontras */
+            overflow: hidden;
+            /* Sembunyikan bagian video yang mungkin keluar dari border */
+            background: #111827;
+            /* Latar belakang gelap agar kontras */
         }
+
         #qr-reader video {
-            border-radius: 6px; /* Agar video di dalamnya juga punya sudut melengkung */
+            border-radius: 6px;
+            /* Agar video di dalamnya juga punya sudut melengkung */
         }
+
         .scanner-line {
             position: absolute;
             left: 0;
             right: 0;
             height: 3px;
-            background: #059669; /* Hijau emerald */
+            background: #059669;
+            /* Hijau emerald */
             box-shadow: 0 0 10px #059669, 0 0 20px #059669;
             border-radius: 3px;
             animation: scan-animation 2.5s infinite ease-in-out;
         }
+
         @keyframes scan-animation {
-            0% { top: 0%; }
-            50% { top: calc(100% - 3px); }
-            100% { top: 0%; }
+            0% {
+                top: 0%;
+            }
+
+            50% {
+                top: calc(100% - 3px);
+            }
+
+            100% {
+                top: 0%;
+            }
         }
+
+
+
+        /* Chat Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-fade-in-up {
+            animation: fadeInUp 0.3s ease-out forwards;
+        }
+
+        /* Online Indicator Pulse */
+        @keyframes pulse-ring {
+            0% {
+                transform: scale(0.8);
+                box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+            }
+
+            70% {
+                transform: scale(1);
+                box-shadow: 0 0 0 6px rgba(34, 197, 94, 0);
+            }
+
+            100% {
+                transform: scale(0.8);
+                box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+            }
+        }
+
         /* Memberi sedikit ruang di tengah untuk hasil scan */
         #scan-result {
             margin-top: 20px;
             font-size: 1.2em;
             font-weight: bold;
         }
+
         /* Gaya untuk Modal AI Quiz */
         #ai-quiz-modal .lifeline {
-            width: 50px; height: 50px; border: 2px solid #f0f0f0; border-radius: 50%;
-            display: flex; align-items: center; justify-content: center; font-size: 1.2rem;
-            cursor: pointer; transition: all 0.3s ease; color: white;
+            width: 50px;
+            height: 50px;
+            border: 2px solid #f0f0f0;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: white;
         }
-        #ai-quiz-modal .lifeline:hover:not(.used) { background-color: #ff8e00; }
+
+        #ai-quiz-modal .lifeline:hover:not(.used) {
+            background-color: #ff8e00;
+        }
+
         #ai-quiz-modal .lifeline.used {
-            background-color: #555; color: #888; cursor: not-allowed;
-            border-color: #555; text-decoration: line-through;
+            background-color: #555;
+            color: #888;
+            cursor: not-allowed;
+            border-color: #555;
+            text-decoration: line-through;
         }
+
         #ai-quiz-modal .option {
-            background: linear-gradient(45deg, #000428, #004e92); border: 2px solid #f0f0f0;
-            border-radius: 12px; padding: 1rem; cursor: pointer; transition: all 0.3s ease;
-            text-align: left; color: white;
+            background: linear-gradient(45deg, #000428, #004e92);
+            border: 2px solid #f0f0f0;
+            border-radius: 12px;
+            padding: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: left;
+            color: white;
         }
-        #ai-quiz-modal .option:hover:not(.disabled) { background: linear-gradient(45deg, #004e92, #0077b6); }
-        #ai-quiz-modal .option.selected { background: #ff8e00; border-color: #ff8e00; }
-        #ai-quiz-modal .option.correct { background: #22c55e; border-color: #22c55e; }
-        #ai-quiz-modal .option.incorrect { background: #ef4444; border-color: #ef4444; }
-        #ai-quiz-modal .option.disabled { opacity: 0.5; cursor: not-allowed; }
+
+        #ai-quiz-modal .option:hover:not(.disabled) {
+            background: linear-gradient(45deg, #004e92, #0077b6);
+        }
+
+        #ai-quiz-modal .option.selected {
+            background: #ff8e00;
+            border-color: #ff8e00;
+        }
+
+        #ai-quiz-modal .option.correct {
+            background: #22c55e;
+            border-color: #22c55e;
+        }
+
+        #ai-quiz-modal .option.incorrect {
+            background: #ef4444;
+            border-color: #ef4444;
+        }
+
+        #ai-quiz-modal .option.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
         #ai-quiz-prize-ladder li {
-            padding: 0.25rem 0.5rem; border-radius: 8px; transition: all 0.3s ease;
-            font-size: 0.9rem; color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            color: white;
         }
+
         #ai-quiz-prize-ladder li.current {
-            background-color: #ff8e00; color: #020230; font-weight: bold; transform: scale(1.05);
+            background-color: #ff8e00;
+            color: #020230;
+            font-weight: bold;
+            transform: scale(1.05);
         }
-        #ai-quiz-prize-ladder li.safe-haven { font-weight: bold; color: #a7f3d0; }
+
+        #ai-quiz-prize-ladder li.safe-haven {
+            font-weight: bold;
+            color: #a7f3d0;
+        }
+
         /* Gaya untuk Opsi Jawaban di Party Battle */
         #battle-options-container .option {
-            background: linear-gradient(45deg, #e0e7ff, #c7d2fe); border: 2px solid #a5b4fc;
-            border-radius: 12px; padding: 1rem; cursor: pointer; transition: all 0.3s ease;
-            text-align: left; color: #3730a3; font-weight: 500;
+            background: linear-gradient(45deg, #e0e7ff, #c7d2fe);
+            border: 2px solid #a5b4fc;
+            border-radius: 12px;
+            padding: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: left;
+            color: #3730a3;
+            font-weight: 500;
         }
-        #battle-options-container .option:hover:not(.disabled) { background: linear-gradient(45deg, #c7d2fe, #a5b4fc); }
-        #battle-options-container .option.selected { background: #f97316; border-color: #f97316; color: white; }
-        #battle-options-container .option.correct { background: #22c55e; border-color: #22c55e; color: white; }
-        #battle-options-container .option.incorrect { background: #ef4444; border-color: #ef4444; color: white; }
-        #battle-options-container .option.disabled { opacity: 0.6; cursor: not-allowed; }
 
-        .print-only { display: none; }
+        #battle-options-container .option:hover:not(.disabled) {
+            background: linear-gradient(45deg, #c7d2fe, #a5b4fc);
+        }
+
+        #battle-options-container .option.selected {
+            background: #f97316;
+            border-color: #f97316;
+            color: white;
+        }
+
+        #battle-options-container .option.correct {
+            background: #22c55e;
+            border-color: #22c55e;
+            color: white;
+        }
+
+        #battle-options-container .option.incorrect {
+            background: #ef4444;
+            border-color: #ef4444;
+            color: white;
+        }
+
+        #battle-options-container .option.disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .print-only {
+            display: none;
+        }
+
         @media print {
             body * {
                 visibility: hidden;
             }
-            #admin-dashboard-main, #admin-dashboard-main * {
+
+            #admin-dashboard-main,
+            #admin-dashboard-main * {
                 visibility: visible;
             }
+
             #admin-dashboard-main {
                 position: absolute;
                 left: 0;
                 top: 0;
                 width: 100%;
             }
+
             /* Sembunyikan elemen yang tidak perlu saat mencetak */
-            header, nav, #print-student-button, #add-student-button, #dashboard-filter-kelas, #dashboard-filter-guild, #pagination-controls, .loading-container, button, .no-print {
+            header,
+            nav,
+            #print-student-button,
+            #add-student-button,
+            #dashboard-filter-kelas,
+            #dashboard-filter-guild,
+            #pagination-controls,
+            .loading-container,
+            button,
+            .no-print {
                 display: none !important;
             }
-            /* Pastikan tabel terlihat jelas */
-            table { width: 100%; border-collapse: collapse; }
-            th, td { border: 1px solid #000; padding: 8px; color: black; }
-            .print-only { display: table-cell !important; }
-        }
 
+            /* Pastikan tabel terlihat jelas */
+            table {
+                width: 100%;
+                border-collapse: collapse;
+            }
+
+            th,
+            td {
+                border: 1px solid #000;
+                padding: 8px;
+                color: black;
+            }
+
+            .print-only {
+                display: table-cell !important;
+            }
+        }
     </style>
     <script src="https://cdn.lordicon.com/lordicon.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Press+Start+2P&display=swap"
+        rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://unpkg.com/html5-qrcode/html5-qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
@@ -120,161 +287,230 @@
     <script type="module" src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="style.css">
-<link rel="icon" href="asset/gambar/logo my madival.png">
+    <link rel="icon" href="asset/gambar/logomymadival.png">
 </head>
+
 <body class="min-h-screen admin-bg">
 
     <div id="admin-dashboard-page" class="min-h-screen">
         <header class="bg-white/90 backdrop-blur-sm/80 backdrop-blur-sm shadow-md sticky top-0 z-30">
-            <div class="container mx-auto px-4"><div class="h-20 flex items-center justify-between"><h1 class="text-2xl font-bold text-blue-600 font-game tracking-tighter">DREAMY</h1><div class="flex items-center space-x-2 md:space-x-4">
-                <!-- Notification Bell -->
-                <div class="relative">
-                    <button id="notification-button" class="p-2 rounded-full "title="Pemberitahuan">
-                        <lord-icon
-    src="https://cdn.lordicon.com/ahxaipjb.json"
-    trigger="hover"
-    colors="primary:#545454"
-    style="width:20px;height:20px">
-</lord-icon>
-                        <span id="notification-badge" class="absolute top-1 right-1 block h-2 w-2 rounded-full bg-red-500 ring-1 ring-white hidden"></span>
-                    </button>
-                    <!-- Notification Dropdown Panel -->
-                    <div id="notification-panel" class="absolute right-0 mt-2 w-80 sm:w-96 bg-white/90 backdrop-blur-sm rounded-lg shadow-xl z-40 hidden origin-top-right transition-transform transform opacity-0 scale-95">
-                        <div class="p-4 border-b flex justify-between items-center">
-                            <h4 class="font-semibold text-gray-800">Notifikasi</h4>
-                            <button id="mark-all-read-button" class="text-xs text-blue-600 hover:underline font-medium">Tandai semua dibaca</button>
-                        </div>
-                        <div id="notification-list" class="max-h-96 overflow-y-auto">
-                            <div class="p-4 text-center text-gray-500">Tidak ada notifikasi baru.</div>
-                        </div>
-                    </div>
-                </div>
-                <!-- TOMBOL BARU: Chat Siswa -->
-                <div class="relative">
-                    <button id="admin-chat-button" class="p-2 rounded-full relative" title="Chat dengan Siswa">
-                        <lord-icon
-                            src="https://cdn.lordicon.com/bpptgtfr.json"
-                            trigger="hover"
-                            colors="primary:#545454"
-                            style="width:25px;height:25px">
-                        </lord-icon>
-                        <span id="admin-chat-badge" class="absolute top-1 right-1 block h-2 w-2 rounded-full bg-blue-500 ring-1 ring-white hidden"></span>
-                    </button>
-                    <!-- Chat Popup Modal -->
-                    <div id="admin-chat-panel" class="absolute right-0 mt-2 w-96 bg-white/90 backdrop-blur-sm rounded-lg shadow-xl z-40 hidden flex flex-col max-h-96">
-                        <div class="p-4 border-b flex justify-between items-center">
-                            <h4 class="font-semibold text-gray-800">Chat dengan Siswa</h4>
-                            <div class="flex items-center gap-2">
-                                <button id="admin-chat-delete" class="text-red-500 hover:text-red-700 hidden" title="Hapus Riwayat Chat">
-                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
-                                </button>
-                                <button id="admin-chat-close" class="text-gray-500 hover:text-gray-700">
-                                    <i data-lucide="x" class="w-4 h-4"></i>
-                                </button>
+            <div class="container mx-auto px-4">
+                <div class="h-20 flex items-center justify-between">
+                    <h1 class="text-2xl font-bold text-blue-600 font-game tracking-tighter">DREAMY</h1>
+                    <div class="flex items-center space-x-2 md:space-x-4">
+                        <!-- Notification Bell -->
+                        <div class="relative">
+                            <button id="notification-button" class="p-2 rounded-full " title="Pemberitahuan">
+                                <lord-icon src="https://cdn.lordicon.com/ahxaipjb.json" trigger="hover"
+                                    colors="primary:#545454" style="width:20px;height:20px">
+                                </lord-icon>
+                                <span id="notification-badge"
+                                    class="absolute top-1 right-1 block h-2 w-2 rounded-full bg-red-500 ring-1 ring-white hidden"></span>
+                            </button>
+                            <!-- Notification Dropdown Panel -->
+                            <div id="notification-panel"
+                                class="absolute right-0 mt-2 w-80 sm:w-96 bg-white/90 backdrop-blur-sm rounded-lg shadow-xl z-40 hidden origin-top-right transition-transform transform opacity-0 scale-95">
+                                <div class="p-4 border-b flex justify-between items-center">
+                                    <h4 class="font-semibold text-gray-800">Notifikasi</h4>
+                                    <button id="mark-all-read-button"
+                                        class="text-xs text-blue-600 hover:underline font-medium">Tandai semua
+                                        dibaca</button>
+                                </div>
+                                <div id="notification-list" class="max-h-96 overflow-y-auto">
+                                    <div class="p-4 text-center text-gray-500">Tidak ada notifikasi baru.</div>
+                                </div>
                             </div>
                         </div>
-                        <div id="admin-chat-recipients" class="p-4 border-b max-h-32 overflow-y-auto bg-gray-50">
-                            <p class="text-sm text-gray-500">Pilih siswa untuk dikirim chat...</p>
-                        </div>
-                        <div id="admin-chat-messages" class="flex-1 p-4 overflow-y-auto space-y-3">
-                            <!-- Chat messages akan ditampilkan di sini -->
-                        </div>
-                        <div class="p-4 border-t bg-white">
-                            <div class="flex gap-2">
-                                <input type="text" id="admin-chat-input" class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ketik pesan...">
-                                <button id="admin-chat-send" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg">
-                                    <i data-lucide="send" class="w-4 h-4"></i>
-                                </button>
+                        <!-- TOMBOL BARU: Chat Siswa -->
+                        <div class="relative">
+                            <button id="admin-chat-button" class="p-2 rounded-full relative" title="Chat dengan Siswa">
+                                <lord-icon src="https://cdn.lordicon.com/bpptgtfr.json" trigger="hover"
+                                    colors="primary:#545454" style="width:25px;height:25px">
+                                </lord-icon>
+                                <span id="admin-chat-badge"
+                                    class="absolute top-1 right-1 block h-2 w-2 rounded-full bg-blue-500 ring-1 ring-white hidden"></span>
+                            </button>
+                            <!-- Chat Popup Modal -->
+                            <div id="admin-chat-panel"
+                                class="fixed right-0 mt-2 w-96 bg-white/90 backdrop-blur-sm rounded-lg shadow-xl z-40 hidden flex flex-col max-h-96">
+                                <div class="p-4 border-b flex justify-between items-center">
+                                    <h4 class="font-semibold text-gray-800">Chat dengan Siswa</h4>
+                                    <div class="flex items-center gap-2">
+                                        <button id="admin-chat-delete" class="text-red-500 hover:text-red-700 hidden"
+                                            title="Hapus Riwayat Chat">
+                                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                        </button>
+                                        <button id="admin-chat-close" class="text-gray-500 hover:text-gray-700">
+                                            <i data-lucide="x" class="w-4 h-4"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div id="admin-chat-recipients"
+                                    class="p-4 border-b max-h-32 overflow-y-auto bg-gray-50">
+                                    <p class="text-sm text-gray-500">Pilih siswa untuk dikirim chat...</p>
+                                </div>
+                                <div id="admin-chat-messages" class="flex-1 p-4 overflow-y-auto space-y-3">
+                                    <!-- Chat messages akan ditampilkan di sini -->
+                                </div>
+                                <div class="p-4 border-t bg-white">
+                                    <div class="flex gap-2">
+                                        <input type="text" id="admin-chat-input"
+                                            class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            placeholder="Ketik pesan...">
+                                        <button id="admin-chat-send"
+                                            class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg">
+                                            <i data-lucide="send" class="w-4 h-4"></i>
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </div>
 
-                <!-- TOMBOL BARU: Chatbot Admin -->
-                <button id="open-admin-ivy-chat-button" class="p-2 rounded-full" title="Tanya Ivy tentang Siswa">
-                    <lord-icon
-                        src="https://cdn.lordicon.com/dwhxbrvz.json"
-                        trigger="hover"
-                        stroke="bold"
-                        colors="primary:#545454"
-                        style="width:30px;height:30px">
-                    </lord-icon>
-                </button>
-                <button id="open-ivy-settings-button" class="p-2 rounded-full"><lord-icon
-    src="https://cdn.lordicon.com/asyunleq.json"
-    trigger="hover"
-    colors="primary:#545454"
-    style="width:20px;height:20px">
-</lord-icon></button><button id="admin-logout-button" class="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg"><span class="hidden md:inline">Logout</span><i data-lucide="log-out" class="w-5 h-5"></i></button></div></div></div>
-            <nav class="border-t border-gray-200"><div class="container mx-auto px-4"><div id="admin-nav-links" class="flex items-center space-x-4 md:space-x-6 overflow-x-auto">
-                <a href="#dashboard" class="nav-link active flex items-center px-2 py-4 text-sm font-semibold border-b-2"><i data-lucide="layout-dashboard" class="w-4 h-4 mr-2"></i>Dashboard</a>
-                <a href="#attendance" class="nav-link text-gray-500 hover:text-blue-600 flex items-center px-2 py-4 text-sm font-semibold border-b-2 border-transparent"><i data-lucide="calendar-check" class="w-4 h-4 mr-2"></i>Attendance</a>
-                <a href="#quests" class="nav-link text-gray-500 hover:text-blue-600 flex items-center px-2 py-4 text-sm font-semibold border-b-2 border-transparent"><i data-lucide="swords" class="w-4 h-4 mr-2"></i>Quests</a>
-              
-                <a href="#shop" class="nav-link text-gray-500 hover:text-blue-600 flex items-center px-2 py-4 text-sm font-semibold border-b-2 border-transparent"><i data-lucide="shopping-cart" class="w-4 h-4 mr-2"></i>Shop</a>
-                <a href="#magic" class="nav-link text-gray-500 hover:text-blue-600 flex items-center px-2 py-4 text-sm font-semibold border-b-2 border-transparent"><i data-lucide="wand-2" class="w-4 h-4 mr-2"></i>Magic Controls</a>
-                <a href="#journal" class="nav-link text-gray-500 hover:text-blue-600 flex items-center px-2 py-4 text-sm font-semibold border-b-2 border-transparent"><i data-lucide="book-heart" class="w-4 h-4 mr-2"></i>Jurnal Refleksi</a>
-            </div></div></nav>
+                        <!-- TOMBOL BARU: Chatbot Admin -->
+                        <button id="open-admin-ivy-chat-button" class="p-2 rounded-full"
+                            title="Tanya Ivy tentang Siswa">
+                            <lord-icon src="https://cdn.lordicon.com/dwhxbrvz.json" trigger="hover" stroke="bold"
+                                colors="primary:#545454" style="width:30px;height:30px">
+                            </lord-icon>
+                        </button>
+                        <button id="open-ivy-settings-button" class="p-2 rounded-full"><lord-icon
+                                src="https://cdn.lordicon.com/asyunleq.json" trigger="hover" colors="primary:#545454"
+                                style="width:20px;height:20px">
+                            </lord-icon></button><button id="admin-logout-button"
+                            class="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg"><span
+                                class="hidden md:inline">Logout</span><i data-lucide="log-out"
+                                class="w-5 h-5"></i></button>
+                    </div>
+                </div>
+            </div>
+            <nav class="border-t border-gray-200">
+                <div class="container mx-auto px-4">
+                    <div id="admin-nav-links" class="flex items-center space-x-4 md:space-x-6 overflow-x-auto">
+                        <a href="#dashboard"
+                            class="nav-link active flex items-center px-2 py-4 text-sm font-semibold border-b-2"><i
+                                data-lucide="layout-dashboard" class="w-4 h-4 mr-2"></i>Dashboard</a>
+                        <a href="#attendance"
+                            class="nav-link text-gray-500 hover:text-blue-600 flex items-center px-2 py-4 text-sm font-semibold border-b-2 border-transparent"><i
+                                data-lucide="calendar-check" class="w-4 h-4 mr-2"></i>Attendance</a>
+                        <a href="#quests"
+                            class="nav-link text-gray-500 hover:text-blue-600 flex items-center px-2 py-4 text-sm font-semibold border-b-2 border-transparent"><i
+                                data-lucide="swords" class="w-4 h-4 mr-2"></i>Quests</a>
+
+                        <a href="#shop"
+                            class="nav-link text-gray-500 hover:text-blue-600 flex items-center px-2 py-4 text-sm font-semibold border-b-2 border-transparent"><i
+                                data-lucide="shopping-cart" class="w-4 h-4 mr-2"></i>Shop</a>
+                        <a href="#magic"
+                            class="nav-link text-gray-500 hover:text-blue-600 flex items-center px-2 py-4 text-sm font-semibold border-b-2 border-transparent"><i
+                                data-lucide="wand-2" class="w-4 h-4 mr-2"></i>Magic Controls</a>
+                        <a href="#journal"
+                            class="nav-link text-gray-500 hover:text-blue-600 flex items-center px-2 py-4 text-sm font-semibold border-b-2 border-transparent"><i
+                                data-lucide="book-heart" class="w-4 h-4 mr-2"></i>Jurnal Refleksi</a>
+                    </div>
+                </div>
+            </nav>
         </header>
-        
+
         <main class="container mx-auto p-4 md:p-6">
             <div id="admin-dashboard-main">
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
-                    <div><div class="bg-white/90 backdrop-blur-sm p-6 rounded-lg shadow-md flex items-center justify-between"><div><p class="text-sm text-gray-500">Total Siswa</p><p id="total-students" class="text-3xl font-bold">0</p></div><div class="bg-blue-100 p-3 rounded-full"><i data-lucide="users" class="w-6 h-6 text-blue-500"></i></div></div></div>
-                    <div><div class="bg-white/90 backdrop-blur-sm p-6 rounded-lg shadow-md flex items-center justify-between"><div><p class="text-sm text-gray-500">Rata-rata Level</p><p id="average-level" class="text-3xl font-bold">0</p></div><div class="bg-green-100 p-3 rounded-full"><i data-lucide="trending-up" class="w-6 h-6 text-green-500"></i></div></div></div>
-                    <div><div class="bg-white/90 backdrop-blur-sm p-6 rounded-lg shadow-md flex items-center justify-between"><div><p class="text-sm text-gray-500">Total Koin Beredar</p><p id="total-coins" class="text-3xl font-bold">0</p></div><div class="bg-yellow-100 p-3 rounded-full"><i data-lucide="coins" class="w-6 h-6 text-yellow-500"></i></div></div></div>
+                    <div>
+                        <div
+                            class="bg-white/90 backdrop-blur-sm p-6 rounded-lg shadow-md flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-gray-500">Total Siswa</p>
+                                <p id="total-students" class="text-3xl font-bold">0</p>
+                            </div>
+                            <div class="bg-blue-100 p-3 rounded-full"><i data-lucide="users"
+                                    class="w-6 h-6 text-blue-500"></i></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div
+                            class="bg-white/90 backdrop-blur-sm p-6 rounded-lg shadow-md flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-gray-500">Rata-rata Level</p>
+                                <p id="average-level" class="text-3xl font-bold">0</p>
+                            </div>
+                            <div class="bg-green-100 p-3 rounded-full"><i data-lucide="trending-up"
+                                    class="w-6 h-6 text-green-500"></i></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div
+                            class="bg-white/90 backdrop-blur-sm p-6 rounded-lg shadow-md flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-gray-500">Total Koin Beredar</p>
+                                <p id="total-coins" class="text-3xl font-bold">0</p>
+                            </div>
+                            <div class="bg-yellow-100 p-3 rounded-full"><i data-lucide="coins"
+                                    class="w-6 h-6 text-yellow-500"></i></div>
+                        </div>
+                    </div>
                 </div>
                 <div class="bg-white/90 backdrop-blur-sm rounded-lg shadow-md">
-    <div class="p-6 border-b border-gray-200 flex justify-between items-center">
-        <div>
-            <h2 class="text-xl font-semibold">Tinjauan Siswa</h2>
-            <p class="text-sm text-gray-500 mt-1">Data dari Firebase.</p>
-        </div>
-        <div class="flex gap-2">
-            <button id="print-student-button" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg flex items-center">
-                <i data-lucide="printer" class="w-4 h-4 mr-2"></i>Cetak Siswa
-            </button>
-            <button id="add-student-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg flex items-center">
-                <i data-lucide="user-plus" class="w-4 h-4 mr-2"></i>Tambah Siswa
-            </button>
-        </div>
-    </div>
+                    <div class="p-6 border-b border-gray-200 flex justify-between items-center">
+                        <div>
+                            <h2 class="text-xl font-semibold">Tinjauan Siswa</h2>
+                            <p class="text-sm text-gray-500 mt-1">Data dari Firebase.</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button id="print-student-button"
+                                class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg flex items-center">
+                                <i data-lucide="printer" class="w-4 h-4 mr-2"></i>Cetak Siswa
+                            </button>
+                            <button id="add-student-button"
+                                class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg flex items-center">
+                                <i data-lucide="user-plus" class="w-4 h-4 mr-2"></i>Tambah Siswa
+                            </button>
+                        </div>
+                    </div>
 
-    <div class="p-4 grid grid-cols-1 md:grid-cols-2 gap-4 border-b">
-        <div>
-            <label for="dashboard-filter-kelas" class="block text-sm font-medium text-gray-700">Filter Kelas</label>
-            <select id="dashboard-filter-kelas" class="mt-1 w-full p-2 border border-gray-300 rounded-md bg-white/90 backdrop-blur-sm">
-                <option value="semua">Semua Kelas</option>
-            </select>
-        </div>
-        <div>
-            <label for="dashboard-filter-guild" class="block text-sm font-medium text-gray-700">Filter Guild</label>
-            <select id="dashboard-filter-guild" class="mt-1 w-full p-2 border border-gray-300 rounded-md bg-white/90 backdrop-blur-sm">
-                <option value="semua">Semua Guild</option>
-            </select>
-        </div>
-    </div>
-    <div class="overflow-x-auto">
-        <table class="w-full text-sm text-left text-gray-500"><thead class="text-xs text-gray-700 uppercase bg-gray-50">
-    <tr>
-        <th scope="col" class="px-6 py-3">Siswa</th>
-        <th scope="col" class="px-6 py-3 text-center no-print">Level</th>
-        <th scope="col" class="px-6 py-3 text-center no-print">XP</th>
-        <th scope="col" class="px-6 py-3 text-center no-print">HP</th>
-        <th scope="col" class="px-6 py-3 text-center no-print">Koin</th>
-        <th scope="col" class="px-6 py-3 text-center print-only">Catatan</th>
-        <th scope="col" class="px-6 py-3 text-center no-print">Aksi</th></tr>
-        </thead>
-        <tbody id="student-table-body">
-                    <tr><td colspan="6">
-                         <div class="loading-container"><div class="loader"></div><p class="loading-text">Memuat data siswa...</p></div>
-                    </td></tr>
-                </tbody>
-            </table>
-        </div>
-        <div id="pagination-controls" class="p-4 flex justify-between items-center border-t">
-                    <!-- Kontrol pagination akan dibuat oleh JavaScript di sini -->
-                </div>
+                    <div class="p-4 grid grid-cols-1 md:grid-cols-2 gap-4 border-b">
+                        <div>
+                            <label for="dashboard-filter-kelas" class="block text-sm font-medium text-gray-700">Filter
+                                Kelas</label>
+                            <select id="dashboard-filter-kelas"
+                                class="mt-1 w-full p-2 border border-gray-300 rounded-md bg-white/90 backdrop-blur-sm">
+                                <option value="semua">Semua Kelas</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="dashboard-filter-guild" class="block text-sm font-medium text-gray-700">Filter
+                                Guild</label>
+                            <select id="dashboard-filter-guild"
+                                class="mt-1 w-full p-2 border border-gray-300 rounded-md bg-white/90 backdrop-blur-sm">
+                                <option value="semua">Semua Guild</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left text-gray-500">
+                            <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3">Siswa</th>
+                                    <th scope="col" class="px-6 py-3 text-center no-print">Level</th>
+                                    <th scope="col" class="px-6 py-3 text-center no-print">XP</th>
+                                    <th scope="col" class="px-6 py-3 text-center no-print">HP</th>
+                                    <th scope="col" class="px-6 py-3 text-center no-print">Koin</th>
+                                    <th scope="col" class="px-6 py-3 text-center print-only">Catatan</th>
+                                    <th scope="col" class="px-6 py-3 text-center no-print">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="student-table-body">
+                                <tr>
+                                    <td colspan="6">
+                                        <div class="loading-container">
+                                            <div class="loader"></div>
+                                            <p class="loading-text">Memuat data siswa...</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="pagination-controls" class="p-4 flex justify-between items-center border-t">
+                        <!-- Kontrol pagination akan dibuat oleh JavaScript di sini -->
+                    </div>
                 </div>
             </div>
 
@@ -286,14 +522,20 @@
                             <h2 class="text-xl font-semibold">Aksi Absensi Harian</h2>
                             <p class="text-sm text-gray-500 mt-1">Pilih tanggal, lalu tandai kehadiran siswa.</p>
                         </div>
-                        <button id="scan-qr-button" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg flex items-center"><i data-lucide="scan-line" class="w-4 h-4 mr-2"></i>Scan QR Hadir</button>
+                        <button id="scan-qr-button"
+                            class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg flex items-center"><i
+                                data-lucide="scan-line" class="w-4 h-4 mr-2"></i>Scan QR Hadir</button>
                     </div>
                     <div class="flex flex-col sm:flex-row items-end gap-4">
                         <div class="flex-grow">
-                            <label for="attendance-date" class="block text-sm font-medium text-gray-700">Tanggal Absensi</label>
-                            <input type="date" id="attendance-date" class="mt-1 p-2 border border-gray-300 rounded-md w-full">
+                            <label for="attendance-date" class="block text-sm font-medium text-gray-700">Tanggal
+                                Absensi</label>
+                            <input type="date" id="attendance-date"
+                                class="mt-1 p-2 border border-gray-300 rounded-md w-full">
                         </div>
-                        <button id="load-attendance-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg w-full sm:w-auto">Tampilkan Absensi</button>
+                        <button id="load-attendance-button"
+                            class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg w-full sm:w-auto">Tampilkan
+                            Absensi</button>
                     </div>
                 </div>
 
@@ -308,12 +550,21 @@
                 <!-- Card untuk Rekap -->
                 <div class="bg-white/90 backdrop-blur-sm rounded-lg shadow-md p-6">
                     <div class="flex flex-wrap justify-between items-center gap-4 mb-6">
-                        <div><h2 class="text-xl font-semibold">Rekapitulasi & Cetak</h2><p class="text-sm text-gray-500 mt-1">Pilih rentang tanggal untuk mencetak rekap.</p></div>
-                        <button id="print-recap-button" class="bg-gray-700 hover:bg-gray-800 text-white font-bold py-2 px-4 rounded-lg flex items-center"><i data-lucide="printer" class="w-4 h-4 mr-2"></i>Cetak Rekap</button>
+                        <div>
+                            <h2 class="text-xl font-semibold">Rekapitulasi & Cetak</h2>
+                            <p class="text-sm text-gray-500 mt-1">Pilih rentang tanggal untuk mencetak rekap.</p>
+                        </div>
+                        <button id="print-recap-button"
+                            class="bg-gray-700 hover:bg-gray-800 text-white font-bold py-2 px-4 rounded-lg flex items-center"><i
+                                data-lucide="printer" class="w-4 h-4 mr-2"></i>Cetak Rekap</button>
                     </div>
                     <div class="flex flex-wrap gap-4">
-                        <div><label for="start-date" class="block text-sm font-medium text-gray-700">Mulai Tanggal</label><input type="date" id="start-date" class="mt-1 p-2 border border-gray-300 rounded-md"></div>
-                        <div><label for="end-date" class="block text-sm font-medium text-gray-700">Sampai Tanggal</label><input type="date" id="end-date" class="mt-1 p-2 border border-gray-300 rounded-md"></div>
+                        <div><label for="start-date" class="block text-sm font-medium text-gray-700">Mulai
+                                Tanggal</label><input type="date" id="start-date"
+                                class="mt-1 p-2 border border-gray-300 rounded-md"></div>
+                        <div><label for="end-date" class="block text-sm font-medium text-gray-700">Sampai
+                                Tanggal</label><input type="date" id="end-date"
+                                class="mt-1 p-2 border border-gray-300 rounded-md"></div>
                     </div>
                 </div>
             </div>
@@ -325,25 +576,36 @@
                             <h2 class="text-xl font-semibold">Jurnal Refleksi Siswa</h2>
                             <p class="text-sm text-gray-500 mt-1">Catat dan tinjau refleksi harian siswa.</p>
                         </div>
-                        <button id="add-journal-button" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-lg flex items-center">
+                        <button id="add-journal-button"
+                            class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-lg flex items-center">
                             <i data-lucide="plus-circle" class="w-4 h-4 mr-2"></i>Tambah Jurnal Baru
                         </button>
                     </div>
                     <div class="flex flex-col sm:flex-row items-end gap-4 border-t pt-6">
                         <div class="flex-grow">
-                            <label for="journal-filter-start-date" class="block text-sm font-medium text-gray-700">Mulai Tanggal</label>
-                            <input type="date" id="journal-filter-start-date" class="mt-1 p-2 border border-gray-300 rounded-md w-full">
+                            <label for="journal-filter-start-date" class="block text-sm font-medium text-gray-700">Mulai
+                                Tanggal</label>
+                            <input type="date" id="journal-filter-start-date"
+                                class="mt-1 p-2 border border-gray-300 rounded-md w-full">
                         </div>
                         <div class="flex-grow">
-                            <label for="journal-filter-end-date" class="block text-sm font-medium text-gray-700">Sampai Tanggal</label>
-                            <input type="date" id="journal-filter-end-date" class="mt-1 p-2 border border-gray-300 rounded-md w-full">
+                            <label for="journal-filter-end-date" class="block text-sm font-medium text-gray-700">Sampai
+                                Tanggal</label>
+                            <input type="date" id="journal-filter-end-date"
+                                class="mt-1 p-2 border border-gray-300 rounded-md w-full">
                         </div>
-                        <button id="print-journal-button" class="bg-gray-700 hover:bg-gray-800 text-white font-bold py-2 px-4 rounded-lg flex items-center sm:w-auto w-full">
+                        <button id="print-journal-button"
+                            class="bg-gray-700 hover:bg-gray-800 text-white font-bold py-2 px-4 rounded-lg flex items-center sm:w-auto w-full">
                             <i data-lucide="printer" class="w-4 h-4 mr-2"></i>Cetak
                         </button>
                     </div>
                 </div>
-                <div id="journal-list-container" class="space-y-4"><div class="loading-container"><div class="loader"></div><p class="loading-text">Memuat jurnal refleksi...</p></div></div>
+                <div id="journal-list-container" class="space-y-4">
+                    <div class="loading-container">
+                        <div class="loader"></div>
+                        <p class="loading-text">Memuat jurnal refleksi...</p>
+                    </div>
+                </div>
             </div>
             <div id="quests-page" class="hidden space-y-6">
                 <!-- Card 1: Quest Controls -->
@@ -353,12 +615,24 @@
                         <p class="text-sm text-gray-500 mt-1">Buat Quest party battle, misi, dan uji keheningan.</p>
                     </div>
                     <div class="p-6 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-                        <button id="party-battle-button" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center text-center"><i data-lucide="users" class="w-4 h-4 mr-2"></i>Party Battle (AI)</button>
-                        <button id="admin-question-battle-button" class="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center text-center"><i data-lucide="edit-3" class="w-4 h-4 mr-2"></i>Party Battle (Admin)</button>
-                        <button id="ai-quiz-battle-button" class="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center text-center"><i data-lucide="brain-circuit" class="w-4 h-4 mr-2"></i>AI Quiz Battle</button>
-                        <button id="open-noise-detector-button" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center text-center"><i data-lucide="gauge-circle" class="w-4 h-4 mr-2"></i>Uji Keheningan</button>
-                        <button id="add-quest-button" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center text-center"><i data-lucide="plus-circle" class="w-4 h-4 mr-2"></i>Buat Monster</button>
-                        <button id="add-admin-bounty-button" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center text-center"><i data-lucide="plus-circle" class="w-4 h-4 mr-2"></i>Buat Misi Admin</button>
+                        <button id="party-battle-button"
+                            class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center text-center"><i
+                                data-lucide="users" class="w-4 h-4 mr-2"></i>Party Battle (AI)</button>
+                        <button id="admin-question-battle-button"
+                            class="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center text-center"><i
+                                data-lucide="edit-3" class="w-4 h-4 mr-2"></i>Party Battle (Admin)</button>
+                        <button id="ai-quiz-battle-button"
+                            class="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center text-center"><i
+                                data-lucide="brain-circuit" class="w-4 h-4 mr-2"></i>AI Quiz Battle</button>
+                        <button id="open-noise-detector-button"
+                            class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center text-center"><i
+                                data-lucide="gauge-circle" class="w-4 h-4 mr-2"></i>Uji Keheningan</button>
+                        <button id="add-quest-button"
+                            class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center text-center"><i
+                                data-lucide="plus-circle" class="w-4 h-4 mr-2"></i>Buat Monster</button>
+                        <button id="add-admin-bounty-button"
+                            class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center text-center"><i
+                                data-lucide="plus-circle" class="w-4 h-4 mr-2"></i>Buat Misi Admin</button>
                     </div>
                 </div>
 
@@ -366,10 +640,15 @@
                 <div class="bg-white/90 backdrop-blur-sm rounded-lg shadow-md">
                     <div class="p-6 border-b border-gray-200">
                         <h2 class="text-xl font-semibold">Manajemen Monster</h2>
-                        <p class="text-sm text-gray-500 mt-1">Jika anda punya nyali lawan para monster berpengetahuan.</p>
+                        <p class="text-sm text-gray-500 mt-1">Jika anda punya nyali lawan para monster berpengetahuan.
+                        </p>
                     </div>
-                    <div id="quest-list-container" class="p-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-                        <div class="loading-container col-span-full"><div class="loader"></div><p class="loading-text">Memuat data monster...</p></div>
+                    <div id="quest-list-container"
+                        class="p-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+                        <div class="loading-container col-span-full">
+                            <div class="loader"></div>
+                            <p class="loading-text">Memuat data monster...</p>
+                        </div>
                     </div>
                 </div>
 
@@ -379,73 +658,145 @@
                         <h2 class="text-xl font-semibold">Manajemen Bounty Board</h2>
                         <p class="text-sm text-gray-500 mt-1">Atur Bounty Board untuk admin.</p>
                     </div>
-                    <div id="admin-bounty-list-container" class="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        <div class="loading-container col-span-full"><div class="loader"></div><p class="loading-text">Memuat misi admin...</p></div>
+                    <div id="admin-bounty-list-container"
+                        class="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div class="loading-container col-span-full">
+                            <div class="loader"></div>
+                            <p class="loading-text">Memuat misi admin...</p>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <!-- Modal BARU untuk membuat misi admin (letakkan di dekat modal lainnya) -->
-            <div id="admin-bounty-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40 hidden opacity-0 transition-opacity duration-300">
-                <div class="bg-white/90 backdrop-blur-sm rounded-lg shadow-xl w-full max-w-2xl m-4 transform scale-95 transition-transform duration-300 max-h-[90vh] flex flex-col">
+            <div id="admin-bounty-modal"
+                class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40 hidden opacity-0 transition-opacity duration-300">
+                <div
+                    class="bg-white/90 backdrop-blur-sm rounded-lg shadow-xl w-full max-w-2xl m-4 transform scale-95 transition-transform duration-300 max-h-[90vh] flex flex-col">
                     <div class="p-6 border-b flex justify-between items-center">
                         <h3 id="admin-bounty-modal-title" class="text-xl font-semibold">Buat Misi Bounty Baru</h3>
-                        <button id="close-admin-bounty-modal-button" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+                        <button id="close-admin-bounty-modal-button"
+                            class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
                     </div>
                     <form id="admin-bounty-form" class="p-6 space-y-4 overflow-y-auto">
                         <div>
-                            <label for="admin-bounty-title" class="block text-sm font-medium text-gray-700">Judul Misi</label>
-                            <input type="text" id="admin-bounty-title" required class="mt-1 w-full p-2 border border-gray-300 rounded-md">
+                            <label for="admin-bounty-title" class="block text-sm font-medium text-gray-700">Judul
+                                Misi</label>
+                            <input type="text" id="admin-bounty-title" required
+                                class="mt-1 w-full p-2 border border-gray-300 rounded-md">
                         </div>
                         <div>
-                            <label for="admin-bounty-description" class="block text-sm font-medium text-gray-700">Deskripsi Misi</label>
-                            <textarea id="admin-bounty-description" rows="3" required class="mt-1 w-full p-2 border border-gray-300 rounded-md"></textarea>
+                            <label for="admin-bounty-description"
+                                class="block text-sm font-medium text-gray-700">Deskripsi Misi</label>
+                            <textarea id="admin-bounty-description" rows="3" required
+                                class="mt-1 w-full p-2 border border-gray-300 rounded-md"></textarea>
                         </div>
                         <div>
-                            <label for="admin-bounty-image" class="block text-sm font-medium text-gray-700">Gambar Misi (Opsional)</label>
-                            <input type="file" id="admin-bounty-image" accept="image/*" class="mt-1 w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100">
-                            <img id="admin-bounty-image-preview" class="mt-2 h-24 w-24 object-cover rounded-md hidden border">
+                            <label for="admin-bounty-image" class="block text-sm font-medium text-gray-700">Gambar Misi
+                                (Opsional)</label>
+                            <input type="file" id="admin-bounty-image" accept="image/*"
+                                class="mt-1 w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100">
+                            <img id="admin-bounty-image-preview"
+                                class="mt-2 h-24 w-24 object-cover rounded-md hidden border">
                         </div>
+
+                        <!-- BARU: Pilihan Tipe Misi -->
+                        <div>
+                            <label for="admin-bounty-type" class="block text-sm font-medium text-gray-700">Tipe
+                                Misi</label>
+                            <select id="admin-bounty-type"
+                                class="mt-1 w-full p-2 border border-gray-300 rounded-md bg-white/90 backdrop-blur-sm">
+                                <option value="standard">📜 Standar (Teks/Gambar)</option>
+                                <option value="portal">s️ Portal (Dungeon RPG 2D)</option>
+                            </select>
+                        </div>
+
+                        <!-- BARU: Field Khusus Portal (Hidden by default) -->
+                        <div id="admin-bounty-portal-fields"
+                            class="hidden space-y-4 border-l-4 border-purple-500 pl-4 bg-purple-50 p-2 rounded-r-md">
+                            <h4 class="font-semibold text-purple-700">Konfigurasi Portal</h4>
+                            <div>
+                                <label for="admin-bounty-map-id" class="block text-sm font-medium text-gray-700">ID Peta
+                                    / Dungeon</label>
+                                <select id="admin-bounty-map-id"
+                                    class="mt-1 w-full p-2 border border-gray-300 rounded-md">
+                                    <option value="dungeon_1">🏰 Dungeon Dasar (Level 1)</option>
+                                    <option value="dungeon_forest">🌲 Hutan Terlarang (Level 2)</option>
+                                    <option value="dungeon_castle">🏯 Istana Tua (Level 3)</option>
+                                </select>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label for="admin-bounty-start-x"
+                                        class="block text-sm font-medium text-gray-700">Posisi Awal X</label>
+                                    <input type="number" id="admin-bounty-start-x"
+                                        class="mt-1 w-full p-2 border border-gray-300 rounded-md" value="100">
+                                </div>
+                                <div>
+                                    <label for="admin-bounty-start-y"
+                                        class="block text-sm font-medium text-gray-700">Posisi Awal Y</label>
+                                    <input type="number" id="admin-bounty-start-y"
+                                        class="mt-1 w-full p-2 border border-gray-300 rounded-md" value="100">
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
-                                <label for="admin-bounty-reward-xp" class="block text-sm font-medium text-gray-700">Hadiah XP</label>
-                                <input type="number" id="admin-bounty-reward-xp" required class="mt-1 w-full p-2 border border-gray-300 rounded-md" value="50">
+                                <label for="admin-bounty-reward-xp"
+                                    class="block text-sm font-medium text-gray-700">Hadiah XP</label>
+                                <input type="number" id="admin-bounty-reward-xp" required
+                                    class="mt-1 w-full p-2 border border-gray-300 rounded-md" value="50">
                             </div>
                             <div>
-                                <label for="admin-bounty-reward-coin" class="block text-sm font-medium text-gray-700">Hadiah Koin</label>
-                                <input type="number" id="admin-bounty-reward-coin" required class="mt-1 w-full p-2 border border-gray-300 rounded-md" value="25">
+                                <label for="admin-bounty-reward-coin"
+                                    class="block text-sm font-medium text-gray-700">Hadiah Koin</label>
+                                <input type="number" id="admin-bounty-reward-coin" required
+                                    class="mt-1 w-full p-2 border border-gray-300 rounded-md" value="25">
                             </div>
-                             <div>
-                                <label for="admin-bounty-taker-limit" class="block text-sm font-medium text-gray-700">Batas Pengambil</label>
-                                <input type="number" id="admin-bounty-taker-limit" required class="mt-1 w-full p-2 border border-gray-300 rounded-md" value="10">
+                            <div>
+                                <label for="admin-bounty-taker-limit"
+                                    class="block text-sm font-medium text-gray-700">Batas Pengambil</label>
+                                <input type="number" id="admin-bounty-taker-limit" required
+                                    class="mt-1 w-full p-2 border border-gray-300 rounded-md" value="10">
                             </div>
                         </div>
                         <div class="pt-4 flex justify-end space-x-2">
-                            <button type="button" id="cancel-admin-bounty-button" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg">Batal</button>
-                            <button type="submit" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg">Publikasikan Misi</button>
+                            <button type="button" id="cancel-admin-bounty-button"
+                                class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg">Batal</button>
+                            <button type="submit"
+                                class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg">Publikasikan
+                                Misi</button>
                         </div>
                     </form>
                 </div>
             </div>
-            <div id="grade-bounty-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden opacity-0 transition-opacity duration-300">
-    <div class="bg-white/90 backdrop-blur-sm rounded-lg shadow-xl w-full max-w-lg m-4 max-h-[80vh] flex flex-col">
-        <div class="p-6 border-b flex justify-between items-center">
-            <div>
-                <h3 class="text-xl font-semibold">Pilih Penerima Hadiah</h3>
-                <p id="grade-bounty-title" class="text-sm text-gray-500 mt-1">Misi: [Nama Misi]</p>
+            <div id="grade-bounty-modal"
+                class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden opacity-0 transition-opacity duration-300">
+                <div
+                    class="bg-white/90 backdrop-blur-sm rounded-lg shadow-xl w-full max-w-lg m-4 max-h-[80vh] flex flex-col">
+                    <div class="p-6 border-b flex justify-between items-center">
+                        <div>
+                            <h3 class="text-xl font-semibold">Pilih Penerima Hadiah</h3>
+                            <p id="grade-bounty-title" class="text-sm text-gray-500 mt-1">Misi: [Nama Misi]</p>
+                        </div>
+                        <button id="close-grade-bounty-modal-button"
+                            class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+                    </div>
+                    <div id="grade-bounty-student-list" class="p-6 space-y-3 overflow-y-auto">
+                        <div class="loading-container">
+                            <div class="loader"></div>
+                            <p class="loading-text">Memuat data peserta...</p>
+                        </div>
+                    </div>
+                    <div class="p-6 bg-gray-50 border-t mt-auto">
+                        <button id="confirm-grade-bounty-button"
+                            class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center">
+                            <i data-lucide="award" class="w-5 h-5 mr-2"></i>Berikan Hadiah & Selesaikan Misi
+                        </button>
+                    </div>
+                </div>
             </div>
-            <button id="close-grade-bounty-modal-button" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
-        </div>
-        <div id="grade-bounty-student-list" class="p-6 space-y-3 overflow-y-auto">
-            <div class="loading-container"><div class="loader"></div><p class="loading-text">Memuat data peserta...</p></div>
-        </div>
-        <div class="p-6 bg-gray-50 border-t mt-auto">
-            <button id="confirm-grade-bounty-button" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center">
-                <i data-lucide="award" class="w-5 h-5 mr-2"></i>Berikan Hadiah & Selesaikan Misi
-            </button>
-        </div>
-    </div>
-</div>
 
             <div id="shop-page" class="hidden space-y-6">
                 <!-- Bagian Analisis Penjualan -->
@@ -462,7 +813,8 @@
                             </div>
                             <div class="bg-gray-100 p-4 rounded-lg">
                                 <p class="text-sm text-gray-600">Total Pendapatan</p>
-                                <p id="total-revenue" class="text-2xl font-bold">0 <span class="text-base font-normal">Koin</span></p>
+                                <p id="total-revenue" class="text-2xl font-bold">0 <span
+                                        class="text-base font-normal">Koin</span></p>
                             </div>
                             <div class="bg-gray-100 p-4 rounded-lg">
                                 <p class="text-sm text-gray-600">Item Terlaris</p>
@@ -493,28 +845,36 @@
                             <h2 class="text-xl font-semibold">Manajemen Toko</h2>
                             <p class="text-sm text-gray-500 mt-1">Tambah, edit, atau hapus item yang dijual di toko.</p>
                         </div>
-                        <button id="add-shop-item-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg flex items-center">
+                        <button id="add-shop-item-button"
+                            class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg flex items-center">
                             <i data-lucide="plus-circle" class="w-4 h-4 mr-2"></i>Tambah Item
                         </button>
                     </div>
-                    <div id="shop-item-list" class="selection:bg-fuchsia-300 selection:text-fuchsia-900 p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                        <div class="loading-container col-span-full"><div class="loader"></div><p class="loading-text">Memuat item toko...</p></div>
+                    <div id="shop-item-list"
+                        class="selection:bg-fuchsia-300 selection:text-fuchsia-900 p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                        <div class="loading-container col-span-full">
+                            <div class="loader"></div>
+                            <p class="loading-text">Memuat item toko...</p>
+                        </div>
                     </div>
                 </div>
             </div>
-<div id="magic-controls-page" class="hidden">
+            <div id="magic-controls-page" class="hidden">
                 <div class="bg-white/90 backdrop-blur-sm rounded-lg shadow-md p-6">
                     <div class="mb-6">
                         <h2 class="text-xl font-semibold">Magic Controls</h2>
-                        <p class="text-sm text-gray-500 mt-1">Berikan efek, hadiah, atau hukuman kepada siswa secara langsung.</p>
+                        <p class="text-sm text-gray-500 mt-1">Berikan efek, hadiah, atau hukuman kepada siswa secara
+                            langsung.</p>
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 border-t pt-6">
                         <div class="space-y-4">
                             <h3 class="font-semibold text-lg">Ubah Stats</h3>
                             <div>
-                                <label for="stat-type" class="block text-sm font-medium text-gray-700">Jenis Stat</label>
-                                <select id="stat-type" class="mt-1 w-full p-2 border border-gray-300 rounded-md bg-white/90 backdrop-blur-sm">
+                                <label for="stat-type" class="block text-sm font-medium text-gray-700">Jenis
+                                    Stat</label>
+                                <select id="stat-type"
+                                    class="mt-1 w-full p-2 border border-gray-300 rounded-md bg-white/90 backdrop-blur-sm">
                                     <option value="hp">❤️ Health Points (HP)</option>
                                     <option value="mp">💧 Mana Points (MP)</option>
                                     <option value="xp">✨ Experience (XP)</option>
@@ -523,13 +883,16 @@
                             </div>
                             <div>
                                 <label for="stat-value" class="block text-sm font-medium text-gray-700">Jumlah</label>
-                                <input type="number" id="stat-value" value="10" class="mt-1 w-full p-2 border border-gray-300 rounded-md">
+                                <input type="number" id="stat-value" value="10"
+                                    class="mt-1 w-full p-2 border border-gray-300 rounded-md">
                             </div>
                             <div class="flex gap-4">
-                                <button id="apply-stat-addition" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center">
+                                <button id="apply-stat-addition"
+                                    class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center">
                                     <i data-lucide="plus" class="w-4 h-4 mr-2"></i> Tambahkan
                                 </button>
-                                <button id="apply-stat-subtraction" class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center">
+                                <button id="apply-stat-subtraction"
+                                    class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center">
                                     <i data-lucide="minus" class="w-4 h-4 mr-2"></i> Kurangi
                                 </button>
                             </div>
@@ -538,19 +901,23 @@
                         <div class="space-y-4">
                             <h3 class="font-semibold text-lg">Beri Status Efek</h3>
                             <div>
-                                <label for="effect-type" class="block text-sm font-medium text-gray-700">Jenis Efek</label>
-                                <select id="effect-type" class="mt-1 w-full p-2 border border-gray-300 rounded-md bg-white/90 backdrop-blur-sm">
+                                <label for="effect-type" class="block text-sm font-medium text-gray-700">Jenis
+                                    Efek</label>
+                                <select id="effect-type"
+                                    class="mt-1 w-full p-2 border border-gray-300 rounded-md bg-white/90 backdrop-blur-sm">
                                     <option value="racun">☠️ Racun (HP -1/hari)</option>
                                     <option value="diam">🔇 Diam (Blok Aksi)</option>
                                     <option value="buff_admin_key">🔑 Kunci Misi Dari Dungeon Master</option>
                                     <option value="knock">😵 Knock (HP jadi 10)</option>
                                 </select>
                             </div>
-                             <div class="flex gap-4">
-                                <button id="apply-effect" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center">
+                            <div class="flex gap-4">
+                                <button id="apply-effect"
+                                    class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center">
                                     <i data-lucide="wand-2" class="w-4 h-4 mr-2"></i> Beri Efek
                                 </button>
-                                <button id="remove-effect" class="w-full bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center">
+                                <button id="remove-effect"
+                                    class="w-full bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center">
                                     <i data-lucide="shield-off" class="w-4 h-4 mr-2"></i> Hapus Efek
                                 </button>
                             </div>
@@ -559,60 +926,78 @@
 
                     <div id="magic-student-list" class="mt-8 border-t pt-6">
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-        <div>
-            <label for="magic-filter-kelas" class="block text-sm font-medium text-gray-700">Filter berdasarkan Kelas</label>
-            <select id="magic-filter-kelas" class="mt-1 w-full p-2 border border-gray-300 rounded-md bg-white/90 backdrop-blur-sm">
-                <option value="semua">Semua Kelas</option>
-            </select>
-        </div>
-        <div>
-            <label for="magic-filter-guild" class="block text-sm font-medium text-gray-700">Filter berdasarkan Guild</label>
-            <select id="magic-filter-guild" class="mt-1 w-full p-2 border border-gray-300 rounded-md bg-white/90 backdrop-blur-sm">
-                <option value="semua">Semua Guild</option>
-            </select>
-        </div>
-    </div>
-<div class="flex flex-wrap gap-4 justify-between items-center mb-4">
-    <h3 class="font-semibold text-lg">Pilih Target Siswa</h3>
-    <div class="flex items-center gap-2">
-        <button id="scan-qr-magic-button" class="bg-teal-500 hover:bg-teal-600 text-white font-bold py-1 px-3 rounded-lg flex items-center text-sm">
-            <i data-lucide="scan-line" class="w-4 h-4 mr-2"></i>Scan QR Target
-        </button>
-        <label class="flex items-center space-x-2 text-sm">
-            <input type="checkbox" id="select-all-students-magic" class="rounded">
-            <span>Pilih Semua</span>
-        </label>
-    </div>
-</div>
-    <div id="magic-student-list-container" class="space-y-2 max-h-96 overflow-y-auto pr-2">
-         <div class="loading-container"><div class="loader"></div><p class="loading-text">Memuat data siswa...</p></div>
-    </div>
-</div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <label for="magic-filter-kelas" class="block text-sm font-medium text-gray-700">Filter
+                                    berdasarkan Kelas</label>
+                                <select id="magic-filter-kelas"
+                                    class="mt-1 w-full p-2 border border-gray-300 rounded-md bg-white/90 backdrop-blur-sm">
+                                    <option value="semua">Semua Kelas</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="magic-filter-guild" class="block text-sm font-medium text-gray-700">Filter
+                                    berdasarkan Guild</label>
+                                <select id="magic-filter-guild"
+                                    class="mt-1 w-full p-2 border border-gray-300 rounded-md bg-white/90 backdrop-blur-sm">
+                                    <option value="semua">Semua Guild</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="flex flex-wrap gap-4 justify-between items-center mb-4">
+                            <h3 class="font-semibold text-lg">Pilih Target Siswa</h3>
+                            <div class="flex items-center gap-2">
+                                <button id="scan-qr-magic-button"
+                                    class="bg-teal-500 hover:bg-teal-600 text-white font-bold py-1 px-3 rounded-lg flex items-center text-sm">
+                                    <i data-lucide="scan-line" class="w-4 h-4 mr-2"></i>Scan QR Target
+                                </button>
+                                <label class="flex items-center space-x-2 text-sm">
+                                    <input type="checkbox" id="select-all-students-magic" class="rounded">
+                                    <span>Pilih Semua</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div id="magic-student-list-container" class="space-y-2 max-h-96 overflow-y-auto pr-2">
+                            <div class="loading-container">
+                                <div class="loader"></div>
+                                <p class="loading-text">Memuat data siswa...</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
             <footer class="text-center py-4 mt-8">
-   <p class="text-xs text-black-400">Dibuat oleh © <a style="text-decoration:none" href="https://sites.google.com/view/smk-myckb/halaman-muka" target="_blank"><font color="#0080FF" face="sans-serif">Mas Panji Purnomo</font></a></p>
-</footer>
-</main>
+                <p class="text-xs text-black-400">Dibuat oleh © <a style="text-decoration:none"
+                        href="https://sites.google.com/view/smk-myckb/halaman-muka" target="_blank">
+                        <font color="#0080FF" face="sans-serif">Mas Panji Purnomo</font>
+                    </a></p>
+            </footer>
+        </main>
         </main>
     </div>
 
-    <div id="party-battle-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40 hidden modal-overlay opacity-0">
-        <div class="bg-white/90 backdrop-blur-sm rounded-lg shadow-xl w-full max-w-2xl m-4 modal-content transform scale-95 max-h-[90vh] flex flex-col">
+    <div id="party-battle-modal"
+        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40 hidden modal-overlay opacity-0">
+        <div
+            class="bg-white/90 backdrop-blur-sm rounded-lg shadow-xl w-full max-w-2xl m-4 modal-content transform scale-95 max-h-[90vh] flex flex-col">
             <div class="p-6 border-b flex justify-between items-center">
                 <h3 class="text-xl font-semibold">Siapkan Pertarungan Kelompok</h3>
-                <button id="close-party-battle-modal-button" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+                <button id="close-party-battle-modal-button"
+                    class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
             </div>
             <div class="p-6 space-y-4 overflow-y-auto">
                 <div>
-    <label for="class-select" class="block text-sm font-medium text-gray-700 mb-2">Pilih Kelas yang Spesifik (Opsional):</label>
-    <select id="class-select" class="w-full p-2 border border-gray-300 rounded-md bg-white/90 backdrop-blur-sm">
-        </select>
-</div>
+                    <label for="class-select" class="block text-sm font-medium text-gray-700 mb-2">Pilih Kelas yang
+                        Spesifik (Opsional):</label>
+                    <select id="class-select"
+                        class="w-full p-2 border border-gray-300 rounded-md bg-white/90 backdrop-blur-sm">
+                    </select>
+                </div>
                 <div>
-                    <label for="guild-select" class="block text-sm font-medium text-gray-700 mb-2">Pilih Guild yang akan Bertarung:</label>
-                    <select id="guild-select" class="w-full p-2 border border-gray-300 rounded-md bg-white/90 backdrop-blur-sm">
+                    <label for="guild-select" class="block text-sm font-medium text-gray-700 mb-2">Pilih Guild yang akan
+                        Bertarung:</label>
+                    <select id="guild-select"
+                        class="w-full p-2 border border-gray-300 rounded-md bg-white/90 backdrop-blur-sm">
                         <option value="Garuda">🦅 Garuda</option>
                         <option value="Burung Hantu">🦉 Burung Hantu</option>
                         <option value="Candi">🏛️ Candi</option>
@@ -622,36 +1007,51 @@
                     </select>
                 </div>
                 <div class="mt-4 pt-4 border-t">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Atau, Pilih Siswa Secara Manual (Akan menimpa pilihan Kelas/Guild):</label>
-                    <input type="text" id="party-student-search" class="w-full p-2 border border-gray-300 rounded-md mb-2" placeholder="Cari nama siswa...">
-                    <div id="party-manual-student-selection-list" class="space-y-1 max-h-48 overflow-y-auto border rounded-md p-2 bg-gray-50">
-                        <div class="loading-container"><div class="loader"></div><p class="loading-text text-sm">Memuat siswa...</p></div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Atau, Pilih Siswa Secara Manual (Akan
+                        menimpa pilihan Kelas/Guild):</label>
+                    <input type="text" id="party-student-search"
+                        class="w-full p-2 border border-gray-300 rounded-md mb-2" placeholder="Cari nama siswa...">
+                    <div id="party-manual-student-selection-list"
+                        class="space-y-1 max-h-48 overflow-y-auto border rounded-md p-2 bg-gray-50">
+                        <div class="loading-container">
+                            <div class="loader"></div>
+                            <p class="loading-text text-sm">Memuat siswa...</p>
+                        </div>
                     </div>
                 </div>
-                 <div>
+                <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Pilih Monster yang akan Dilawan:</label>
-                    <div id="party-monster-selection-list" class="space-y-2 max-h-48 overflow-y-auto border rounded-md p-2">
-                        <div class="loading-container"><div class="loader"></div><p class="loading-text text-sm">Memuat monster...</p></div>
+                    <div id="party-monster-selection-list"
+                        class="space-y-2 max-h-48 overflow-y-auto border rounded-md p-2">
+                        <div class="loading-container">
+                            <div class="loader"></div>
+                            <p class="loading-text text-sm">Memuat monster...</p>
+                        </div>
                     </div>
                 </div>
             </div>
             <div class="p-6 bg-gray-50 rounded-b-lg mt-auto">
-                <button id="start-party-battle-button" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-lg flex items-center justify-center"><i data-lucide="swords" class="w-5 h-5 mr-2"></i>MULAI PERTARUNGAN KELOMPOK</button>
+                <button id="start-party-battle-button"
+                    class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-lg flex items-center justify-center"><i
+                        data-lucide="swords" class="w-5 h-5 mr-2"></i>MULAI PERTARUNGAN KELOMPOK</button>
             </div>
         </div>
     </div>
 
 
-    <div id="battle-modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 hidden modal-overlay opacity-0">
-        <div class="bg-white/90 backdrop-blur-sm rounded-lg shadow-xl w-full max-w-4xl m-4 modal-content transform scale-95 max-h-[90vh] flex flex-col">
+    <div id="battle-modal"
+        class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 hidden modal-overlay opacity-0">
+        <div
+            class="bg-white/90 backdrop-blur-sm rounded-lg shadow-xl w-full max-w-4xl m-4 modal-content transform scale-95 max-h-[90vh] flex flex-col">
             <div class="p-4 border-b flex justify-between items-center bg-gray-100 rounded-t-lg">
                 <h3 id="battle-modal-title" class="text-xl font-bold font-game tracking-wider">BATTLE!</h3>
-                <button id="close-battle-modal-button" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+                <button id="close-battle-modal-button"
+                    class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
             </div>
             <div class="p-6 flex-grow overflow-y-auto space-y-4">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
                     <div class="space-y-4">
-                         <h4 class="text-lg font-bold text-center">PARTY SISWA</h4>
+                        <h4 class="text-lg font-bold text-center">PARTY SISWA</h4>
                         <div id="battle-student-info" class="space-y-3 max-h-64 overflow-y-auto pr-2"></div>
                     </div>
                     <div id="battle-monster-info" class="text-center"></div>
@@ -661,330 +1061,483 @@
                     <p class="font-bold text-center text-blue-600" id="turn-indicator">Giliran: [Nama Siswa]</p>
                     <!-- Container untuk Pertanyaan AI -->
                     <div id="ai-battle-question-container">
-                        <div id="battle-question-text-container" class="bg-blue-50 rounded-lg p-4 text-center min-h-[100px] flex items-center justify-center"><p id="battle-question-text" class="text-lg font-semibold text-gray-800">Memuat pertanyaan AI...</p></div>
+                        <div id="battle-question-text-container"
+                            class="bg-blue-50 rounded-lg p-4 text-center min-h-[100px] flex items-center justify-center">
+                            <p id="battle-question-text" class="text-lg font-semibold text-gray-800">Memuat pertanyaan
+                                AI...</p>
+                        </div>
                         <div id="battle-options-container" class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                             <!-- Opsi dari AI akan muncul di sini -->
                         </div>
                     </div>
                     <!-- Container untuk Pertanyaan Admin -->
                     <div id="admin-battle-question-container" class="hidden">
-                        <textarea id="admin-question-input" class="w-full p-2 border border-gray-300 rounded-md" rows="3" placeholder="Ketik pertanyaan di sini..."></textarea>
+                        <textarea id="admin-question-input" class="w-full p-2 border border-gray-300 rounded-md"
+                            rows="3" placeholder="Ketik pertanyaan di sini..."></textarea>
                         <div class="flex justify-center gap-4 mt-4">
-                            <button id="admin-answer-correct-button" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-6 rounded-lg">Benar</button>
-                            <button id="admin-answer-incorrect-button" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-6 rounded-lg">Salah</button>
+                            <button id="admin-answer-correct-button"
+                                class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-6 rounded-lg">Benar</button>
+                            <button id="admin-answer-incorrect-button"
+                                class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-6 rounded-lg">Salah</button>
                         </div>
                     </div>
                 </div>
-                <div id="battle-log" class="h-24 bg-gray-800 text-white font-mono text-sm p-2 rounded-md overflow-y-auto"></div>
+                <div id="battle-log"
+                    class="h-24 bg-gray-800 text-white font-mono text-sm p-2 rounded-md overflow-y-auto"></div>
             </div>
         </div>
     </div>
 
-    <div id="monster-selection-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40 hidden modal-overlay opacity-0">
-        <div class="bg-white/90 backdrop-blur-sm rounded-lg shadow-xl w-full max-w-2xl m-4 modal-content transform scale-95 max-h-[90vh] flex flex-col">
+    <div id="monster-selection-modal"
+        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40 hidden modal-overlay opacity-0">
+        <div
+            class="bg-white/90 backdrop-blur-sm rounded-lg shadow-xl w-full max-w-2xl m-4 modal-content transform scale-95 max-h-[90vh] flex flex-col">
             <div class="p-6 border-b flex justify-between items-center">
                 <h3 class="text-xl font-semibold">Pilih Monster untuk Dilawan</h3>
-                <button id="close-monster-selection-modal-button" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+                <button id="close-monster-selection-modal-button"
+                    class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
             </div>
             <div id="monster-selection-list" class="p-6 space-y-4 overflow-y-auto">
-                <div class="loading-container"><div class="loader"></div><p class="loading-text">Memuat data monster...</p></div>
+                <div class="loading-container">
+                    <div class="loader"></div>
+                    <p class="loading-text">Memuat data monster...</p>
+                </div>
             </div>
         </div>
     </div>
 
-    <div id="shop-item-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40 hidden modal-overlay opacity-0">
-        <div class="bg-white/90 backdrop-blur-sm rounded-lg shadow-xl w-full max-w-2xl m-4 modal-content transform scale-95 max-h-[90vh] flex flex-col">
+    <div id="shop-item-modal"
+        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40 hidden modal-overlay opacity-0">
+        <div
+            class="bg-white/90 backdrop-blur-sm rounded-lg shadow-xl w-full max-w-2xl m-4 modal-content transform scale-95 max-h-[90vh] flex flex-col">
             <div class="p-6 border-b flex justify-between items-center">
                 <h3 id="shop-item-modal-title" class="text-xl font-semibold">Tambah Item Baru</h3>
-                <button id="close-shop-item-modal-button" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+                <button id="close-shop-item-modal-button"
+                    class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
             </div>
             <form id="shop-item-form" class="p-6 space-y-4 overflow-y-auto">
                 <input type="hidden" id="shop-item-id">
                 <div>
                     <label for="item-name" class="block text-sm font-medium text-gray-700">Nama Item</label>
-                    <input type="text" id="item-name" required class="mt-1 w-full p-2 border border-gray-300 rounded-md">
+                    <input type="text" id="item-name" required
+                        class="mt-1 w-full p-2 border border-gray-300 rounded-md">
                 </div>
                 <div>
-                    <label for="item-description" class="block text-sm font-medium text-gray-700">Deskripsi / Kegunaan</label>
-                    <textarea id="item-description" rows="3" required class="mt-1 w-full p-2 border border-gray-300 rounded-md"></textarea>
+                    <label for="item-description" class="block text-sm font-medium text-gray-700">Deskripsi /
+                        Kegunaan</label>
+                    <textarea id="item-description" rows="3" required
+                        class="mt-1 w-full p-2 border border-gray-300 rounded-md"></textarea>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label for="item-effect" class="block text-sm font-medium text-gray-700">Efek Item</label>
-<select id="item-effect" required class="mt-1 w-full p-2 border border-gray-300 rounded-md bg-white/90 backdrop-blur-sm">
-    <optgroup label="Efek Instan & Bantuan">
-       <option value="HEAL_HP">❤️ Pulihkan HP</option>
-    <option value="HEAL_MP">💧 Pulihkan MP</option>
-    <option value="GAIN_XP">✨ Dapatkan XP</option>
-        <option value="BLOCK_ATTACK">🛡️ Blok Serangan Musuh (1x)</option>
-        <option value="CURE_EFFECT">🌿 Sembuhkan 1 Efek Negatif</option>
-        <option value="GACHA_MYSTERY">🎁 Mistery! (Efek Gacha)</option>
-        <option value="BATTLE_TICKET">⚔️ Tiket Lawan Monster (AI)</option>
-        <option value="DUNGEON_TICKET">🎟️ Tiket Masuk Dungeon</option>
-        <option value="ACAK_KATA_TICKET">🎲 Tiket Game Acak Kata (AI)</option>
-    </optgroup>
-    <optgroup label="Buff Positif (Keuntungan)">
-        <option value="BUFF_HP_REGEN">💖 Regenerasi HP (+5% per hari)</option>
-        <option value="BUFF_TEMP_HP">❤️‍🩹 HP Sementara (Temporary HP)</option>
-        <option value="BUFF_ATTACK">⚔️ Penguat Serangan (masih belum aktif)</option>
-        <option value="BUFF_DEFENSE">🛡️ Penguat Pertahanan (masih belum aktif)</option>
-    </optgroup>
-    <optgroup label="Kutukan (Target Siswa Lain)">
-        <option value="CURSE_RACUN">☠️ Beri Kutukan Racun</option>
-        <option value="CURSE_DIAM">🔇 Beri Kutukan Diam</option>
-        <option value="CURSE_KNOCK">😵 Beri Kutukan Knock</option>
-    </optgroup>
-</select>
+                        <select id="item-effect" required
+                            class="mt-1 w-full p-2 border border-gray-300 rounded-md bg-white/90 backdrop-blur-sm">
+                            <optgroup label="Efek Instan & Bantuan">
+                                <option value="HEAL_HP">❤️ Pulihkan HP</option>
+                                <option value="HEAL_MP">💧 Pulihkan MP</option>
+                                <option value="GAIN_XP">✨ Dapatkan XP</option>
+                                <option value="BLOCK_ATTACK">🛡️ Blok Serangan Musuh (1x)</option>
+                                <option value="CURE_EFFECT">🌿 Sembuhkan 1 Efek Negatif</option>
+                                <option value="GACHA_MYSTERY">🎁 Mistery! (Efek Gacha)</option>
+                                <option value="BATTLE_TICKET">⚔️ Tiket Lawan Monster (AI)</option>
+                                <option value="DUNGEON_TICKET">🎟️ Tiket Masuk Dungeon</option>
+                                <option value="ACAK_KATA_TICKET">🎲 Tiket Game Acak Kata (AI)</option>
+                            </optgroup>
+                            <optgroup label="Buff Positif (Keuntungan)">
+                                <option value="BUFF_HP_REGEN">💖 Regenerasi HP (+5% per hari)</option>
+                                <option value="BUFF_TEMP_HP">❤️‍🩹 HP Sementara (Temporary HP)</option>
+                                <option value="BUFF_ATTACK">⚔️ Penguat Serangan (masih belum aktif)</option>
+                                <option value="BUFF_DEFENSE">🛡️ Penguat Pertahanan (masih belum aktif)</option>
+                            </optgroup>
+                            <optgroup label="Kutukan (Target Siswa Lain)">
+                                <option value="CURSE_RACUN">☠️ Beri Kutukan Racun</option>
+                                <option value="CURSE_DIAM">🔇 Beri Kutukan Diam</option>
+                                <option value="CURSE_KNOCK">😵 Beri Kutukan Knock</option>
+                            </optgroup>
+                        </select>
                     </div>
                     <div>
-                        <label for="item-effect-value" class="block text-sm font-medium text-gray-700">Nilai Efek (jika ada)</label>
-                        <input type="number" id="item-effect-value" class="mt-1 w-full p-2 border border-gray-300 rounded-md" placeholder="Contoh: 50 untuk HP">
+                        <label for="item-effect-value" class="block text-sm font-medium text-gray-700">Nilai Efek (jika
+                            ada)</label>
+                        <input type="number" id="item-effect-value"
+                            class="mt-1 w-full p-2 border border-gray-300 rounded-md" placeholder="Contoh: 50 untuk HP">
                     </div>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div><label for="item-price" class="block text-sm font-medium text-gray-700">Harga (Koin)</label><input type="number" id="item-price" required class="mt-1 w-full p-2 border border-gray-300 rounded-md" value="10"></div>
-                    <div><label for="item-stock" class="block text-sm font-medium text-gray-700">Stok</label><input type="number" id="item-stock" required class="mt-1 w-full p-2 border border-gray-300 rounded-md" value="1"></div>
+                    <div><label for="item-price" class="block text-sm font-medium text-gray-700">Harga
+                            (Koin)</label><input type="number" id="item-price" required
+                            class="mt-1 w-full p-2 border border-gray-300 rounded-md" value="10"></div>
+                    <div><label for="item-stock" class="block text-sm font-medium text-gray-700">Stok</label><input
+                            type="number" id="item-stock" required
+                            class="mt-1 w-full p-2 border border-gray-300 rounded-md" value="1"></div>
                 </div>
-                <div><label for="item-image" class="block text-sm font-medium text-gray-700">Gambar Item</label><input type="file" id="item-image" accept="image/*" class="mt-1 w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"><img id="item-image-preview" class="mt-2 h-24 w-24 object-cover rounded-md hidden border"></div>
-                <div class="pt-4 flex justify-end space-x-2"><button type="button" id="cancel-shop-item-button" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg">Batal</button><button type="submit" id="submit-shop-item-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">Simpan Item</button></div>
+                <div><label for="item-image" class="block text-sm font-medium text-gray-700">Gambar Item</label><input
+                        type="file" id="item-image" accept="image/*"
+                        class="mt-1 w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"><img
+                        id="item-image-preview" class="mt-2 h-24 w-24 object-cover rounded-md hidden border"></div>
+                <div class="pt-4 flex justify-end space-x-2"><button type="button" id="cancel-shop-item-button"
+                        class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg">Batal</button><button
+                        type="submit" id="submit-shop-item-button"
+                        class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">Simpan
+                        Item</button></div>
             </form>
         </div>
     </div>
 
-    <div id="student-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-30 hidden modal-overlay opacity-0"><div class="bg-white/90 backdrop-blur-sm rounded-lg shadow-xl w-full max-w-lg m-4 modal-content transform scale-95 max-h-[90vh] flex flex-col"><div class="p-6 border-b flex justify-between items-center"><h3 id="modal-title" class="text-xl font-semibold">Tambah Siswa Baru</h3>
-        <button id="close-modal-button" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button></div>
-        <form id="student-form" class="p-6 space-y-4 overflow-y-auto"><input type="hidden" id="student-id"><div id="auth-fields"><div class="mb-4"><label for="email-modal" class="block text-sm font-medium text-gray-700">Email Login Siswa</label>
-            <input type="email" id="email-modal" class="mt-1 w-full p-2 border border-gray-300 rounded-md"></div>
-            <div class="mb-4"><label for="password-modal" class="block text-sm font-medium text-gray-700">Password Awal</label><input type="password" id="password-modal" class="mt-1 w-full p-2 border border-gray-300 rounded-md"></div></div>
-            <hr class="my-4"><div><label for="nama" class="block text-sm font-medium text-gray-700">Nama Siswa</label>
-                <input type="text" id="nama" required class="mt-1 w-full p-2 border border-gray-300 rounded-md"></div>
-            <div><label for="nis" class="block text-sm font-medium text-gray-700">NIS</label><input type="text" id="nis" required class="mt-1 w-full p-2 border border-gray-300 rounded-md"></div>
-            <div><label for="kelas" class="block text-sm font-medium text-gray-700">Kelas</label><select id="kelas" required class="mt-1 w-full p-2 border border-gray-300 rounded-md bg-white/90 backdrop-blur-sm"><option value="X RPL">X RPL</option><option value="XI RPL">XI RPL</option>
-                <option value="XII RPL">XII RPL</option>
-                <option value="X DPB">X DPB</option>
-                <option value="XI DPB">XI DPB</option>
-                <option value="XII DPB">XII DPB</option></select></div>
+    <div id="student-modal"
+        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-30 hidden modal-overlay opacity-0">
+        <div
+            class="bg-white/90 backdrop-blur-sm rounded-lg shadow-xl w-full max-w-lg m-4 modal-content transform scale-95 max-h-[90vh] flex flex-col">
+            <div class="p-6 border-b flex justify-between items-center">
+                <h3 id="modal-title" class="text-xl font-semibold">Tambah Siswa Baru</h3>
+                <button id="close-modal-button"
+                    class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+            </div>
+            <form id="student-form" class="p-6 space-y-4 overflow-y-auto"><input type="hidden" id="student-id">
+                <div id="auth-fields">
+                    <div class="mb-4"><label for="email-modal" class="block text-sm font-medium text-gray-700">Email
+                            Login Siswa</label>
+                        <input type="email" id="email-modal" class="mt-1 w-full p-2 border border-gray-300 rounded-md">
+                    </div>
+                    <div class="mb-4"><label for="password-modal"
+                            class="block text-sm font-medium text-gray-700">Password Awal</label><input type="password"
+                            id="password-modal" class="mt-1 w-full p-2 border border-gray-300 rounded-md"></div>
+                </div>
+                <hr class="my-4">
+                <div><label for="nama" class="block text-sm font-medium text-gray-700">Nama Siswa</label>
+                    <input type="text" id="nama" required class="mt-1 w-full p-2 border border-gray-300 rounded-md">
+                </div>
+                <div><label for="nis" class="block text-sm font-medium text-gray-700">NIS</label><input type="text"
+                        id="nis" required class="mt-1 w-full p-2 border border-gray-300 rounded-md"></div>
+                <div><label for="kelas" class="block text-sm font-medium text-gray-700">Kelas</label><select id="kelas"
+                        required class="mt-1 w-full p-2 border border-gray-300 rounded-md bg-white/90 backdrop-blur-sm">
+                        <option value="X RPL">X RPL</option>
+                        <option value="XI RPL">XI RPL</option>
+                        <option value="XII RPL">XII RPL</option>
+                        <option value="X DPB">X DPB</option>
+                        <option value="XI DPB">XI DPB</option>
+                        <option value="XII DPB">XII DPB</option>
+                    </select></div>
                 <div><label for="peran" class="block text-sm font-medium text-gray-700">Peran Karakter</label>
-                <select id="peran" required class="mt-1 w-full p-2 border border-gray-300 rounded-md bg-white/90 backdrop-blur-sm"><option value="Prajurit">Prajurit</option>
-                <option value="Penyihir">Penyihir</option><option value="Penyembuh">Penyembuh</option></select></div>
-                <div><label for="guild" class="block text-sm font-medium text-gray-700">Guild</label><select id="guild" required class="mt-1 w-full p-2 border border-gray-300 rounded-md bg-white/90 backdrop-blur-sm"><option value="Garuda">🦅 Garuda</option>
-                <option value="Burung Hantu">🦉 Burung Hantu</option>
-                <option value="Candi">🏛️ Candi</option><option value="Obor">🔥 Obor</option>
-                <option value="Buku">📖 Buku</option><option value="Topi Toga">🎓 Topi Toga</option></select></div>
+                    <select id="peran" required
+                        class="mt-1 w-full p-2 border border-gray-300 rounded-md bg-white/90 backdrop-blur-sm">
+                        <option value="Prajurit">Prajurit</option>
+                        <option value="Penyihir">Penyihir</option>
+                        <option value="Penyembuh">Penyembuh</option>
+                    </select>
+                </div>
+                <div><label for="guild" class="block text-sm font-medium text-gray-700">Guild</label><select id="guild"
+                        required class="mt-1 w-full p-2 border border-gray-300 rounded-md bg-white/90 backdrop-blur-sm">
+                        <option value="Garuda">🦅 Garuda</option>
+                        <option value="Burung Hantu">🦉 Burung Hantu</option>
+                        <option value="Candi">🏛️ Candi</option>
+                        <option value="Obor">🔥 Obor</option>
+                        <option value="Buku">📖 Buku</option>
+                        <option value="Topi Toga">🎓 Topi Toga</option>
+                    </select></div>
                 <div><label for="jenis-kelamin" class="block text-sm font-medium text-gray-700">Jenis Kelamin</label>
-    <select id="jenis-kelamin" required class="mt-1 w-full p-2 border border-gray-300 rounded-md bg-white/90 backdrop-blur-sm">
-        <option value="Pria">Pria</option>
-        <option value="Wanita">Wanita</option>
-    </select>
-</div>
-<div>
-    <label for="catatan" class="block text-sm font-medium text-gray-700">Catatan (Opsional)</label>
-    <textarea id="catatan" rows="3" class="mt-1 w-full p-2 border border-gray-300 rounded-md" placeholder="Contoh: Siswa aktif di OSIS, alergi udang, dll."></textarea>
-</div>
-<div class="grid grid-cols-4 gap-4">
-    
-        <div><label for="xp" class="block text-sm font-medium text-gray-700">XP</label>
-            <input type="number" id="xp" required class="mt-1 w-full p-2 border border-gray-300 rounded-md" value="0"></div>
-            <div><label for="hp" class="block text-sm font-medium text-gray-700">HP</label><input type="number" id="hp" required class="mt-1 w-full p-2 border border-gray-300 rounded-md" value="100"></div>
-            <div><label for="coin" class="block text-sm font-medium text-gray-700">Koin</label><input type="number" id="coin" required class="mt-1 w-full p-2 border border-gray-300 rounded-md" value="0"></div>
-        <div><label for="mp" class="block text-sm font-medium text-gray-700">MP</label><input type="number" id="mp" required class="mt-1 w-full p-2 border border-gray-300 rounded-md" value="50"></div></div>
-            <div><label for="foto" class="block text-sm font-medium text-gray-700">Foto Profil</label><input type="file" id="foto" accept="image/*" class="mt-1 w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"><div id="image-preview-container" class="mt-2 hidden"><p class="text-sm text-gray-600 mb-1">Pratinjau:</p><img id="image-preview" class="image-preview rounded-lg border"></div></div>
-            <div class="pt-4 flex justify-end space-x-2"><button type="button" id="cancel-button" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg">Batal</button><button type="submit" id="submit-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">Simpan</button></div></form></div></div>
+                    <select id="jenis-kelamin" required
+                        class="mt-1 w-full p-2 border border-gray-300 rounded-md bg-white/90 backdrop-blur-sm">
+                        <option value="Pria">Pria</option>
+                        <option value="Wanita">Wanita</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="catatan" class="block text-sm font-medium text-gray-700">Catatan (Opsional)</label>
+                    <textarea id="catatan" rows="3" class="mt-1 w-full p-2 border border-gray-300 rounded-md"
+                        placeholder="Contoh: Siswa aktif di OSIS, alergi udang, dll."></textarea>
+                </div>
+                <div class="grid grid-cols-4 gap-4">
 
-    <div id="quest-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40 hidden modal-overlay opacity-0">
-        <div class="bg-white/90 backdrop-blur-sm rounded-lg shadow-xl w-full max-w-2xl m-4 modal-content transform scale-95 max-h-[90vh] flex flex-col">
-            <div class="p-6 border-b flex justify-between items-center"><h3 id="quest-modal-title" class="text-xl font-semibold">Buat Monster Baru</h3><button id="close-quest-modal-button" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button></div>
+                    <div><label for="xp" class="block text-sm font-medium text-gray-700">XP</label>
+                        <input type="number" id="xp" required class="mt-1 w-full p-2 border border-gray-300 rounded-md"
+                            value="0">
+                    </div>
+                    <div><label for="hp" class="block text-sm font-medium text-gray-700">HP</label><input type="number"
+                            id="hp" required class="mt-1 w-full p-2 border border-gray-300 rounded-md" value="100">
+                    </div>
+                    <div><label for="coin" class="block text-sm font-medium text-gray-700">Koin</label><input
+                            type="number" id="coin" required class="mt-1 w-full p-2 border border-gray-300 rounded-md"
+                            value="0"></div>
+                    <div><label for="mp" class="block text-sm font-medium text-gray-700">MP</label><input type="number"
+                            id="mp" required class="mt-1 w-full p-2 border border-gray-300 rounded-md" value="50"></div>
+                </div>
+                <div><label for="foto" class="block text-sm font-medium text-gray-700">Foto Profil</label><input
+                        type="file" id="foto" accept="image/*"
+                        class="mt-1 w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                    <div id="image-preview-container" class="mt-2 hidden">
+                        <p class="text-sm text-gray-600 mb-1">Pratinjau:</p><img id="image-preview"
+                            class="image-preview rounded-lg border">
+                    </div>
+                </div>
+                <div class="pt-4 flex justify-end space-x-2"><button type="button" id="cancel-button"
+                        class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg">Batal</button><button
+                        type="submit" id="submit-button"
+                        class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="quest-modal"
+        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40 hidden modal-overlay opacity-0">
+        <div
+            class="bg-white/90 backdrop-blur-sm rounded-lg shadow-xl w-full max-w-2xl m-4 modal-content transform scale-95 max-h-[90vh] flex flex-col">
+            <div class="p-6 border-b flex justify-between items-center">
+                <h3 id="quest-modal-title" class="text-xl font-semibold">Buat Monster Baru</h3><button
+                    id="close-quest-modal-button"
+                    class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+            </div>
             <form id="quest-form" class="p-6 space-y-4 overflow-y-auto">
                 <input type="hidden" id="quest-id">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label for="monster-name" class="block text-sm font-medium text-gray-700">Nama Monster</label>
-                        <input type="text" id="monster-name" required class="mt-1 w-full p-2 border border-gray-300 rounded-md">
+                        <input type="text" id="monster-name" required
+                            class="mt-1 w-full p-2 border border-gray-300 rounded-md">
                     </div>
                     <div>
                         <label for="monster-hp" class="block text-sm font-medium text-gray-700">HP Monster</label>
-                        <input type="number" id="monster-hp" required class="mt-1 w-full p-2 border border-gray-300 rounded-md" value="100">
+                        <input type="number" id="monster-hp" required
+                            class="mt-1 w-full p-2 border border-gray-300 rounded-md" value="100">
                     </div>
                 </div>
                 <div>
                     <label for="monster-image" class="block text-sm font-medium text-gray-700">Gambar Monster</label>
-                    <input type="file" id="monster-image" accept="image/*" class="mt-1 w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100">
+                    <input type="file" id="monster-image" accept="image/*"
+                        class="mt-1 w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100">
                     <img id="monster-image-preview" class="mt-2 h-24 w-24 object-cover rounded-md hidden border">
                 </div>
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label for="monster-reward-coin" class="block text-sm font-medium text-gray-700">Hadiah Koin</label>
-                        <input type="number" id="monster-reward-coin" required class="mt-1 w-full p-2 border border-gray-300 rounded-md" value="50">
+                        <label for="monster-reward-coin" class="block text-sm font-medium text-gray-700">Hadiah
+                            Koin</label>
+                        <input type="number" id="monster-reward-coin" required
+                            class="mt-1 w-full p-2 border border-gray-300 rounded-md" value="50">
                     </div>
                     <div>
                         <label for="monster-reward-xp" class="block text-sm font-medium text-gray-700">Hadiah XP</label>
-                        <input type="number" id="monster-reward-xp" required class="mt-1 w-full p-2 border border-gray-300 rounded-md" value="50">
+                        <input type="number" id="monster-reward-xp" required
+                            class="mt-1 w-full p-2 border border-gray-300 rounded-md" value="50">
                     </div>
                 </div>
                 <hr class="my-4">
                 <h4 class="text-lg font-semibold">Skill Monster</h4>
                 <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    <label class="flex items-center space-x-2"><input type="checkbox" id="skill-racun" data-skill="racun" class="monster-skill rounded"><span>Racun (HP -1/hari)</span></label>
-                    <label class="flex items-center space-x-2"><input type="checkbox" id="skill-diam" data-skill="diam" class="monster-skill rounded"><span>Diam (Blok Aksi)</span></label>
-                    <label class="flex items-center space-x-2"><input type="checkbox" id="skill-knock" data-skill="knock" class="monster-skill rounded"><span>Knock (HP jadi 10)</span></label>
-                    <label class="flex items-center space-x-2"><input type="checkbox" id="skill-mencuri" data-skill="mencuri" class="monster-skill rounded"><span>Mencuri Koin</span></label>
-                    <label class="flex items-center space-x-2"><input type="checkbox" id="skill-kabut" data-skill="kabut" class="monster-skill rounded"><span>Kabut (Acak Jawaban)</span></label>
-                    <label class="flex items-center space-x-2"><input type="checkbox" id="skill-hisap" data-skill="hisap" class="monster-skill rounded"><span>Hisap Energi (Curi XP)</span></label>
+                    <label class="flex items-center space-x-2"><input type="checkbox" id="skill-racun"
+                            data-skill="racun" class="monster-skill rounded"><span>Racun (HP -1/hari)</span></label>
+                    <label class="flex items-center space-x-2"><input type="checkbox" id="skill-diam" data-skill="diam"
+                            class="monster-skill rounded"><span>Diam (Blok Aksi)</span></label>
+                    <label class="flex items-center space-x-2"><input type="checkbox" id="skill-knock"
+                            data-skill="knock" class="monster-skill rounded"><span>Knock (HP jadi 10)</span></label>
+                    <label class="flex items-center space-x-2"><input type="checkbox" id="skill-mencuri"
+                            data-skill="mencuri" class="monster-skill rounded"><span>Mencuri Koin</span></label>
+                    <label class="flex items-center space-x-2"><input type="checkbox" id="skill-kabut"
+                            data-skill="kabut" class="monster-skill rounded"><span>Kabut (Acak Jawaban)</span></label>
+                    <label class="flex items-center space-x-2"><input type="checkbox" id="skill-hisap"
+                            data-skill="hisap" class="monster-skill rounded"><span>Hisap Energi (Curi XP)</span></label>
                 </div>
                 <hr class="my-4">
                 <div class="flex justify-between items-center">
                     <h4 class="text-lg font-semibold">Pertanyaan Pertarungan</h4>
-                    <button type="button" id="add-question-button" class="bg-blue-500 hover:bg-blue-600 text-white text-sm font-bold py-1 px-3 rounded-full flex items-center"><i data-lucide="plus" class="w-4 h-4 mr-1"></i>Tambah</button>
+                    <button type="button" id="add-question-button"
+                        class="bg-blue-500 hover:bg-blue-600 text-white text-sm font-bold py-1 px-3 rounded-full flex items-center"><i
+                            data-lucide="plus" class="w-4 h-4 mr-1"></i>Tambah</button>
                 </div>
                 <div id="questions-container" class="space-y-4">
-                    </div>
+                </div>
                 <div class="pt-4 flex justify-end space-x-2">
-                    <button type="button" id="cancel-quest-button" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg">Batal</button>
-                    <button type="submit" id="submit-quest-button" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg">Simpan Monster</button>
+                    <button type="button" id="cancel-quest-button"
+                        class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg">Batal</button>
+                    <button type="submit" id="submit-quest-button"
+                        class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg">Simpan
+                        Monster</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <div id="qr-scanner-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-30 hidden modal-overlay opacity-0">
-        <div class="bg-white/90 backdrop-blur-sm rounded-lg shadow-xl w-full max-w-lg m-4 modal-content transform scale-95">
+    <div id="qr-scanner-modal"
+        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-30 hidden modal-overlay opacity-0">
+        <div
+            class="bg-white/90 backdrop-blur-sm rounded-lg shadow-xl w-full max-w-lg m-4 modal-content transform scale-95">
             <div class="p-4 border-b flex justify-between items-center">
                 <h3 class="text-lg font-semibold">Pindai Kode QR Siswa</h3>
-                <button id="close-qr-scanner-modal-button" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+                <button id="close-qr-scanner-modal-button"
+                    class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
             </div>
             <div class="p-6 flex flex-col items-center bg-gray-50">
                 <div id="qr-reader-wrapper">
                     <div id="qr-reader"></div>
                     <div class="scanner-line"></div>
                 </div>
-                <div id="scan-result" class="text-center mt-4 font-semibold text-gray-700 h-6">Arahkan kamera ke Kode QR Siswa</div>
+                <div id="scan-result" class="text-center mt-4 font-semibold text-gray-700 h-6">Arahkan kamera ke Kode QR
+                    Siswa</div>
             </div>
         </div>
     </div>
-    <div id="toast-notification" class="fixed bottom-5 right-5 bg-green-500 text-white py-2 px-4 rounded-lg shadow-lg hidden transition-opacity duration-300"></div>
+    <div id="toast-notification"
+        class="fixed bottom-5 right-5 bg-green-500 text-white py-2 px-4 rounded-lg shadow-lg hidden transition-opacity duration-300">
+    </div>
 
-    <div id="noise-detector-modal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50 hidden opacity-0 transition-opacity duration-300">
-    <div class="bg-white/90 backdrop-blur-sm rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
-        <div class="p-4 border-b flex justify-between items-center">
-            <h3 class="text-xl font-semibold">🤫 Uji Keheningan Kelas</h3>
-            <button id="close-noise-detector-modal" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
-        </div>
+    <div id="noise-detector-modal"
+        class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50 hidden opacity-0 transition-opacity duration-300">
+        <div class="bg-white/90 backdrop-blur-sm rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+            <div class="p-4 border-b flex justify-between items-center">
+                <h3 class="text-xl font-semibold">🤫 Uji Keheningan Kelas</h3>
+                <button id="close-noise-detector-modal"
+                    class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+            </div>
 
-        <div class="p-6 grid grid-cols-1 lg:grid-cols-2 gap-6 overflow-y-auto">
-            <div class="space-y-4">
-                <div>
-                    <h4 class="font-semibold mb-2">1. Pilih Peserta Ujian</h4>
-                    <div class="p-4 border rounded-md space-y-2">
-                         <select id="noise-filter-kelas" class="w-full p-2 border border-gray-300 rounded-md bg-white/90 backdrop-blur-sm">
-                            <option value="semua">Pilih Semua Kelas</option>
-                        </select>
-                        <div id="noise-student-list" class="space-y-1 max-h-48 overflow-y-auto pr-2">
-                            <p class="text-xs text-gray-400">Pilih kelas untuk menampilkan siswa...</p>
+            <div class="p-6 grid grid-cols-1 lg:grid-cols-2 gap-6 overflow-y-auto">
+                <div class="space-y-4">
+                    <div>
+                        <h4 class="font-semibold mb-2">1. Pilih Peserta Ujian</h4>
+                        <div class="p-4 border rounded-md space-y-2">
+                            <select id="noise-filter-kelas"
+                                class="w-full p-2 border border-gray-300 rounded-md bg-white/90 backdrop-blur-sm">
+                                <option value="semua">Pilih Semua Kelas</option>
+                            </select>
+                            <div id="noise-student-list" class="space-y-1 max-h-48 overflow-y-auto pr-2">
+                                <p class="text-xs text-gray-400">Pilih kelas untuk menampilkan siswa...</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold mb-2">2. Atur Batas Kebisingan</h4>
+                        <div class="flex items-center gap-4 p-4 border rounded-md">
+                            <i data-lucide="volume-x" class="text-gray-400"></i>
+                            <input type="range" id="noise-threshold-slider" min="0" max="100" value="30" class="w-full">
+                            <i data-lucide="volume-2" class="text-red-500"></i>
+                            <span id="noise-threshold-value" class="font-bold text-lg w-12 text-center">30</span>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold mb-2">3. Kontrol Ujian</h4>
+                        <div class="flex flex-col sm:flex-row gap-2">
+                            <button id="start-noise-detection"
+                                class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center gap-2">
+                                <i data-lucide="play-circle" class="w-5 h-5"></i>Mulai
+                            </button>
+                            <button id="stop-noise-detection"
+                                class="w-full bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center gap-2"
+                                disabled>
+                                <i data-lucide="stop-circle" class="w-5 h-5"></i>Berhenti
+                            </button>
+                        </div>
+                    </div>
+                    <button id="finish-and-reward"
+                        class="w-full mt-4 bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2"
+                        disabled>
+                        <i data-lucide="party-popper" class="w-5 h-5"></i>Selesai & Beri Hadiah Acak
+                    </button>
+                </div>
+
+                <div class="space-y-4">
+                    <div>
+                        <h4 class="font-semibold mb-2">Monitor Suara Saat Ini</h4>
+                        <div class="w-full bg-gray-200 rounded-full h-8 relative">
+                            <div id="noise-meter-bar" class="bg-green-500 h-8 rounded-full transition-all duration-100"
+                                style="width: 0%;"></div>
+                            <div id="noise-meter-threshold-line"
+                                class="absolute top-0 h-full border-r-2 border-dashed border-red-500"
+                                style="left: 30%;"></div>
+                            <span id="noise-meter-value"
+                                class="absolute inset-0 flex items-center justify-center font-bold text-white text-shadow">0</span>
+                        </div>
+                        <p class="text-xs text-center mt-1 text-gray-500">Garis merah adalah batas kebisingan.</p>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold mb-2">Log Hukuman (HP -10%)</h4>
+                        <div id="noise-penalty-log"
+                            class="p-2 border rounded-md h-64 overflow-y-auto bg-gray-50 text-sm">
+                            <p class="text-gray-400">Log akan muncul di sini...</p>
                         </div>
                     </div>
                 </div>
-                <div>
-                    <h4 class="font-semibold mb-2">2. Atur Batas Kebisingan</h4>
-                    <div class="flex items-center gap-4 p-4 border rounded-md">
-                        <i data-lucide="volume-x" class="text-gray-400"></i>
-                        <input type="range" id="noise-threshold-slider" min="0" max="100" value="30" class="w-full">
-                        <i data-lucide="volume-2" class="text-red-500"></i>
-                        <span id="noise-threshold-value" class="font-bold text-lg w-12 text-center">30</span>
-                    </div>
-                </div>
-                <div>
-                    <h4 class="font-semibold mb-2">3. Kontrol Ujian</h4>
-                    <div class="flex flex-col sm:flex-row gap-2">
-                        <button id="start-noise-detection" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center gap-2">
-                            <i data-lucide="play-circle" class="w-5 h-5"></i>Mulai
-                        </button>
-                        <button id="stop-noise-detection" class="w-full bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center gap-2" disabled>
-                            <i data-lucide="stop-circle" class="w-5 h-5"></i>Berhenti
-                        </button>
-                    </div>
-                </div>
-                 <button id="finish-and-reward" class="w-full mt-4 bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2" disabled>
-                    <i data-lucide="party-popper" class="w-5 h-5"></i>Selesai & Beri Hadiah Acak
-                </button>
-            </div>
-
-            <div class="space-y-4">
-                <div>
-                    <h4 class="font-semibold mb-2">Monitor Suara Saat Ini</h4>
-                    <div class="w-full bg-gray-200 rounded-full h-8 relative">
-                        <div id="noise-meter-bar" class="bg-green-500 h-8 rounded-full transition-all duration-100" style="width: 0%;"></div>
-                        <div id="noise-meter-threshold-line" class="absolute top-0 h-full border-r-2 border-dashed border-red-500" style="left: 30%;"></div>
-                        <span id="noise-meter-value" class="absolute inset-0 flex items-center justify-center font-bold text-white text-shadow">0</span>
-                    </div>
-                    <p class="text-xs text-center mt-1 text-gray-500">Garis merah adalah batas kebisingan.</p>
-                </div>
-                <div>
-                    <h4 class="font-semibold mb-2">Log Hukuman (HP -10%)</h4>
-                    <div id="noise-penalty-log" class="p-2 border rounded-md h-64 overflow-y-auto bg-gray-50 text-sm">
-                        <p class="text-gray-400">Log akan muncul di sini...</p>
-                    </div>
-                </div>
             </div>
         </div>
     </div>
-</div>
-<div id="ivy-settings-modal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50 hidden opacity-0 transition-opacity duration-300">
-    <div class="bg-white/90 backdrop-blur-sm rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
-        <div class="p-4 border-b flex justify-between items-center">
-            <h3 class="text-xl font-semibold">Pengaturan Ivy</h3>
-            <button id="close-ivy-settings-modal" class="text-gray-400 hover:text-gray-600">&times;</button>
-        </div>
+    <div id="ivy-settings-modal"
+        class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50 hidden opacity-0 transition-opacity duration-300">
+        <div class="bg-white/90 backdrop-blur-sm rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+            <div class="p-4 border-b flex justify-between items-center">
+                <h3 class="text-xl font-semibold">Pengaturan Ivy</h3>
+                <button id="close-ivy-settings-modal" class="text-gray-400 hover:text-gray-600">&times;</button>
+            </div>
 
-        <div class="p-6 space-y-4 overflow-y-auto">
-            <div>
-                <label for="ivy-api-key" class="block text-sm font-medium text-gray-700">API Key Gemini</label>
-                <div class="relative mt-1">
-                    <input type="password" id="ivy-api-key" class="w-full p-2 border border-gray-300 rounded-md pr-10" placeholder="Masukkan API Key yang valid...">
-                    <button id="toggle-api-key-visibility" class="absolute inset-y-0 right-0 px-3 flex items-center text-gray-500">
-                        <i data-lucide="eye" class="w-4 h-4"></i>
-                    </button>
+            <div class="p-6 space-y-4 overflow-y-auto">
+                <div>
+                    <label for="ivy-api-key" class="block text-sm font-medium text-gray-700">API Key Gemini</label>
+                    <div class="relative mt-1">
+                        <input type="password" id="ivy-api-key"
+                            class="w-full p-2 border border-gray-300 rounded-md pr-10"
+                            placeholder="Masukkan API Key yang valid...">
+                        <button id="toggle-api-key-visibility"
+                            class="absolute inset-y-0 right-0 px-3 flex items-center text-gray-500">
+                            <i data-lucide="eye" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div>
+                    <label for="ivy-personality" class="block text-sm font-medium text-gray-700">Kepribadian Dasar
+                        Ivy</label>
+                    <textarea id="ivy-personality" rows="4" class="mt-1 w-full p-2 border border-gray-300 rounded-md"
+                        placeholder="Tulis sifat dasar Ivy di sini..."></textarea>
+                </div>
+
+                <div>
+                    <label for="ivy-info" class="block text-sm font-medium text-gray-700">Informasi Platform &
+                        Sekolah</label>
+                    <textarea id="ivy-info" rows="4" class="mt-1 w-full p-2 border border-gray-300 rounded-md"
+                        placeholder="Tulis semua fakta penting yang harus Ivy ketahui..."></textarea>
+                </div>
+                <div>
+                    <label for="ivy-ai-quiz-prompt" class="block text-sm font-medium text-gray-700">Prompt Dasar AI
+                        Quiz</label>
+                    <textarea id="ivy-ai-quiz-prompt" rows="4" class="mt-1 w-full p-2 border border-gray-300 rounded-md"
+                        placeholder="Contoh: Buatkan satu soal kuis pilihan ganda (4 opsi) tentang [TOPIK]. Tingkat kesulitan: [KESULITAN]. Format soal dalam cerita pendek. Berikan penjelasan singkat. Pastikan jawaban benar ada di salah satu opsi."></textarea>
+                </div>
+
+                <div class="p-4 border rounded-md space-y-3">
+                    <div class="flex justify-between items-center">
+                        <label for="ivy-gossip-toggle" class="block text-sm font-medium text-gray-700">Izinkan Ivy
+                            Menggosip?</label>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="ivy-gossip-toggle" class="sr-only peer">
+                            <div
+                                class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white/90 backdrop-blur-sm after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600">
+                            </div>
+                        </label>
+                    </div>
+                    <textarea id="ivy-gossip" rows="4"
+                        class="w-full p-2 border border-gray-300 rounded-md transition-opacity"
+                        placeholder="Tulis gosip-gosip centil di sini..."></textarea>
                 </div>
             </div>
 
-            <div>
-                <label for="ivy-personality" class="block text-sm font-medium text-gray-700">Kepribadian Dasar Ivy</label>
-                <textarea id="ivy-personality" rows="4" class="mt-1 w-full p-2 border border-gray-300 rounded-md" placeholder="Tulis sifat dasar Ivy di sini..."></textarea>
+            <div class="p-4 bg-gray-50 border-t flex justify-end gap-2">
+                <button id="cancel-ivy-settings"
+                    class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg">Batal</button>
+                <button id="save-ivy-settings"
+                    class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg">Simpan
+                    Pengaturan</button>
             </div>
-
-            <div>
-                <label for="ivy-info" class="block text-sm font-medium text-gray-700">Informasi Platform & Sekolah</label>
-                <textarea id="ivy-info" rows="4" class="mt-1 w-full p-2 border border-gray-300 rounded-md" placeholder="Tulis semua fakta penting yang harus Ivy ketahui..."></textarea>
-            </div>
-            <div>
-                <label for="ivy-ai-quiz-prompt" class="block text-sm font-medium text-gray-700">Prompt Dasar AI Quiz</label>
-                <textarea id="ivy-ai-quiz-prompt" rows="4" class="mt-1 w-full p-2 border border-gray-300 rounded-md" placeholder="Contoh: Buatkan satu soal kuis pilihan ganda (4 opsi) tentang [TOPIK]. Tingkat kesulitan: [KESULITAN]. Format soal dalam cerita pendek. Berikan penjelasan singkat. Pastikan jawaban benar ada di salah satu opsi."></textarea>
-            </div>
-            
-            <div class="p-4 border rounded-md space-y-3">
-                <div class="flex justify-between items-center">
-                    <label for="ivy-gossip-toggle" class="block text-sm font-medium text-gray-700">Izinkan Ivy Menggosip?</label>
-                    <label class="relative inline-flex items-center cursor-pointer">
-                      <input type="checkbox" id="ivy-gossip-toggle" class="sr-only peer">
-                      <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white/90 backdrop-blur-sm after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
-                    </label>
-                </div>
-                <textarea id="ivy-gossip" rows="4" class="w-full p-2 border border-gray-300 rounded-md transition-opacity" placeholder="Tulis gosip-gosip centil di sini..."></textarea>
-            </div>
-        </div>
-
-        <div class="p-4 bg-gray-50 border-t flex justify-end gap-2">
-            <button id="cancel-ivy-settings" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg">Batal</button>
-            <button id="save-ivy-settings" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg">Simpan Pengaturan</button>
         </div>
     </div>
-</div>
     <!-- Modal AI Quiz Battle -->
-    <div id="ai-quiz-modal" class="fixed inset-0 bg-black bg-opacity-80 flex-col items-center justify-center p-4 z-50 hidden opacity-0 transition-opacity duration-300">
-        <div class="w-full max-w-5xl h-full flex flex-col-reverse lg:flex-row bg-[#020230] rounded-lg shadow-2xl border-2 border-yellow-400">
+    <div id="ai-quiz-modal"
+        class="fixed inset-0 bg-black bg-opacity-80 flex-col items-center justify-center p-4 z-50 hidden opacity-0 transition-opacity duration-300">
+        <div
+            class="w-full max-w-5xl h-full flex flex-col-reverse lg:flex-row bg-[#020230] rounded-lg shadow-2xl border-2 border-yellow-400">
             <!-- Game Area -->
             <div class="flex-grow flex flex-col justify-around p-4 relative">
-                <div id="ai-quiz-question-container" class="bg-gradient-to-br from-[#000428] to-[#004e92] p-6 rounded-lg text-center border-2 border-gray-400 min-h-[150px] flex items-center justify-center">
-                    <h2 id="ai-quiz-question-text" class="text-xl lg:text-2xl text-white">Pertanyaan dari AI akan muncul di sini...</h2>
+                <div id="ai-quiz-question-container"
+                    class="bg-gradient-to-br from-[#000428] to-[#004e92] p-6 rounded-lg text-center border-2 border-gray-400 min-h-[150px] flex items-center justify-center">
+                    <h2 id="ai-quiz-question-text" class="text-xl lg:text-2xl text-white">Pertanyaan dari AI akan muncul
+                        di sini...</h2>
                 </div>
                 <div id="ai-quiz-options-container" class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                     <!-- Options will be generated here -->
@@ -993,98 +1546,143 @@
             <!-- Sidebar -->
             <div class="w-full lg:w-80 flex-shrink-0 p-4 flex flex-col justify-between bg-black bg-opacity-20">
                 <div>
-                    <img src="https://placehold.co/300x100/020230/FFFF00?text=AI+Quiz+Battle" alt="Logo" class="mx-auto mb-4 rounded-lg">
+                    <img src="https://placehold.co/300x100/020230/FFFF00?text=AI+Quiz+Battle" alt="Logo"
+                        class="mx-auto mb-4 rounded-lg">
                     <div class="flex justify-around my-4">
                         <div id="lifeline-5050" class="lifeline" title="50:50 (15 MP)">50:50</div>
-                        <div id="lifeline-phone" class="lifeline" title="Tanya AI Lain (20 MP)"><i data-lucide="phone" class="w-6 h-6"></i></div>
-                        <div id="lifeline-audience" class="lifeline" title="Tanya Penonton (25 MP)"><i data-lucide="users" class="w-6 h-6"></i></div>
+                        <div id="lifeline-phone" class="lifeline" title="Tanya AI Lain (20 MP)"><i data-lucide="phone"
+                                class="w-6 h-6"></i></div>
+                        <div id="lifeline-audience" class="lifeline" title="Tanya Penonton (25 MP)"><i
+                                data-lucide="users" class="w-6 h-6"></i></div>
                     </div>
                 </div>
                 <ul id="ai-quiz-prize-ladder" class="text-right space-y-1"></ul>
-                <button id="close-ai-quiz-modal-button" class="mt-4 w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg">Keluar</button>
+                <button id="close-ai-quiz-modal-button"
+                    class="mt-4 w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg">Keluar</button>
             </div>
         </div>
     </div>
     <!-- Modal Jurnal Refleksi -->
-<div id="journal-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40 hidden modal-overlay opacity-0">
-    <div class="bg-white/90 backdrop-blur-sm rounded-lg shadow-xl w-full max-w-3xl m-4 modal-content transform scale-95 max-h-[90vh] flex flex-col">
-        <div class="p-6 border-b flex justify-between items-center">
-            <h3 id="journal-modal-title" class="text-xl font-semibold">Tambah Jurnal Refleksi Baru</h3>
-            <button id="close-journal-modal-button" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
-        </div>
-        <form id="journal-form" class="p-6 space-y-4 overflow-y-auto">
-            <input type="hidden" id="journal-id">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <label for="journal-date" class="block text-sm font-medium text-gray-700">Tanggal</label>
-                    <input type="date" id="journal-date" required class="mt-1 w-full p-2 border border-gray-300 rounded-md">
-                </div>
-                <div>
-                    <label for="journal-day-name" class="block text-sm font-medium text-gray-700">Hari</label>
-                    <input type="text" id="journal-day-name" readonly class="mt-1 w-full p-2 border border-gray-300 rounded-md bg-gray-100 cursor-not-allowed">
-                </div>
-                <div>
-                    <label for="journal-class" class="block text-sm font-medium text-gray-700">Kelas</label>
-                    <select id="journal-class" required class="mt-1 w-full p-2 border border-gray-300 rounded-md bg-white/90 backdrop-blur-sm"><option value="X RPL">X RPL</option><option value="XI RPL">XI RPL</option><option value="XII RPL">XII RPL</option><option value="X DPB">X DPB</option><option value="XI DPB">XI DPB</option><option value="XII DPB">XII DPB</option><option value="Umum">Umum/Semua Kelas</option></select>
-                </div>
-                <div>
-                    <label for="journal-subject" class="block text-sm font-medium text-gray-700">Mata Pelajaran</label>
-                    <select id="journal-subject" required class="mt-1 w-full p-2 border border-gray-300 rounded-md bg-white/90 backdrop-blur-sm"><option value="RPL">RPL</option><option value="Web">Web</option><option value="Basis Data">Basis Data</option></select>
-                </div>
+    <div id="journal-modal"
+        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40 hidden modal-overlay opacity-0">
+        <div
+            class="bg-white/90 backdrop-blur-sm rounded-lg shadow-xl w-full max-w-3xl m-4 modal-content transform scale-95 max-h-[90vh] flex flex-col">
+            <div class="p-6 border-b flex justify-between items-center">
+                <h3 id="journal-modal-title" class="text-xl font-semibold">Tambah Jurnal Refleksi Baru</h3>
+                <button id="close-journal-modal-button"
+                    class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
             </div>
+            <form id="journal-form" class="p-6 space-y-4 overflow-y-auto">
+                <input type="hidden" id="journal-id">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="journal-date" class="block text-sm font-medium text-gray-700">Tanggal</label>
+                        <input type="date" id="journal-date" required
+                            class="mt-1 w-full p-2 border border-gray-300 rounded-md">
+                    </div>
+                    <div>
+                        <label for="journal-day-name" class="block text-sm font-medium text-gray-700">Hari</label>
+                        <input type="text" id="journal-day-name" readonly
+                            class="mt-1 w-full p-2 border border-gray-300 rounded-md bg-gray-100 cursor-not-allowed">
+                    </div>
+                    <div>
+                        <label for="journal-class" class="block text-sm font-medium text-gray-700">Kelas</label>
+                        <select id="journal-class" required
+                            class="mt-1 w-full p-2 border border-gray-300 rounded-md bg-white/90 backdrop-blur-sm">
+                            <option value="X RPL">X RPL</option>
+                            <option value="XI RPL">XI RPL</option>
+                            <option value="XII RPL">XII RPL</option>
+                            <option value="X DPB">X DPB</option>
+                            <option value="XI DPB">XI DPB</option>
+                            <option value="XII DPB">XII DPB</option>
+                            <option value="Umum">Umum/Semua Kelas</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="journal-subject" class="block text-sm font-medium text-gray-700">Mata
+                            Pelajaran</label>
+                        <select id="journal-subject" required
+                            class="mt-1 w-full p-2 border border-gray-300 rounded-md bg-white/90 backdrop-blur-sm">
+                            <option value="RPL">RPL</option>
+                            <option value="Web">Web</option>
+                            <option value="Basis Data">Basis Data</option>
+                        </select>
+                    </div>
+                </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Cuaca Hari Ini</label>
-                    <div id="journal-weather-selector" class="flex flex-wrap gap-3"></div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Cuaca Hari Ini</label>
+                        <div id="journal-weather-selector" class="flex flex-wrap gap-3"></div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Perasaanku Hari Ini</label>
+                        <div id="journal-feeling-selector" class="flex flex-wrap gap-3"></div>
+                    </div>
                 </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Perasaanku Hari Ini</label>
-                    <div id="journal-feeling-selector" class="flex flex-wrap gap-3"></div>
-                </div>
-            </div>
 
-            <div><label for="journal-tasks" class="block text-sm font-medium text-gray-700">Daftar Tugas</label><textarea id="journal-tasks" rows="3" class="mt-1 w-full p-2 border border-gray-300 rounded-md" placeholder="Tugas apa saja yang dikerjakan hari ini?"></textarea></div>
-            <div><label for="journal-achievements" class="block text-sm font-medium text-gray-700">Pencapaian Hari Ini</label><textarea id="journal-achievements" rows="3" class="mt-1 w-full p-2 border border-gray-300 rounded-md" placeholder="Apa saja yang berhasil kamu capai?"></textarea></div>
-            <div><label for="journal-notes" class="block text-sm font-medium text-gray-700">Catatan Hari Ini</label><textarea id="journal-notes" rows="3" class="mt-1 w-full p-2 border border-gray-300 rounded-md" placeholder="Hal penting atau menarik apa yang terjadi?"></textarea></div>
-            <div><label for="journal-tomorrow-plan" class="block text-sm font-medium text-gray-700">Rencana Esok Hari</label><textarea id="journal-tomorrow-plan" rows="3" class="mt-1 w-full p-2 border border-gray-300 rounded-md" placeholder="Apa yang akan kamu lakukan besok?"></textarea></div>
+                <div><label for="journal-tasks" class="block text-sm font-medium text-gray-700">Daftar
+                        Tugas</label><textarea id="journal-tasks" rows="3"
+                        class="mt-1 w-full p-2 border border-gray-300 rounded-md"
+                        placeholder="Tugas apa saja yang dikerjakan hari ini?"></textarea></div>
+                <div><label for="journal-achievements" class="block text-sm font-medium text-gray-700">Pencapaian Hari
+                        Ini</label><textarea id="journal-achievements" rows="3"
+                        class="mt-1 w-full p-2 border border-gray-300 rounded-md"
+                        placeholder="Apa saja yang berhasil kamu capai?"></textarea></div>
+                <div><label for="journal-notes" class="block text-sm font-medium text-gray-700">Catatan Hari
+                        Ini</label><textarea id="journal-notes" rows="3"
+                        class="mt-1 w-full p-2 border border-gray-300 rounded-md"
+                        placeholder="Hal penting atau menarik apa yang terjadi?"></textarea></div>
+                <div><label for="journal-tomorrow-plan" class="block text-sm font-medium text-gray-700">Rencana Esok
+                        Hari</label><textarea id="journal-tomorrow-plan" rows="3"
+                        class="mt-1 w-full p-2 border border-gray-300 rounded-md"
+                        placeholder="Apa yang akan kamu lakukan besok?"></textarea></div>
 
-            <div class="pt-4 flex justify-end space-x-2">
-                <button type="button" id="cancel-journal-button" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg">Batal</button>
-                <button type="submit" id="submit-journal-button" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-lg">Simpan Jurnal</button>
-            </div>
-        </form>
-    </div>
-</div>
-<!-- MODAL BARU: Chatbot Admin Ivy -->
-<div id="admin-ivy-chat-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-300 z-50">
-    <div class="bg-white/90 backdrop-blur-sm rounded-lg shadow-xl w-full max-w-md max-h-[80vh] flex flex-col">
-        <div class="p-4 border-b flex justify-between items-center bg-blue-50 rounded-t-lg">
-            <div class="flex items-center gap-2">
-                <div class="bg-blue-100 p-1 rounded-full">
-                    <lord-icon src="https://cdn.lordicon.com/dwhxbrvz.json" trigger="loop" delay="2000" style="width:24px;height:24px"></lord-icon>
+                <div class="pt-4 flex justify-end space-x-2">
+                    <button type="button" id="cancel-journal-button"
+                        class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg">Batal</button>
+                    <button type="submit" id="submit-journal-button"
+                        class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-lg">Simpan
+                        Jurnal</button>
                 </div>
-                <h3 class="text-lg font-semibold text-gray-800">Asisten Admin Ivy</h3>
-            </div>
-            <button id="close-admin-ivy-chat-modal-button" class="text-gray-400 hover:text-gray-600">
-                <i data-lucide="x" class="w-6 h-6"></i>
-            </button>
-        </div>
-        <div id="admin-ivy-chat-box" class="flex-grow p-4 overflow-y-auto bg-gray-50 space-y-3">
-            <div class="p-3 rounded-lg bg-white border border-gray-200 text-sm w-fit max-w-[85%] shadow-sm">
-                Halo Admin! Saya punya akses ke data seluruh siswa termasuk catatan khususnya. Mau tanya tentang siapa hari ini? 📝✨
-            </div>
-        </div>
-        <div class="p-3 border-t bg-white rounded-b-lg">
-            <form id="admin-ivy-chat-form" class="flex items-center gap-2">
-                <input type="text" id="admin-ivy-chat-input" class="w-full p-2 bg-gray-100 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" placeholder="Contoh: Siapa siswa yang sering sakit?" required autocomplete="off">
-                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold p-2 rounded-lg transition-colors">
-                    <i data-lucide="send" class="w-5 h-5"></i>
-                </button>
             </form>
         </div>
     </div>
-</div>
+    <!-- MODAL BARU: Chatbot Admin Ivy -->
+    <div id="admin-ivy-chat-modal"
+        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-300 z-50">
+        <div class="bg-white/90 backdrop-blur-sm rounded-lg shadow-xl w-full max-w-md max-h-[80vh] flex flex-col">
+            <div class="p-4 border-b flex justify-between items-center bg-blue-50 rounded-t-lg">
+                <div class="flex items-center gap-2">
+                    <div class="bg-blue-100 p-1 rounded-full">
+                        <lord-icon src="https://cdn.lordicon.com/dwhxbrvz.json" trigger="loop" delay="2000"
+                            style="width:24px;height:24px"></lord-icon>
+                    </div>
+                    <h3 class="text-lg font-semibold text-gray-800">Asisten Admin Ivy</h3>
+                </div>
+                <button id="close-admin-ivy-chat-modal-button" class="text-gray-400 hover:text-gray-600">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            <div id="admin-ivy-chat-box" class="flex-grow p-4 overflow-y-auto bg-gray-50 space-y-3">
+                <div class="p-3 rounded-lg bg-white border border-gray-200 text-sm w-fit max-w-[85%] shadow-sm">
+                    Halo Admin! Saya punya akses ke data seluruh siswa termasuk catatan khususnya. Mau tanya tentang
+                    siapa hari ini? 📝✨
+                </div>
+            </div>
+            <div class="p-3 border-t bg-white rounded-b-lg">
+                <form id="admin-ivy-chat-form" class="flex items-center gap-2">
+                    <input type="text" id="admin-ivy-chat-input"
+                        class="w-full p-2 bg-gray-100 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                        placeholder="Contoh: Siapa siswa yang sering sakit?" required autocomplete="off">
+                    <button type="submit"
+                        class="bg-blue-600 hover:bg-blue-700 text-white font-bold p-2 rounded-lg transition-colors">
+                        <i data-lucide="send" class="w-5 h-5"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
     <script type="module" src="script.js"></script>
     <script>
         // Script untuk menangani tombol Cetak Siswa
@@ -1096,4 +1694,5 @@
         });
     </script>
 </body>
+
 </html>
