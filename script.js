@@ -1,10 +1,10 @@
 // --- Theme Toggle Setup ---
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     const root = document.documentElement;
     const themeToggle = document.getElementById('theme-toggle');
 
     if (themeToggle) {
-        themeToggle.addEventListener('click', function() {
+        themeToggle.addEventListener('click', function () {
             if (root.getAttribute('data-color-scheme') === 'dark') {
                 root.setAttribute('data-color-scheme', 'light');
             } else {
@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // --- Impor dan Konfigurasi Firebase ---
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
-import { getDatabase, ref, set, get, onValue, push, update, remove, query, orderByChild, equalTo } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
+import { getDatabase, ref, set, get, onValue, push, update, remove, query, orderByChild, equalTo, onDisconnect } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyCA2Dwl7FPBDcbAtS5iTyTADx0YY5byxo8",
@@ -191,7 +191,7 @@ onAuthStateChanged(auth, async (user) => {
                 };
                 await update(studentRef, updates);
                 showToast("Kamu berhasil selamat dari Backroom! HP pulih & dapat 10 Koin!");
-                
+
                 // Hapus parameter dari URL agar tidak dieksekusi lagi saat refresh
                 const newUrl = window.location.pathname;
                 window.history.replaceState({}, document.title, newUrl);
@@ -237,14 +237,14 @@ function renderActiveSkill(studentData, uid) {
     for (let i = 0; i <= maxSkillIndex; i++) {
         const skill = SKILL_BOOK[peran].active[i];
         if (!skill) continue;
-        
+
         skillsFound = true;
         const hasEnoughMp = mp >= skill.mpCost;
         const skillLevel = i + 1;
 
         const skillDiv = document.createElement('div');
         skillDiv.className = "flex flex-col sm:flex-row items-center gap-4 border-b border-gray-200 pb-4 mb-4 last:border-0 last:mb-0 last:pb-0";
-        
+
         skillDiv.innerHTML = `
             <div class="flex-grow">
             <h4 class="font-bold text-lg font-sans">${skill.name} <span class="text-sm font-normal text-gray-500 font-sans">(Lv. ${skillLevel})</span></h4>
@@ -319,7 +319,7 @@ async function handleUseActiveSkill(uid, studentData, skill) {
             else {
                 updates[`/students/${uid}/mp`] = studentData.mp - skill.mpCost;
                 await update(ref(db), updates);
-                
+
                 const adminMessage = `Siswa <strong>${studentData.nama}</strong> (${studentData.peran} Lv. ${studentData.level}) menggunakan skill: <strong>${skill.name}</strong>.`;
                 addNotification(adminMessage, 'skill_usage', { studentId: uid });
                 showToast(`Skill "${skill.name}" berhasil digunakan! Permintaan dikirim ke admin.`);
@@ -469,7 +469,7 @@ const showToast = (message, isError = false) => {
     toast.classList.remove('hidden', 'bg-green-500', 'bg-red-500');
     toast.classList.add(isError ? 'bg-red-500' : 'bg-green-500');
     setTimeout(() => toast.classList.add('hidden'), 3000);
-    
+
     // Mainkan suara sesuai kondisi
     if (isError) {
         audioPlayer.error();
@@ -533,7 +533,7 @@ async function checkAndApplyStatusEffects(uid) {
         // 1. Hapus efek yang sudah kedaluwarsa
         if (now > effect.expires) {
             updates[`/students/${uid}/statusEffects/${effectKey}`] = null;
-            
+
             // --- 👇 MANTRA PENYEMPURNA HP SEMENTARA DIMULAI DI SINI 👇 ---
             if (effectKey === 'buff_temp_hp' && effect.tempHpGranted) {
                 const currentHp = updates[`/students/${uid}/hp`] || studentData.hp;
@@ -578,16 +578,16 @@ async function checkAndApplyStatusEffects(uid) {
                 }
             }
         }
-        
+
         // 3. Terapkan konsekuensi EFEK POSITIF (Regenerasi)
         if (effectKey === 'buff_hp_regen') {
             const lastRegenDate = studentData.lastRegenCheck || '';
-            
+
             if (lastRegenDate !== today) {
                 const regenAmount = Math.ceil(maxHp * 0.05);
                 const currentHp = updates[`/students/${uid}/hp`] || studentData.hp;
                 const newHp = Math.min(maxHp, currentHp + regenAmount);
-                
+
                 updates[`/students/${uid}/hp`] = newHp;
                 updates[`/students/${uid}/lastRegenCheck`] = today;
                 console.log(`Siswa ${studentData.nama} mendapat ${regenAmount} HP dari regenerasi.`);
@@ -687,7 +687,7 @@ function formatTimeRemaining(expiryTimestamp) {
 //                  LOGIKA HALAMAN LOGIN
 // =======================================================
 const loginForm = document.getElementById('login-form');
-if(loginForm) {
+if (loginForm) {
     loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const loginButton = document.getElementById('login-button');
@@ -716,9 +716,8 @@ if(loginForm) {
             }
 
         } catch (error) {
-            loginNotification.textContent = 'Email atau password salah!';
+            loginNotification.innerHTML = 'Email atau password salah!';
             loginNotification.classList.remove('hidden');
-            loginNotification.classList.add('bg-white-500');
             audioPlayer.error();
             loginButton.disabled = false;
             loginButton.textContent = 'Masuk Dunia DREAMY';
@@ -787,7 +786,7 @@ async function handleDailyLogin(uid) {
         updates[`/students/${uid}/lastLoginDate`] = today;
         updates[`/students/${uid}/loginStreak`] = streak;
     }
-    
+
     // 3. Terapkan semua update ke database jika ada
     if (Object.keys(updates).length > 0) {
         await update(ref(db), updates);
@@ -802,7 +801,23 @@ async function handleDailyLogin(uid) {
 // =======================================================
 
 function setupStudentDashboard(uid) {
-    document.getElementById('student-logout-button').onclick = () => signOut(auth);
+    // --- MANTRA BARU: DETAK JANTUNG ONLINE (PRESENCE) ---
+    const userStatusDatabaseRef = ref(db, `/students/${uid}/presence`);
+    const connectedRef = ref(db, ".info/connected");
+    onValue(connectedRef, (snap) => {
+        if (snap.val() === true) {
+            set(userStatusDatabaseRef, true);
+            onDisconnect(userStatusDatabaseRef).set(false);
+        }
+    });
+    document.getElementById('student-logout-button').onclick = async () => {
+        try {
+            await set(userStatusDatabaseRef, false); // Paksa offline sebelum logout
+        } catch (error) {
+            console.error("Gagal update status offline:", error);
+        }
+        signOut(auth);
+    };
     setupStudentNotifications(uid);
     setupIvyChat(uid); // Panggil fungsi chat Ivy di sini
     const ivyChatModal = document.getElementById('ivy-chat-modal');
@@ -826,7 +841,7 @@ function setupStudentDashboard(uid) {
         closeIvyChatModalButton.addEventListener('click', closeIvyChatModal);
         ivyChatModal.addEventListener('click', (event) => { if (event.target === ivyChatModal) { closeIvyChatModal(); } });
     }
-    
+
     // --- MANTRA BARU DISINI ---
     // Menghubungkan tombol navigasi Shop ke fungsi buka toko
     const shopNavButton = document.getElementById('open-shop-button');
@@ -836,86 +851,86 @@ function setupStudentDashboard(uid) {
             openStudentShop(uid);
         });
     }
-// Di dalam fungsi setupStudentDashboard(uid)
+    // Di dalam fungsi setupStudentDashboard(uid)
 
-// ... (kode untuk shopNavButton ada di atasnya)
+    // ... (kode untuk shopNavButton ada di atasnya)
 
-const bountyBoardNavLink = document.getElementById('bounty-board-nav-link');
-const navLinks = document.querySelector('nav .flex'); // Target navigasi
-const profilePage = document.getElementById('student-main-content');
-const bountyBoardPage = document.getElementById('bounty-board-page');
- const shopPage = document.getElementById('shop-page'); // Halaman baru
-const guildPage = document.getElementById('guild-page')
+    const bountyBoardNavLink = document.getElementById('bounty-board-nav-link');
+    const navLinks = document.querySelector('nav .flex'); // Target navigasi
+    const profilePage = document.getElementById('student-main-content');
+    const bountyBoardPage = document.getElementById('bounty-board-page');
+    const shopPage = document.getElementById('shop-page'); // Halaman baru
+    const guildPage = document.getElementById('guild-page')
 
-if (bountyBoardNavLink) {
-    bountyBoardNavLink.addEventListener('click', (e) => {
+    if (bountyBoardNavLink) {
+        bountyBoardNavLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            // Sembunyikan halaman lain dan tampilkan bounty board
+            profilePage.classList.add('hidden');
+            bountyBoardPage.classList.remove('hidden');
+
+            // Atur style link aktif
+            document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+            bountyBoardNavLink.classList.add('active');
+
+            // Panggil fungsi untuk memuat data bounty board
+            setupBountyBoardPage(uid);
+        });
+    }
+    navLinks.addEventListener('click', (e) => {
+        const targetLink = e.target.closest('a');
+        if (!targetLink || !targetLink.href.includes('#')) return;
+
         e.preventDefault();
-        // Sembunyikan halaman lain dan tampilkan bounty board
+
+        if (targetLink.id === 'open-shop-button') return; // Abaikan tombol Shop
+
+        // Sembunyikan semua halaman
         profilePage.classList.add('hidden');
-        bountyBoardPage.classList.remove('hidden');
+        bountyBoardPage.classList.add('hidden');
+        shopPage.classList.add('hidden');
+        guildPage.classList.add('hidden');
 
-        // Atur style link aktif
-        document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
-        bountyBoardNavLink.classList.add('active');
+        // Reset style semua link
+        navLinks.querySelectorAll('a.nav-link').forEach(link => link.classList.remove('active'));
 
-        // Panggil fungsi untuk memuat data bounty board
-        setupBountyBoardPage(uid);
-    });
-}
-navLinks.addEventListener('click', (e) => {
-    const targetLink = e.target.closest('a');
-    if (!targetLink || !targetLink.href.includes('#')) return;
+        const pageId = targetLink.getAttribute('href').substring(1);
+        targetLink.classList.add('active');
 
-    e.preventDefault();
-
-    if (targetLink.id === 'open-shop-button') return; // Abaikan tombol Shop
-
-    // Sembunyikan semua halaman
-    profilePage.classList.add('hidden');
-    bountyBoardPage.classList.add('hidden');
-    shopPage.classList.add('hidden');
-    guildPage.classList.add('hidden');
-
-    // Reset style semua link
-    navLinks.querySelectorAll('a.nav-link').forEach(link => link.classList.remove('active'));
-
-    const pageId = targetLink.getAttribute('href').substring(1);
-    targetLink.classList.add('active');
-
-    if (pageId === 'bounty-board') {
-        bountyBoardPage.classList.remove('hidden');
+        if (pageId === 'bounty-board') {
+            bountyBoardPage.classList.remove('hidden');
         } else if (pageId === 'shop') {
             shopPage.classList.remove('hidden');
-            setupStudentShopPage(uid); 
-    } else if (pageId === 'guild') {
-        guildPage.classList.remove('hidden');
-        setupGuildPage(uid); // Panggil mantra untuk Guild
-    } else {
-        profilePage.classList.remove('hidden');
-    }
-});
-// Tambahkan juga event listener untuk link profil agar bisa kembali
-const profileNavLink = document.querySelector('a[href="#"]'); // Asumsi link profil href="#"
-if(profileNavLink && profileNavLink.textContent === 'Profil'){
-    profileNavLink.addEventListener('click', (e) => {
-        e.preventDefault();
-        bountyBoardPage.classList.add('hidden');
-        profilePage.classList.remove('hidden');
-        document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
-        profileNavLink.classList.add('active');
+            setupStudentShopPage(uid);
+        } else if (pageId === 'guild') {
+            guildPage.classList.remove('hidden');
+            setupGuildPage(uid); // Panggil mantra untuk Guild
+        } else {
+            profilePage.classList.remove('hidden');
+        }
     });
-}
+    // Tambahkan juga event listener untuk link profil agar bisa kembali
+    const profileNavLink = document.querySelector('a[href="#"]'); // Asumsi link profil href="#"
+    if (profileNavLink && profileNavLink.textContent === 'Profil') {
+        profileNavLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            bountyBoardPage.classList.add('hidden');
+            profilePage.classList.remove('hidden');
+            document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+            profileNavLink.classList.add('active');
+        });
+    }
 
-// ... (sisa kode onValue(studentRef, ...) ada di bawahnya)
+    // ... (sisa kode onValue(studentRef, ...) ada di bawahnya)
 
     // --- MANTRA BARU: Variabel untuk menyimpan data siswa agar bisa diakses oleh fungsi lain di scope ini ---
     let currentStudentData = null;
 
     const studentRef = ref(db, `students/${uid}`);
     onValue(studentRef, (snapshot) => {
-        if(!snapshot.exists()) return;
+        if (!snapshot.exists()) return;
         const studentData = snapshot.val();
-         const maxHp = (studentData.level || 1) * 100;
+        const maxHp = (studentData.level || 1) * 100;
         const maxMp = 50 + ((studentData.level - 1) * 5); // Rumus Max MP baru
         document.getElementById('student-name').textContent = studentData.nama;
         document.getElementById('student-class-role').textContent = `${studentData.kelas} | ${studentData.peran} | Guild ${studentData.guild || ''}`;
@@ -925,14 +940,14 @@ if(profileNavLink && profileNavLink.textContent === 'Profil'){
         document.getElementById('student-avatar').src = studentData.fotoProfilBase64 || `https://placehold.co/128x128/e2e8f0/3d4852?text=${studentData.nama.charAt(0)}`;
         document.getElementById('hp-value').textContent = `${studentData.hp} / ${maxHp}`;
         document.getElementById('hp-bar').style.width = `${(studentData.hp / maxHp) * 100}%`;
-         document.getElementById('mp-value').textContent = `${studentData.mp} / ${maxMp}`;
+        document.getElementById('mp-value').textContent = `${studentData.mp} / ${maxMp}`;
         document.getElementById('mp-bar').style.width = `${(studentData.mp / maxMp) * 100}%`;
         document.getElementById('level-value').textContent = studentData.level;
         document.getElementById('xp-value').textContent = `${studentData.xp} / 1000`;
         document.getElementById('xp-bar').style.width = `${(studentData.xp / 1000) * 100}%`;
         document.getElementById('coin-value').textContent = studentData.coin;
         document.getElementById('login-streak-value').textContent = `${studentData.loginStreak || 0} Hari`;
-        
+
         const inventorySlots = document.getElementById('inventory-slots');
         inventorySlots.innerHTML = '';
         const inventorySize = 2 + ((studentData.level - 1) * 1);
@@ -961,13 +976,13 @@ if(profileNavLink && profileNavLink.textContent === 'Profil'){
                 openUseItemModal(uid, slot.dataset.index, slot.itemData);
             }
         };
-// --- MANTRA BARU: Tampilkan Status Efek Aktif ---
+        // --- MANTRA BARU: Tampilkan Status Efek Aktif ---
         const activeStatusEffectsContainer = document.getElementById('active-status-effects');
         activeStatusEffectsContainer.innerHTML = ''; // Kosongkan dulu
-        
-         // --- MANTRA BARU: Cek apakah objek statusEffects ada dan tidak kosong ---
-        const activeEffects = studentData.statusEffects ? 
-            Object.fromEntries(Object.entries(studentData.statusEffects).filter(([_, val]) => val !== null)) 
+
+        // --- MANTRA BARU: Cek apakah objek statusEffects ada dan tidak kosong ---
+        const activeEffects = studentData.statusEffects ?
+            Object.fromEntries(Object.entries(studentData.statusEffects).filter(([_, val]) => val !== null))
             : {};
 
         if (Object.keys(activeEffects).length > 0) {
@@ -985,26 +1000,26 @@ if(profileNavLink && profileNavLink.textContent === 'Profil'){
             };
 
             // --- GANTI BLOK for...in... YANG LAMA DENGAN INI ---
-for (const effectKey in activeEffects) {
-    const effectData = activeEffects[effectKey];
-    if (effectData && effectMap[effectKey]) {
-        const effectInfo = effectMap[effectKey];
+            for (const effectKey in activeEffects) {
+                const effectData = activeEffects[effectKey];
+                if (effectData && effectMap[effectKey]) {
+                    const effectInfo = effectMap[effectKey];
 
-        // --- Mantra Baru: Hitung sisa waktu! ---
-        const remainingTime = formatTimeRemaining(effectData.expires);
+                    // --- Mantra Baru: Hitung sisa waktu! ---
+                    const remainingTime = formatTimeRemaining(effectData.expires);
 
-        const effectDiv = document.createElement('div');
-        effectDiv.className = `flex flex-col items-center text-center p-3 bg-${effectInfo.color}-50 rounded-lg border border-${effectInfo.color}-200 w-24`; // Inem kasih lebar tetap biar rapi
+                    const effectDiv = document.createElement('div');
+                    effectDiv.className = `flex flex-col items-center text-center p-3 bg-${effectInfo.color}-50 rounded-lg border border-${effectInfo.color}-200 w-24`; // Inem kasih lebar tetap biar rapi
 
-        // --- Mantra Baru: Tampilkan sisa waktu di bawah ikon! ---
-        effectDiv.innerHTML = `
+                    // --- Mantra Baru: Tampilkan sisa waktu di bawah ikon! ---
+                    effectDiv.innerHTML = `
             <i data-lucide="${effectInfo.icon}" class="w-8 h-8 text-${effectInfo.color}-500 mb-1"></i>
             <span class="text-xs text-gray-700 font-medium">${effectInfo.text}</span>
             <span class="text-xxs text-${effectInfo.color}-600 font-semibold mt-1">${remainingTime}</span>
         `;
-        activeStatusEffectsContainer.appendChild(effectDiv);
-    }
-}
+                    activeStatusEffectsContainer.appendChild(effectDiv);
+                }
+            }
         } else {
             activeStatusEffectsContainer.innerHTML = '<p class="text-gray-500 text-sm">Tidak ada efek aktif saat ini.</p>';
         }
@@ -1029,69 +1044,69 @@ for (const effectKey in activeEffects) {
                 }, 100);
             }
         }
-        
+
         createLucideIcons();
     });
     document.getElementById('bounty-list-container').addEventListener('click', async (e) => {
-    const takeButton = e.target.closest('.take-bounty-btn');
-     const manageButton = e.target.closest('.manage-bounty-btn');
+        const takeButton = e.target.closest('.take-bounty-btn');
+        const manageButton = e.target.closest('.manage-bounty-btn');
 
-    if (takeButton) {
-        takeButton.disabled = true;
-        takeButton.textContent = 'Memproses...';
-        const bountyId = takeButton.dataset.id;
-        const uid = auth.currentUser.uid;
+        if (takeButton) {
+            takeButton.disabled = true;
+            takeButton.textContent = 'Memproses...';
+            const bountyId = takeButton.dataset.id;
+            const uid = auth.currentUser.uid;
 
-        try {
-            // ... (kode yang sudah ada untuk mengambil misi, tidak perlu diubah)
-             const bountyRef = ref(db, `bounties/${bountyId}`);
-            const bountySnap = await get(bountyRef);
-            if(!bountySnap.exists()) throw new Error("Misi tidak ditemukan!");
+            try {
+                // ... (kode yang sudah ada untuk mengambil misi, tidak perlu diubah)
+                const bountyRef = ref(db, `bounties/${bountyId}`);
+                const bountySnap = await get(bountyRef);
+                if (!bountySnap.exists()) throw new Error("Misi tidak ditemukan!");
 
-            const bountyData = bountySnap.val();
-            const takersCount = bountyData.takers ? Object.keys(bountyData.takers).length : 0;
-            if(takersCount >= bountyData.takerLimit) throw new Error("Slot misi sudah penuh!");
-            if(bountyData.takers && bountyData.takers[uid]) throw new Error("Kamu sudah mengambil misi ini!");
+                const bountyData = bountySnap.val();
+                const takersCount = bountyData.takers ? Object.keys(bountyData.takers).length : 0;
+                if (takersCount >= bountyData.takerLimit) throw new Error("Slot misi sudah penuh!");
+                if (bountyData.takers && bountyData.takers[uid]) throw new Error("Kamu sudah mengambil misi ini!");
 
-            await update(ref(db, `/bounties/${bountyId}/takers`), { [uid]: true });
-            showToast('Berhasil mengambil misi!');
-        } catch(error) {
-            showToast(error.message, true);
-            takeButton.disabled = false;
-            takeButton.textContent = 'Ambil Misi';
+                await update(ref(db, `/bounties/${bountyId}/takers`), { [uid]: true });
+                showToast('Berhasil mengambil misi!');
+            } catch (error) {
+                showToast(error.message, true);
+                takeButton.disabled = false;
+                takeButton.textContent = 'Ambil Misi';
+            }
+        } else if (manageButton) {
+            // Ini adalah logika baru untuk tombol selesaikan misi
+            const bountyId = manageButton.dataset.id;
+            openManageBountyModal(bountyId); // Panggil fungsi modal yang baru
         }
-    } else if (manageButton) {
-        // Ini adalah logika baru untuk tombol selesaikan misi
-        const bountyId = manageButton.dataset.id;
-        openManageBountyModal(bountyId); // Panggil fungsi modal yang baru
-    }
-});
+    });
 
     // =======================================================
     //          LOGIKA KHUSUS CHAT IVY (MODUL BARU)
     // =======================================================
     async function setupIvyChat(uid) {
-    const chatForm = document.getElementById('Ivy-chat-form');
-    const chatInput = document.getElementById('Ivy-chat-input');
+        const chatForm = document.getElementById('Ivy-chat-form');
+        const chatInput = document.getElementById('Ivy-chat-input');
 
-    if (!chatForm || !chatInput) { return; }
+        if (!chatForm || !chatInput) { return; }
 
-    // --- MANTRA BARU: Ambil data siswa & pengaturan Ivy sekaligus! ---
-    const studentSnap = await get(ref(db, `students/${uid}`));
-    const configSnap = await get(ref(db, 'config/ivySettings'));
-    
-    if (!studentSnap.exists() || !configSnap.exists()) {
-        console.error("Data siswa atau pengaturan Ivy tidak ditemukan.");
-        appendChatMessage("Aduh, Beb! Aku belum siap ngobrol, pengaturanku belum lengkap. Bilang ke admin, ya!", 'Ivy');
-        return;
-    }
-    
-    const studentData = studentSnap.val();
-    const ivySettings = configSnap.val();
-    let isIvyThinking = false;
+        // --- MANTRA BARU: Ambil data siswa & pengaturan Ivy sekaligus! ---
+        const studentSnap = await get(ref(db, `students/${uid}`));
+        const configSnap = await get(ref(db, 'config/ivySettings'));
 
-    chatForm.onsubmit = async (e) => {
-        e.preventDefault();
+        if (!studentSnap.exists() || !configSnap.exists()) {
+            console.error("Data siswa atau pengaturan Ivy tidak ditemukan.");
+            appendChatMessage("Aduh, Beb! Aku belum siap ngobrol, pengaturanku belum lengkap. Bilang ke admin, ya!", 'Ivy');
+            return;
+        }
+
+        const studentData = studentSnap.val();
+        const ivySettings = configSnap.val();
+        let isIvyThinking = false;
+
+        chatForm.onsubmit = async (e) => {
+            e.preventDefault();
             if (isIvyThinking) {
                 showToast("Sabar, Bray! Ivy lagi mikir...", true);
                 return;
@@ -1120,10 +1135,10 @@ for (const effectKey in activeEffects) {
             appendChatMessage(userMessage, 'user');
             chatInput.value = '';
             const loadingIndicator = appendChatMessage('Ivy sedang berpikir...', 'Ivy', true);
-        let finalPersona = `${ivySettings.personality}\n\n${ivySettings.info}`;
+            let finalPersona = `${ivySettings.personality}\n\n${ivySettings.info}`;
 
-        // --- MANTRA BARU: Menyisipkan profil lengkap siswa ke dalam persona Ivy ---
-        const studentProfileInfo = `
+            // --- MANTRA BARU: Menyisipkan profil lengkap siswa ke dalam persona Ivy ---
+            const studentProfileInfo = `
 ---
 INFORMASI PENTING TENTANG SISWA YANG SEDANG KAMU AJAK BICARA (GUNAKAN UNTUK KONTEKS):
 - Nama: ${studentData.nama}
@@ -1140,19 +1155,19 @@ INFORMASI PENTING TENTANG SISWA YANG SEDANG KAMU AJAK BICARA (GUNAKAN UNTUK KONT
 - Catatan dari Admin: ${currentStudentData.catatan || 'Tidak ada catatan.'}
 ---
 `;
-        finalPersona += `\n\n${studentProfileInfo}`;
-        if (ivySettings.gossipEnabled && ivySettings.gossip) {
-            finalPersona += `\n\n${ivySettings.gossip}`;
-        }
-        finalPersona += `\n\nKamu sedang berbicara dengan siswa bernama '${studentData.nama}'. Sapa dia dengan namanya dan gunakan informasi di atas untuk menjawab pertanyaan yang relevan.`;
+            finalPersona += `\n\n${studentProfileInfo}`;
+            if (ivySettings.gossipEnabled && ivySettings.gossip) {
+                finalPersona += `\n\n${ivySettings.gossip}`;
+            }
+            finalPersona += `\n\nKamu sedang berbicara dengan siswa bernama '${studentData.nama}'. Sapa dia dengan namanya dan gunakan informasi di atas untuk menjawab pertanyaan yang relevan.`;
             try {
-                        const apiKey = ivySettings.apiKey;
-                        if (!apiKey) throw new Error("API Key belum diatur oleh Admin!");
+                const apiKey = ivySettings.apiKey;
+                if (!apiKey) throw new Error("API Key belum diatur oleh Admin!");
 
-                        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
-                        const requestBody = {
-                        contents: [{ parts: [{ text: `${finalPersona}\n\nPertanyaan: ${userMessage}` }] }]
+                const requestBody = {
+                    contents: [{ parts: [{ text: `${finalPersona}\n\nPertanyaan: ${userMessage}` }] }]
                 };
 
                 const response = await fetch(apiUrl, {
@@ -1172,7 +1187,7 @@ INFORMASI PENTING TENTANG SISWA YANG SEDANG KAMU AJAK BICARA (GUNAKAN UNTUK KONT
                     console.error("Struktur balasan dari Gemini tidak valid:", result);
                     throw new Error("Ivy memberikan balasan yang aneh.");
                 }
-                
+
                 const IvyResponse = result.candidates[0].content.parts[0].text;
                 loadingIndicator.remove();
                 appendChatMessage(IvyResponse, 'Ivy');
@@ -1186,7 +1201,7 @@ INFORMASI PENTING TENTANG SISWA YANG SEDANG KAMU AJAK BICARA (GUNAKAN UNTUK KONT
                 chatInput.disabled = false;
                 chatInput.placeholder = 'Tanya sesuatu ke Ivy...';
             }
-        }; 
+        };
     }
 }
 
@@ -1207,7 +1222,7 @@ async function openStudentSelectionForAiQuiz() {
 
     modalTitle.textContent = 'Pilih Siswa untuk AI Quiz Battle';
     listDiv.innerHTML = LOADER_HTML;
-    
+
     audioPlayer.openModal();
     selectionModal.classList.remove('hidden');
     setTimeout(() => selectionModal.classList.remove('opacity-0'), 10);
@@ -1324,10 +1339,10 @@ async function loadAiQuizQuestion() {
     currentAiQuizState.isAnswerLocked = false;
     const questionTextEl = document.getElementById('ai-quiz-question-text');
     const optionsContainer = document.getElementById('ai-quiz-options-container');
-    
+
     optionsContainer.innerHTML = '';
     questionTextEl.innerHTML = '<div class="w-10 h-10 border-4 border-dashed rounded-full animate-spin border-yellow-400 mx-auto"></div><p class="mt-4 text-white">AI sedang meracik soal...</p>';
-    
+
     // Update prize ladder highlight
     document.querySelectorAll('#ai-quiz-prize-ladder li').forEach(li => {
         li.classList.remove('current');
@@ -1374,7 +1389,7 @@ async function loadAiQuizQuestion() {
 
         const data = currentAiQuizState.currentQuestionData;
         questionTextEl.innerHTML = `<p class="text-lg mb-4">${data.story}</p><p class="text-2xl font-bold">${data.question}</p>`;
-        
+
         data.options.forEach((option, index) => {
             const button = document.createElement('button');
             button.className = 'option';
@@ -1408,7 +1423,7 @@ function handleAiQuizAnswer(selectedIndex) {
             selectedButton.classList.remove('selected');
             selectedButton.classList.add('correct');
             audioPlayer.success();
-            
+
             setTimeout(() => {
                 currentAiQuizState.questionIndex++;
                 if (currentAiQuizState.questionIndex >= AI_QUIZ_PRIZES.length) {
@@ -1454,11 +1469,11 @@ async function endAiQuiz(isWinner) {
     if (prizeWon.xp > 0 || prizeWon.coin > 0) {
         const studentRef = ref(db, `students/${currentAiQuizState.studentId}`);
         const studentData = (await get(studentRef)).val();
-        
+
         const xpPerLevel = 1000;
         const currentTotalXp = ((studentData.level || 1) - 1) * xpPerLevel + (studentData.xp || 0);
         const newTotalXp = currentTotalXp + prizeWon.xp;
-        
+
         const updates = {
             level: Math.floor(newTotalXp / xpPerLevel) + 1,
             xp: newTotalXp % xpPerLevel,
@@ -1492,7 +1507,7 @@ async function handleAiQuizLifeline(type) {
     // Deduct MP
     await update(studentRef, { mp: studentData.mp - cost });
     showToast(`-${cost} MP. Lifeline ${type} digunakan!`);
-    
+
     currentAiQuizState.lifelines[type] = true;
     document.getElementById(`lifeline-${type}`).classList.add('used');
 
@@ -1620,7 +1635,7 @@ async function setupStudentShopPage(uid) {
         try {
             const studentRef = ref(db, `students/${uid}`);
             const itemRef = ref(db, `shopItems/${itemId}`);
-            
+
             const studentSnap = await get(studentRef);
             const itemSnap = await get(itemRef);
 
@@ -1657,7 +1672,7 @@ async function setupStudentShopPage(uid) {
             await update(ref(db, `shopItems/${itemId}`), {
                 stock: newStock
             });
-            
+
             // Catat transaksi
             const transactionRef = ref(db, 'transactions');
             await push(transactionRef, {
@@ -1668,13 +1683,13 @@ async function setupStudentShopPage(uid) {
                 studentName: studentData.nama,
                 timestamp: Date.now()
             });
-            
+
             addNotification(
-                `<strong>${studentData.nama}</strong> membeli <strong>${itemData.name}</strong>.`, 
-                'transaction', 
+                `<strong>${studentData.nama}</strong> membeli <strong>${itemData.name}</strong>.`,
+                'transaction',
                 { studentId: uid, itemId: itemId }
             );
-            
+
             showToast(`Berhasil membeli ${itemData.name}!`);
             audioPlayer.success();
             // PENTING: Kita tidak panggil renderShopItems() di sini karena onValue sudah tidak dipakai
@@ -1797,7 +1812,7 @@ function openUseItemModal(uid, itemIndex, itemData) {
     switch (itemData.effect) {
         case 'HEAL_HP': effectText = `Memulihkan ${itemData.effectValue} HP.`; break;
         case 'GAIN_XP': effectText = `Menambahkan ${itemData.effectValue} XP.`; break;
-        case 'BLOCK_ATTACK': effectText = `Memblok 1x serangan musuh.`; break;        
+        case 'BLOCK_ATTACK': effectText = `Memblok 1x serangan musuh.`; break;
         case 'GACHA_MYSTERY': effectText = 'Memberikan hadiah acak! Apa ya isinya?'; break;
         // --- Teks Efek Baru ---
         case 'CURSE_RACUN': effectText = 'Memberikan efek Racun pada target.'; break;
@@ -1822,13 +1837,13 @@ function openUseItemModal(uid, itemIndex, itemData) {
         useButton.onclick = () => {
             closeModal(); // Tutup modal item dulu
             // Buka modal baru untuk memilih target (akan kita buat fungsinya)
-            openTargetStudentModal(uid, itemIndex, itemData); 
+            openTargetStudentModal(uid, itemIndex, itemData);
         };
     } else {
         useButton.textContent = 'Gunakan Item';
         useButton.onclick = () => handleUseItem(uid, itemIndex, itemData, closeModal);
     }
-    
+
     depositButton.onclick = async () => {
         const studentSnap = await get(ref(db, `students/${uid}`));
         if (studentSnap.exists()) {
@@ -1868,12 +1883,12 @@ async function handleUseItem(uid, itemIndex, itemData, closeModalCallback) {
             const currentHp = Number(studentData.hp) || 0;
             const healAmount = Number(itemData.effectValue) || 0;
             updates[`/students/${uid}/hp`] = Math.min(maxHp, currentHp + healAmount);
-            } else if (itemData.effect === 'HEAL_MP') {
-    const studentLevel = studentData.level || 1;
-    const maxMp = 50 + ((studentLevel - 1) * 5);
-    const currentMp = Number(studentData.mp) || 0;
-    const healAmount = Number(itemData.effectValue) || 0;
-    updates[`/students/${uid}/mp`] = Math.min(maxMp, currentMp + healAmount);
+        } else if (itemData.effect === 'HEAL_MP') {
+            const studentLevel = studentData.level || 1;
+            const maxMp = 50 + ((studentLevel - 1) * 5);
+            const currentMp = Number(studentData.mp) || 0;
+            const healAmount = Number(itemData.effectValue) || 0;
+            updates[`/students/${uid}/mp`] = Math.min(maxMp, currentMp + healAmount);
         } else if (itemData.effect === 'GAIN_XP') {
             const xpPerLevel = 1000;
             const currentTotalXp = ((studentData.level || 1) - 1) * xpPerLevel + (studentData.xp || 0);
@@ -1890,14 +1905,14 @@ async function handleUseItem(uid, itemIndex, itemData, closeModalCallback) {
             } else {
                 successMessage = "Kamu tidak punya efek negatif untuk disembuhkan.";
             }
-        } 
+        }
         // --- 👇 MANTRA BARU UNTUK BUFF POSITIF 👇 ---
         else if (itemData.effect.startsWith('BUFF_')) {
             const durationInDays = 3; // Semua buff berlaku 3 hari
             const expiryTimestamp = Date.now() + (durationInDays * 24 * 60 * 60 * 1000);
             const effectKey = itemData.effect.toLowerCase(); // contoh: buff_hp_regen
-            
-            updates[`/students/${uid}/statusEffects/${effectKey}`] = { 
+
+            updates[`/students/${uid}/statusEffects/${effectKey}`] = {
                 expires: expiryTimestamp,
                 value: itemData.effectValue || 0, // Simpan nilainya jika ada
                 name: itemData.name // Simpan nama item untuk referensi
@@ -1910,18 +1925,18 @@ async function handleUseItem(uid, itemIndex, itemData, closeModalCallback) {
                 // Kita perlu cara melacak HP sementara ini, kita simpan di dalam efeknya saja
                 updates[`/students/${uid}/statusEffects/${effectKey}`].tempHpGranted = tempHpValue;
             }
-            
+
             successMessage = `Kamu merasakan kekuatan dari ${itemData.name}! Efek akan aktif selama ${durationInDays} hari.`;
         }
         // --- 👆 AKHIR DARI MANTRA 👆 ---
         else if (itemData.effect.startsWith('CURSE_')) {
-             throw new Error("Item ini harus digunakan pada siswa lain!");
+            throw new Error("Item ini harus digunakan pada siswa lain!");
         }
         // --- 👇 MANTRA BARU UNTUK ITEM GACHA "MISTERY!" 👇 ---
         else if (itemData.effect === 'GACHA_MYSTERY') {
             const rand = Math.random() * 100;
             let gachaMessage;
-            
+
             if (rand < 40) { // 40% Kembang Api (Zonk visual)
                 showFireworks();
                 gachaMessage = 'Wow! Kembang api kejutan! ✨';
@@ -1950,7 +1965,7 @@ async function handleUseItem(uid, itemIndex, itemData, closeModalCallback) {
                     { name: 'Tiket Pertarungan', description: 'Gunakan untuk langsung bertarung dengan monster acak.', effect: 'BATTLE_TICKET', effectValue: 0, iconUrl: 'https://cdn-icons-png.flaticon.com/512/2933/2933879.png' }
                 ];
                 const prizeItem = itemPrizes[Math.floor(Math.random() * itemPrizes.length)];
-                
+
                 const emptySlotIndex = (studentData.inventory || []).findIndex(slot => !slot);
                 if (emptySlotIndex !== -1) {
                     updates[`/students/${uid}/inventory/${emptySlotIndex}`] = prizeItem;
@@ -1991,7 +2006,7 @@ async function handleUseItem(uid, itemIndex, itemData, closeModalCallback) {
             await update(ref(db), updates);
             showToast(successMessage);
             closeModalCallback(); // Tutup modal penggunaan item
-            
+
             // Mulai pertarungan setelah jeda singkat agar toast terlihat
             setTimeout(() => {
                 startSoloAiBattle(uid);
@@ -2132,7 +2147,7 @@ async function handleDungeonMessage(event) {
         const expiryTimestamp = Date.now() + (durationInDays * 24 * 60 * 60 * 1000);
         const updates = {};
         updates[`/students/${uid}/statusEffects/racun`] = { expires: expiryTimestamp };
-        
+
         await update(ref(db), updates);
         showToast("Waktu habis! Kamu terkena kutukan Racun!", true);
         audioPlayer.error();
@@ -2180,7 +2195,7 @@ async function openTargetStudentModal(casterUid, itemIndex, itemData) {
     const modal = document.getElementById('target-student-modal');
     const studentList = document.getElementById('target-student-list');
     const closeButton = document.getElementById('close-target-modal-button');
-    
+
     if (!modal || !studentList || !closeButton) {
         showToast("Elemen UI untuk memilih target tidak ditemukan!", true);
         return;
@@ -2190,7 +2205,7 @@ async function openTargetStudentModal(casterUid, itemIndex, itemData) {
         modal.classList.add('opacity-0');
         setTimeout(() => modal.classList.add('hidden'), 300);
     };
-    
+
     closeButton.onclick = closeModal;
     studentList.innerHTML = '<p class="text-gray-400">Memuat daftar siswa...</p>';
 
@@ -2245,7 +2260,7 @@ async function handleUseCurseItem(casterUid, targetUid, itemIndex, itemData, tar
         updates[`/students/${targetUid}/statusEffects/${effect}`] = { expires: expiryTimestamp };
         // Hapus item dari inventori si pengguna
         updates[`/students/${casterUid}/inventory/${itemIndex}`] = null;
-        
+
         // Logika khusus untuk 'knock'
         if (effect === 'knock') {
             updates[`/students/${targetUid}/hp`] = 10;
@@ -2257,11 +2272,11 @@ async function handleUseCurseItem(casterUid, targetUid, itemIndex, itemData, tar
 
         // Kirim notifikasi ke admin
         const casterSnap = await get(ref(db, `students/${casterUid}`));
-        if(casterSnap.exists()){
+        if (casterSnap.exists()) {
             const casterName = casterSnap.val().nama;
             addNotification(
-                `<strong>${casterName}</strong> baru saja mengutuk <strong>${targetName}</strong> dengan item <i>${itemData.name}</i>.`, 
-                'curse_cast', 
+                `<strong>${casterName}</strong> baru saja mengutuk <strong>${targetName}</strong> dengan item <i>${itemData.name}</i>.`,
+                'curse_cast',
                 { casterId: casterUid, targetId: targetUid }
             );
         }
@@ -2277,11 +2292,11 @@ async function handleUseCurseItem(casterUid, targetUid, itemIndex, itemData, tar
 async function setupGuildPage(uid) {
     const memberList = document.getElementById('guild-member-list');
     const guildNameHeader = document.getElementById('guild-name-header');
-    
+
     const guildInventorySlots = document.getElementById('guild-inventory-slots');
     const guildInventoryCapacity = document.getElementById('guild-inventory-capacity');
-    
-    if (!memberList || !guildNameHeader || !guildInventorySlots|| !guildInventoryCapacity ) return;
+
+    if (!memberList || !guildNameHeader || !guildInventorySlots || !guildInventoryCapacity) return;
 
     memberList.innerHTML = '<p class="text-sm text-gray-400">Memuat anggota...</p>';
     guildInventorySlots.innerHTML = '<p class="text-xs text-gray-400 col-span-full text-center">Memuat peti guild...</p>';
@@ -2354,7 +2369,7 @@ async function setupGuildPage(uid) {
         }
     };
 
-   
+
 }
 
 // --- TAMBAHKAN FUNGSI BARU INI tombol admin untuk ivy---
@@ -2379,7 +2394,7 @@ function setupIvySettings() {
     const openModal = async () => {
         saveBtn.textContent = 'Memuat...';
         saveBtn.disabled = true;
-        
+
         const snapshot = await get(configRef);
         if (snapshot.exists()) {
             const settings = snapshot.val();
@@ -2390,7 +2405,7 @@ function setupIvySettings() {
             gossipToggle.checked = settings.gossipEnabled || false;
             aiQuizPromptInput.value = settings.aiQuizPrompt || ''; // <-- ADD THIS
         }
-        
+
         updateGossipInputState();
         modal.classList.remove('hidden');
         setTimeout(() => modal.classList.remove('opacity-0'), 10);
@@ -2436,13 +2451,13 @@ function setupIvySettings() {
             saveBtn.disabled = false;
         }
     };
-    
+
     openBtn.onclick = openModal;
     closeBtn.onclick = closeModal;
     cancelBtn.onclick = closeModal;
     saveBtn.onclick = saveSettings;
     gossipToggle.onchange = updateGossipInputState;
-    
+
     toggleVisibilityBtn.onclick = () => {
         const icon = toggleVisibilityBtn.querySelector('i');
         if (apiKeyInput.type === 'password') {
@@ -2464,7 +2479,7 @@ function appendChatMessage(message, sender, isLoading = false) {
     if (isLoading) { msgDiv.classList.add('animate-pulse'); }
     chatBox.appendChild(msgDiv);
     chatBox.scrollTop = chatBox.scrollHeight;
-    return msgDiv;      
+    return msgDiv;
 }
 
 
@@ -2580,7 +2595,7 @@ function setupBountyBoardPage(uid) {
     closeCreateBountyModalButton.onclick = closeCreateModal;
     cancelCreateBountyButton.onclick = closeCreateModal;
 
-    bountyImageInput.onchange = async function() {
+    bountyImageInput.onchange = async function () {
         if (this.files && this.files[0]) {
             const base64 = await processImageToBase64(this.files[0]);
             const resized = await resizeImage(base64, 300, 200);
@@ -2601,9 +2616,9 @@ function setupBountyBoardPage(uid) {
         const takerLimit = parseInt(document.getElementById('bounty-taker-limit').value);
         const rewardCoin = parseInt(document.getElementById('bounty-reward-coin').value);
         // --- MANTRA BARU: Validasi Upah Minimum ---
-            if (rewardCoin < 10) {
-                throw new Error("Hadiah minimal untuk misi adalah 10 Koin!");
-            }
+        if (rewardCoin < 10) {
+            throw new Error("Hadiah minimal untuk misi adalah 10 Koin!");
+        }
         try {
             const studentRef = ref(db, `students/${uid}`);
             const studentSnap = await get(studentRef);
@@ -2646,10 +2661,10 @@ function setupBountyBoardPage(uid) {
         }
     };
 
-     // --- PERUBAHAN BESAR: Memuat bounty dengan data siswa untuk cek buff ---
+    // --- PERUBAHAN BESAR: Memuat bounty dengan data siswa untuk cek buff ---
     const bountiesRef = ref(db, 'bounties');
     const studentRef = ref(db, `students/${uid}`);
-    
+
     onValue(bountiesRef, async (snapshot) => { // Jadikan callback ini async
         const studentSnap = await get(studentRef); // Ambil data siswa TERBARU setiap kali bounty berubah
         const studentData = studentSnap.exists() ? studentSnap.val() : null;
@@ -2704,7 +2719,7 @@ function setupBountyBoardPage(uid) {
             }
 
             const card = document.createElement('div');
-           // --- MANTRA BARU: Beri border khusus untuk misi admin ---
+            // --- MANTRA BARU: Beri border khusus untuk misi admin ---
             const cardClasses = bounty.isAdminBounty ? 'border-2 border-indigo-400' : '';
             card.className = `bg-white/90 backdrop-blur-sm p-4 rounded-lg shadow-lg flex flex-col ${cardClasses}`;
             card.innerHTML = `
@@ -2834,7 +2849,7 @@ async function handleCompleteBountyWithWinner(bountyId, bountyData, winnerId, cl
             const totalReward = bountyData.rewardCoin || 0;
             updates[`/students/${winnerId}/coin`] = (winnerData.coin || 0) + totalReward;
         }
-const totalReward = bountyData.rewardCoin || 0;
+        const totalReward = bountyData.rewardCoin || 0;
         addNotification(
             `🎉 Selamat! Kamu memenangkan misi <strong>${bountyData.title}</strong> dan mendapatkan <strong>${totalReward}</strong> Koin!`,
             'bounty_win',
@@ -2893,10 +2908,10 @@ function addSoloBattleLog(text, type = 'normal') {
     const logEntry = document.createElement('p');
     logEntry.className = colorClass;
     logEntry.textContent = `> ${text}`;
-    
+
     const placeholder = logContainer.querySelector('.text-gray-400');
     if (placeholder) placeholder.remove();
-    
+
     logContainer.appendChild(logEntry);
     logContainer.scrollTop = logContainer.scrollHeight;
 }
@@ -2966,7 +2981,7 @@ async function startSoloAiBattle(uid) {
             endSoloAiBattle(false, true); // isVictory=false, isForfeit=true
         }
     };
-    
+
     audioPlayer.openModal();
     modal.classList.remove('hidden');
     setTimeout(() => modal.classList.remove('opacity-0'), 10);
@@ -3013,9 +3028,9 @@ function updateSoloBattleUI() {
 
 async function nextSoloAiTurn() {
     if (currentSoloBattleState.isAnswerLocked) return;
-    
+
     updateSoloBattleUI();
-    
+
     const questionTextEl = document.getElementById('solo-battle-question-text');
     const optionsContainer = document.getElementById('solo-battle-options-container');
     const timerEl = document.getElementById('solo-battle-timer');
@@ -3026,10 +3041,10 @@ async function nextSoloAiTurn() {
     currentSoloBattleState.isAnswerLocked = true; // Kunci saat memuat
 
     // Pengaturan Timer
-    let timeLeft = 60; 
+    let timeLeft = 60;
     timerEl.textContent = timeLeft;
     timerEl.classList.remove('text-red-500');
-    
+
     if (soloBattleTimerId) clearInterval(soloBattleTimerId);
 
     soloBattleTimerId = setInterval(() => {
@@ -3059,7 +3074,7 @@ async function nextSoloAiTurn() {
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         const result = await response.json();
         let questionData = JSON.parse(result.candidates[0].content.parts[0].text);
-        
+
         // --- MANTRA PENGACAK JAWABAN DIMULAI DI SINI! ---
         const correctAnswerText = questionData.options[questionData.answerIndex];
         shuffleArray(questionData.options); // Acak urutan pilihan jawaban
@@ -3069,7 +3084,7 @@ async function nextSoloAiTurn() {
 
         currentSoloBattleState.currentQuestionData = questionData;
         questionTextEl.textContent = questionData.question;
-        
+
         questionData.options.forEach((option, index) => {
             const button = document.createElement('button');
             button.className = 'p-4 rounded-lg text-left transition-colors bg-indigo-500 hover:bg-fuchsia-500';
@@ -3077,7 +3092,7 @@ async function nextSoloAiTurn() {
             button.onclick = () => handleSoloAiAnswer(index);
             optionsContainer.appendChild(button);
         });
-        
+
         currentSoloBattleState.isAnswerLocked = false; // Buka kunci setelah memuat
     } catch (error) {
         console.error("Gagal memuat soal AI solo battle:", error);
@@ -3088,130 +3103,130 @@ async function nextSoloAiTurn() {
 }
 
 async function handleSoloAiAnswer(selectedIndex) {
-     if (currentSoloBattleState.isAnswerLocked) return;
-     currentSoloBattleState.isAnswerLocked = true;
-     clearInterval(soloBattleTimerId);
- 
-     const { student, monster, currentQuestionData } = currentSoloBattleState;
-     const options = document.querySelectorAll('#solo-battle-options-container button');
-     const isCorrect = selectedIndex === currentQuestionData.answerIndex;
- 
-     // Umpan balik visual
-     options.forEach(btn => btn.disabled = true);
-     if (selectedIndex !== -1) {
-         options[selectedIndex].classList.add(isCorrect ? 'bg-green-600' : 'bg-red-600');
-     }
-     if (!isCorrect) {
-         options[currentQuestionData.answerIndex]?.classList.add('bg-green-600');
-     }
- 
-     await new Promise(res => setTimeout(res, 1500));
- 
-     // --- MANTRA PERBAIKAN: Logika Skill Dimulai ---
-     const currentPlayer = student; // Alias untuk konsistensi
- 
-     // Ambil data skill pasif dari Kitab
-     const skillIndex = Math.min(currentPlayer.level - 1, 4);
-     const passiveSkill = SKILL_BOOK[currentPlayer.peran]?.passive[skillIndex];
- 
-     // Cek & kurangi MP untuk skill pasif
-     let passiveIsActive = false;
-     if (passiveSkill && currentPlayer.mp >= passiveSkill.mpCost) {
-         currentPlayer.mp -= passiveSkill.mpCost;
-         passiveIsActive = true;
-         addSoloBattleLog(`✨ Skill Pasif [${passiveSkill.name}] aktif! (-${passiveSkill.mpCost} MP)`, 'heal');
-     } else {
-         addSoloBattleLog(`⚠️ MP tidak cukup! Skill Pasif tidak aktif.`, 'damage');
-     }
- 
-     if (isCorrect) {
-         audioPlayer.success();
-         addSoloBattleLog(`Jawaban BENAR! ${currentPlayer.nama} bersiap...`);
-         await new Promise(res => setTimeout(res, 800));
- 
-         if (currentPlayer.peran === 'Prajurit') {
-             let studentDamage = 25 + Math.floor(Math.random() * 10);
-             if (Math.random() < 0.25) {
-                 studentDamage = Math.floor(studentDamage * 1.5);
-                 addSoloBattleLog(`💥 SERANGAN PERKASA! ${currentPlayer.nama} mendaratkan serangan kritis, ${studentDamage} damage!`, 'heal');
-             } else {
-                 addSoloBattleLog(`⚔️ ${currentPlayer.nama} menyerang, ${studentDamage} damage.`, 'normal');
-             }
-             monster.currentHp = Math.max(0, monster.currentHp - studentDamage);
-         } else if (currentPlayer.peran === 'Penyembuh') {
-             const healAmount = Math.floor(currentPlayer.maxHp * 0.20);
-             currentPlayer.currentHp = Math.min(currentPlayer.maxHp, currentPlayer.currentHp + healAmount);
-             addSoloBattleLog(`💖 PEMULIHAN AJAIB! ${currentPlayer.nama} memulihkan dirinya sebesar ${healAmount} HP.`, 'heal');
-         } else if (currentPlayer.peran === 'Penyihir') {
-             let studentDamage = 25 + Math.floor(Math.random() * 10);
-             if (passiveIsActive && Math.random() < 0.15) {
-                 studentDamage = Math.floor(studentDamage * 1.5);
-                 addSoloBattleLog(`✨ CRITICAL HIT!`, 'heal');
-             }
-             if (passiveIsActive) {
-                 studentDamage = Math.floor(studentDamage * 1.05);
-             }
-             monster.currentHp = Math.max(0, monster.currentHp - studentDamage);
-             addSoloBattleLog(`🔮 ${currentPlayer.nama} merapal sihir, ${studentDamage} damage!`, 'heal');
-         } else {
-             let studentDamage = 25 + Math.floor(Math.random() * 10);
-             addSoloBattleLog(`👤 ${currentPlayer.nama} menyerang, ${studentDamage} damage.`, 'normal');
-             monster.currentHp = Math.max(0, monster.currentHp - studentDamage);
-         }
-     } else {
-         audioPlayer.error();
-         addSoloBattleLog(selectedIndex === -1 ? `Waktu habis! ${monster.monsterName} menyerang...` : `Jawaban SALAH! ${monster.monsterName} menyerang...`);
-         await new Promise(res => setTimeout(res, 800));
- 
-         const availableSkills = monster.skills ? Object.keys(monster.skills).filter(s => monster.skills[s]) : [];
-         const monsterActionChoice = Math.random();
- 
-         const performPhysicalAttack = () => {
-             let monsterDamage = 15 + Math.floor(Math.random() * 10);
-             if (passiveIsActive && currentPlayer.peran === 'Prajurit' && passiveSkill) {
-                 const reductionPercent = passiveSkill.desc.includes("12%") ? 0.12 : (passiveSkill.desc.includes("6%") ? 0.06 : 0.03);
-                 const reduction = Math.floor(monsterDamage * reductionPercent);
-                 monsterDamage -= reduction;
-                 addSoloBattleLog(`🛡️ Skill Pasif [${passiveSkill.name}] mengurangi ${reduction} damage!`, 'heal');
-             }
-             currentPlayer.currentHp = Math.max(0, currentPlayer.currentHp - monsterDamage);
-             addSoloBattleLog(`⚔️ ${monster.monsterName} menyerang fisik, ${monsterDamage} damage diterima!`, 'damage');
-         };
- 
-         if (availableSkills.length > 0 && monsterActionChoice > 0.5) {
-             const randomSkill = availableSkills[Math.floor(Math.random() * availableSkills.length)];
-             switch (randomSkill) {
-                 case 'racun':
-                 case 'diam':
-                     if (!currentPlayer.statusEffects) currentPlayer.statusEffects = {};
-                     currentPlayer.statusEffects[randomSkill] = { expires: Date.now() + (2 * 24 * 60 * 60 * 1000) };
-                     addSoloBattleLog(`☠️ ${monster.monsterName} menggunakan skill ${randomSkill}! Kamu terkena kutukan!`, 'damage');
-                     break;
-                 case 'knock':
-                     if (!currentPlayer.statusEffects) currentPlayer.statusEffects = {};
-                     currentPlayer.currentHp = 10;
-                     currentPlayer.statusEffects.knock = { expires: Date.now() + (2 * 24 * 60 * 60 * 1000) };
-                     addSoloBattleLog(`😵 ${monster.monsterName} menggunakan skill Knock! HP-mu menjadi 10!`, 'damage');
-                     break;
-                 default:
-                     performPhysicalAttack();
-                     break;
-             }
-         } else {
-             performPhysicalAttack();
-         }
-     }
- 
-     // Cek akhir pertarungan
-     if (monster.currentHp <= 0) {
-         endSoloAiBattle(true);
-     } else if (student.currentHp <= 0) {
-         endSoloAiBattle(false);
-     } else {
-         await new Promise(res => setTimeout(res, 1200));
-         currentSoloBattleState.isAnswerLocked = false;
-         nextSoloAiTurn();
-     }
+    if (currentSoloBattleState.isAnswerLocked) return;
+    currentSoloBattleState.isAnswerLocked = true;
+    clearInterval(soloBattleTimerId);
+
+    const { student, monster, currentQuestionData } = currentSoloBattleState;
+    const options = document.querySelectorAll('#solo-battle-options-container button');
+    const isCorrect = selectedIndex === currentQuestionData.answerIndex;
+
+    // Umpan balik visual
+    options.forEach(btn => btn.disabled = true);
+    if (selectedIndex !== -1) {
+        options[selectedIndex].classList.add(isCorrect ? 'bg-green-600' : 'bg-red-600');
+    }
+    if (!isCorrect) {
+        options[currentQuestionData.answerIndex]?.classList.add('bg-green-600');
+    }
+
+    await new Promise(res => setTimeout(res, 1500));
+
+    // --- MANTRA PERBAIKAN: Logika Skill Dimulai ---
+    const currentPlayer = student; // Alias untuk konsistensi
+
+    // Ambil data skill pasif dari Kitab
+    const skillIndex = Math.min(currentPlayer.level - 1, 4);
+    const passiveSkill = SKILL_BOOK[currentPlayer.peran]?.passive[skillIndex];
+
+    // Cek & kurangi MP untuk skill pasif
+    let passiveIsActive = false;
+    if (passiveSkill && currentPlayer.mp >= passiveSkill.mpCost) {
+        currentPlayer.mp -= passiveSkill.mpCost;
+        passiveIsActive = true;
+        addSoloBattleLog(`✨ Skill Pasif [${passiveSkill.name}] aktif! (-${passiveSkill.mpCost} MP)`, 'heal');
+    } else {
+        addSoloBattleLog(`⚠️ MP tidak cukup! Skill Pasif tidak aktif.`, 'damage');
+    }
+
+    if (isCorrect) {
+        audioPlayer.success();
+        addSoloBattleLog(`Jawaban BENAR! ${currentPlayer.nama} bersiap...`);
+        await new Promise(res => setTimeout(res, 800));
+
+        if (currentPlayer.peran === 'Prajurit') {
+            let studentDamage = 25 + Math.floor(Math.random() * 10);
+            if (Math.random() < 0.25) {
+                studentDamage = Math.floor(studentDamage * 1.5);
+                addSoloBattleLog(`💥 SERANGAN PERKASA! ${currentPlayer.nama} mendaratkan serangan kritis, ${studentDamage} damage!`, 'heal');
+            } else {
+                addSoloBattleLog(`⚔️ ${currentPlayer.nama} menyerang, ${studentDamage} damage.`, 'normal');
+            }
+            monster.currentHp = Math.max(0, monster.currentHp - studentDamage);
+        } else if (currentPlayer.peran === 'Penyembuh') {
+            const healAmount = Math.floor(currentPlayer.maxHp * 0.20);
+            currentPlayer.currentHp = Math.min(currentPlayer.maxHp, currentPlayer.currentHp + healAmount);
+            addSoloBattleLog(`💖 PEMULIHAN AJAIB! ${currentPlayer.nama} memulihkan dirinya sebesar ${healAmount} HP.`, 'heal');
+        } else if (currentPlayer.peran === 'Penyihir') {
+            let studentDamage = 25 + Math.floor(Math.random() * 10);
+            if (passiveIsActive && Math.random() < 0.15) {
+                studentDamage = Math.floor(studentDamage * 1.5);
+                addSoloBattleLog(`✨ CRITICAL HIT!`, 'heal');
+            }
+            if (passiveIsActive) {
+                studentDamage = Math.floor(studentDamage * 1.05);
+            }
+            monster.currentHp = Math.max(0, monster.currentHp - studentDamage);
+            addSoloBattleLog(`🔮 ${currentPlayer.nama} merapal sihir, ${studentDamage} damage!`, 'heal');
+        } else {
+            let studentDamage = 25 + Math.floor(Math.random() * 10);
+            addSoloBattleLog(`👤 ${currentPlayer.nama} menyerang, ${studentDamage} damage.`, 'normal');
+            monster.currentHp = Math.max(0, monster.currentHp - studentDamage);
+        }
+    } else {
+        audioPlayer.error();
+        addSoloBattleLog(selectedIndex === -1 ? `Waktu habis! ${monster.monsterName} menyerang...` : `Jawaban SALAH! ${monster.monsterName} menyerang...`);
+        await new Promise(res => setTimeout(res, 800));
+
+        const availableSkills = monster.skills ? Object.keys(monster.skills).filter(s => monster.skills[s]) : [];
+        const monsterActionChoice = Math.random();
+
+        const performPhysicalAttack = () => {
+            let monsterDamage = 15 + Math.floor(Math.random() * 10);
+            if (passiveIsActive && currentPlayer.peran === 'Prajurit' && passiveSkill) {
+                const reductionPercent = passiveSkill.desc.includes("12%") ? 0.12 : (passiveSkill.desc.includes("6%") ? 0.06 : 0.03);
+                const reduction = Math.floor(monsterDamage * reductionPercent);
+                monsterDamage -= reduction;
+                addSoloBattleLog(`🛡️ Skill Pasif [${passiveSkill.name}] mengurangi ${reduction} damage!`, 'heal');
+            }
+            currentPlayer.currentHp = Math.max(0, currentPlayer.currentHp - monsterDamage);
+            addSoloBattleLog(`⚔️ ${monster.monsterName} menyerang fisik, ${monsterDamage} damage diterima!`, 'damage');
+        };
+
+        if (availableSkills.length > 0 && monsterActionChoice > 0.5) {
+            const randomSkill = availableSkills[Math.floor(Math.random() * availableSkills.length)];
+            switch (randomSkill) {
+                case 'racun':
+                case 'diam':
+                    if (!currentPlayer.statusEffects) currentPlayer.statusEffects = {};
+                    currentPlayer.statusEffects[randomSkill] = { expires: Date.now() + (2 * 24 * 60 * 60 * 1000) };
+                    addSoloBattleLog(`☠️ ${monster.monsterName} menggunakan skill ${randomSkill}! Kamu terkena kutukan!`, 'damage');
+                    break;
+                case 'knock':
+                    if (!currentPlayer.statusEffects) currentPlayer.statusEffects = {};
+                    currentPlayer.currentHp = 10;
+                    currentPlayer.statusEffects.knock = { expires: Date.now() + (2 * 24 * 60 * 60 * 1000) };
+                    addSoloBattleLog(`😵 ${monster.monsterName} menggunakan skill Knock! HP-mu menjadi 10!`, 'damage');
+                    break;
+                default:
+                    performPhysicalAttack();
+                    break;
+            }
+        } else {
+            performPhysicalAttack();
+        }
+    }
+
+    // Cek akhir pertarungan
+    if (monster.currentHp <= 0) {
+        endSoloAiBattle(true);
+    } else if (student.currentHp <= 0) {
+        endSoloAiBattle(false);
+    } else {
+        await new Promise(res => setTimeout(res, 1200));
+        currentSoloBattleState.isAnswerLocked = false;
+        nextSoloAiTurn();
+    }
 }
 
 async function endSoloAiBattle(isVictory, isForfeit = false) {
@@ -3235,11 +3250,11 @@ async function endSoloAiBattle(isVictory, isForfeit = false) {
         questionContainer.innerHTML = `<h2 class="text-2xl font-bold text-green-400">KAMU MENANG!</h2><p>Hadiah: +${monster.rewardCoin} Koin, +${monster.rewardXp} XP</p>`;
         addSoloBattleLog(`KAMU MENANG! Hadiah diterima.`, 'heal');
         audioPlayer.success();
-        
+
         const xpPerLevel = 1000;
         const currentTotalXp = ((student.level || 1) - 1) * xpPerLevel + (student.xp || 0);
         const newTotalXp = currentTotalXp + (monster.rewardXp || 0);
-        
+
         updates[`/students/${uid}/level`] = Math.floor(newTotalXp / xpPerLevel) + 1;
         updates[`/students/${uid}/xp`] = newTotalXp % xpPerLevel;
         updates[`/students/${uid}/coin`] = (student.coin || 0) + (monster.rewardCoin || 0);
@@ -3248,7 +3263,7 @@ async function endSoloAiBattle(isVictory, isForfeit = false) {
         addSoloBattleLog(`Kamu telah dikalahkan...`, 'damage');
         audioPlayer.error();
     }
-    
+
     // --- MANTRA PERBAIKAN: Simpan semua status akhir siswa ---
     updates[`/students/${uid}/hp`] = finalHp;
     updates[`/students/${uid}/mp`] = student.mp; // Simpan sisa MP
@@ -3351,7 +3366,7 @@ async function startAcakKataBattle(uid) {
             endAcakKataBattle(false, true);
         }
     };
-    
+
     audioPlayer.openModal();
     modal.classList.remove('hidden');
     setTimeout(() => modal.classList.remove('opacity-0'), 10);
@@ -3373,9 +3388,9 @@ function updateAcakKataBattleUI() {
 
 async function nextAcakKataTurn() {
     if (currentAcakKataBattleState.isAnswerLocked) return;
-    
+
     updateAcakKataBattleUI();
-    
+
     const questionTextEl = document.getElementById('acak-kata-battle-question-text');
     const answerInput = document.getElementById('acak-kata-battle-answer-input');
     const submitButton = document.getElementById('acak-kata-battle-submit-button');
@@ -3388,15 +3403,15 @@ async function nextAcakKataTurn() {
     currentAcakKataBattleState.isAnswerLocked = true;
 
     // --- MANTRA BARU: Pengaturan Timer ---
-    let timeLeft = 60; 
-    if(timerEl) timerEl.textContent = timeLeft;
-    if(timerEl) timerEl.classList.remove('text-red-500');
-    
+    let timeLeft = 60;
+    if (timerEl) timerEl.textContent = timeLeft;
+    if (timerEl) timerEl.classList.remove('text-red-500');
+
     if (acakKataTimerId) clearInterval(acakKataTimerId);
 
     acakKataTimerId = setInterval(() => {
         timeLeft--;
-        if(timerEl) timerEl.textContent = timeLeft;
+        if (timerEl) timerEl.textContent = timeLeft;
         if (timeLeft <= 10 && timerEl) timerEl.classList.add('text-red-500');
         if (timeLeft <= 0) {
             handleAcakKataAnswer(true); // isTimeout = true
@@ -3418,13 +3433,13 @@ async function nextAcakKataTurn() {
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         const result = await response.json();
         let questionData = JSON.parse(result.candidates[0].content.parts[0].text);
-        
+
         questionData.answer = questionData.answer.toUpperCase();
         questionData.scrambled = questionData.scrambled.toUpperCase();
 
         currentAcakKataBattleState.currentQuestionData = questionData;
         questionTextEl.textContent = questionData.scrambled;
-        
+
         answerInput.disabled = false;
         submitButton.disabled = false;
         answerInput.focus();
@@ -3452,7 +3467,7 @@ async function handleAcakKataAnswer(isTimeout = false) { // <-- MANTRA BARU: Tam
         if (!logContainer) return;
         const colorClass = type === 'damage' ? 'text-red-400' : type === 'heal' ? 'text-green-400' : 'text-gray-300';
         const placeholder = logContainer.querySelector('.text-gray-400');
-        if(placeholder) placeholder.remove();
+        if (placeholder) placeholder.remove();
         logContainer.innerHTML += `<p class="${colorClass}">> ${text}</p>`;
         logContainer.scrollTop = logContainer.scrollHeight;
     };
@@ -3521,7 +3536,7 @@ async function endAcakKataBattle(isVictory, isForfeit = false) {
     } else {
         questionContainer.innerHTML = `<h2 class="text-2xl font-bold text-red-500">KAMU KALAH...</h2>`;
     }
-    
+
     updates[`/students/${uid}/hp`] = finalHp;
     if (Object.keys(updates).length > 0) await update(ref(db), updates);
 
@@ -3557,7 +3572,7 @@ async function addNotification(message, type = 'info', details = {}, targetUid =
     } catch (error) {
         console.error("Gagal mengirim notifikasi:", error);
     }
-// --- AKHIR FUNGSI INTI ---
+    // --- AKHIR FUNGSI INTI ---
 }
 
 
@@ -3616,31 +3631,31 @@ function setupNotificationPanel() {
         }
     });
 
-   // --- 👇 MANTRA PENGHILANG SEMUA NOTIFIKASI (GANTI KODE LAMA DENGAN INI) 👇 ---
-markAllReadButton.addEventListener('click', async () => {
-    // Tanya dulu biar nggak salah pencet, Beb!
-    if (!confirm('Yakin mau hapus SEMUA notifikasi?')) {
-        return;
-    }
+    // --- 👇 MANTRA PENGHILANG SEMUA NOTIFIKASI (GANTI KODE LAMA DENGAN INI) 👇 ---
+    markAllReadButton.addEventListener('click', async () => {
+        // Tanya dulu biar nggak salah pencet, Beb!
+        if (!confirm('Yakin mau hapus SEMUA notifikasi?')) {
+            return;
+        }
 
-    try {
-        // Langsung hapus seluruh folder 'notifications' di database
-        await remove(ref(db, 'notifications'));
-        showToast('Semua notifikasi berhasil dibersihkan!');
-        audioPlayer.success(); // Suara sukses biar mantap
-    } catch (error) {
-        console.error("Gagal menghapus semua notifikasi:", error);
-        showToast('Oops! Gagal membersihkan notifikasi.', true);
-    }
-});
-// --- 👆 AKHIR DARI MANTRA 👆 ---;
+        try {
+            // Langsung hapus seluruh folder 'notifications' di database
+            await remove(ref(db, 'notifications'));
+            showToast('Semua notifikasi berhasil dibersihkan!');
+            audioPlayer.success(); // Suara sukses biar mantap
+        } catch (error) {
+            console.error("Gagal menghapus semua notifikasi:", error);
+            showToast('Oops! Gagal membersihkan notifikasi.', true);
+        }
+    });
+    // --- 👆 AKHIR DARI MANTRA 👆 ---;
 }
 
 // Fungsi untuk mengambil dan menampilkan notifikasi dari Firebase
 function listenForNotifications() {
     const notificationList = document.getElementById('notification-list');
     const notificationBadge = document.getElementById('notification-badge');
-    
+
     if (!notificationList || !notificationBadge) return; // Pastikan elemen ada
 
     let previousUnreadCount = -1; // Variabel untuk melacak jumlah notifikasi belum dibaca sebelumnya
@@ -3678,23 +3693,23 @@ function listenForNotifications() {
             </a>`).join('') : '<div class="p-4 text-center text-gray-500">Tidak ada notifikasi baru.</div>';
 
         // --- 👇 MANTRA SAKTI BARU (GANTI KODE LAMA DENGAN INI) 👇 ---
-notificationList.querySelectorAll('[data-notification-id]').forEach(item => {
-    item.addEventListener('click', async (event) => {
-        event.preventDefault();
-        const notificationId = item.dataset.notificationId;
-        if (notificationId) {
-            try {
-                // Mantra baru: langsung hapus notifikasi dari database
-                await remove(ref(db, `notifications/${notificationId}`));
-                audioPlayer.click(); // Tambahin suara klik biar afdol
-            } catch (error) {
-                console.error("Gagal menghapus notifikasi:", error);
-                showToast('Gagal menghapus notifikasi.', true);
-            }
-        }
-    });
-});
-// --- 👆 AKHIR DARI MANTRA 👆 ---
+        notificationList.querySelectorAll('[data-notification-id]').forEach(item => {
+            item.addEventListener('click', async (event) => {
+                event.preventDefault();
+                const notificationId = item.dataset.notificationId;
+                if (notificationId) {
+                    try {
+                        // Mantra baru: langsung hapus notifikasi dari database
+                        await remove(ref(db, `notifications/${notificationId}`));
+                        audioPlayer.click(); // Tambahin suara klik biar afdol
+                    } catch (error) {
+                        console.error("Gagal menghapus notifikasi:", error);
+                        showToast('Gagal menghapus notifikasi.', true);
+                    }
+                }
+            });
+        });
+        // --- 👆 AKHIR DARI MANTRA 👆 ---
     });
 }
 
@@ -3712,7 +3727,7 @@ function showFireworks() {
         const y = Math.random() * 100;
         const color = `hsl(${Math.random() * 360}, 100%, 50%)`;
         particle.style.cssText = `position:absolute; left:${x}%; top:${y}%; width:5px; height:5px; background-color:${color}; border-radius:50%;`;
-        
+
         particle.animate([
             { transform: 'scale(1)', opacity: 1 },
             { transform: `scale(${Math.random() * 2 + 1})`, opacity: 0 }
@@ -3721,7 +3736,7 @@ function showFireworks() {
             easing: 'ease-out',
             delay: Math.random() * 200
         });
-        
+
         overlay.appendChild(particle);
     }
 
@@ -3795,9 +3810,9 @@ async function setupSalesAnalytics() {
     }
 
     // Persiapkan data untuk grafik item terlaris
-    const sortedItems = Object.entries(salesCount).sort(([,a],[,b]) => b - a);
+    const sortedItems = Object.entries(salesCount).sort(([, a], [, b]) => b - a);
     const itemLabels = sortedItems.map(([name]) => name);
-    const itemData = sortedItems.map(([,count]) => count);
+    const itemData = sortedItems.map(([, count]) => count);
     const bestSellingItem = sortedItems.length > 0 ? sortedItems[0][0] : '-';
 
     // Persiapkan data untuk grafik tren harian
@@ -3900,19 +3915,19 @@ async function setupSalesAnalytics() {
 //                  LOGIKA DASBOR ADMIN
 // =======================================================
 function setupAdminDashboard() {
-    
+
     // --- MANTRA BARU: Inisialisasi Notifikasi ---
     setupNotificationPanel();
     listenForNotifications();
-    setupNoiseDetector(); 
-    setupIvySettings(); 
+    setupNoiseDetector();
+    setupIvySettings();
     setupAdminIvyChat(); // <-- TAMBAHKAN INI: Panggil fungsi chat admin
 
     console.log("TIMER MANTRA: 'Detak Jantung' akan dimulai dalam 1 jam");
-setTimeout(() => {
-    gameTick(); // Panggil langsung sekali saat pertama kali buka
-    setInterval(gameTick, 3600000); // Lalu ulangi setiap 10 detik
-}, 5000); // kalau mau setiap hari, ganti jadi 86400000
+    setTimeout(() => {
+        gameTick(); // Panggil langsung sekali saat pertama kali buka
+        setInterval(gameTick, 3600000); // Lalu ulangi setiap 10 detik
+    }, 5000); // kalau mau setiap hari, ganti jadi 86400000
 
     // --- ELEMEN UI ADMIN ---
     const adminDashboardMain = document.getElementById('admin-dashboard-main');
@@ -3948,7 +3963,7 @@ setTimeout(() => {
 
     let currentBattleState = {}; // Untuk menyimpan state battle (ID siswa, monster, dll)
     let html5QrCode;
-    
+
     // --- FUNGSI MODAL SISWA (DENGAN SUARA) ---
     const openModal = (isEdit = false) => {
         audioPlayer.openModal();
@@ -3971,7 +3986,7 @@ setTimeout(() => {
         audioPlayer.openModal();
         // Reset pesan hasil scan setiap kali modal dibuka
         const scanResultElement = document.getElementById('scan-result');
-        if(scanResultElement) scanResultElement.textContent = 'Arahkan kamera ke Kode QR Siswa';
+        if (scanResultElement) scanResultElement.textContent = 'Arahkan kamera ke Kode QR Siswa';
 
         qrScannerModal.classList.remove('hidden');
         setTimeout(() => {
@@ -4019,10 +4034,10 @@ setTimeout(() => {
     adminQuestionBattleButton.onclick = () => openPartyBattleModal({ battleType: 'adminQuestion' });
     aiQuizBattleButton.onclick = () => openStudentSelectionForAiQuiz(); // <-- ADD THIS
     document.getElementById('print-recap-button').addEventListener('click', handlePrintRecap);
-    fotoInput.addEventListener('change', function() {
+    fotoInput.addEventListener('change', function () {
         if (this.files && this.files[0]) {
             const reader = new FileReader();
-            reader.onload = function(e) {
+            reader.onload = function (e) {
                 imagePreview.src = e.target.result;
                 imagePreviewContainer.classList.remove('hidden');
             }
@@ -4040,7 +4055,7 @@ setTimeout(() => {
         });
         targetLink.classList.add('active', 'text-blue-600', 'border-blue-600');
         targetLink.classList.remove('text-gray-500', 'border-transparent');
-        
+
         const pageId = targetLink.getAttribute('href').substring(1);
         adminDashboardMain.classList.toggle('hidden', pageId !== 'dashboard');
         questsPage.classList.toggle('hidden', pageId !== 'quests');
@@ -4058,7 +4073,7 @@ setTimeout(() => {
         if (pageId === 'magic') setupMagicControlsPage();
         if (pageId === 'journal') setupJournalPage(); // New line
     });
-// --- TAMBAHKAN BLOK KODE INI DI DALAM setupMagicControlsPage() ---
+    // --- TAMBAHKAN BLOK KODE INI DI DALAM setupMagicControlsPage() ---
     // --- FUNGSI DATA SISWA (ADMIN) ---
     // --- GANTI KODE onValue(studentsRef, ...) YANG LAMA DENGAN KODE BARU INI ---
     const studentsRef = ref(db, 'students');
@@ -4130,56 +4145,56 @@ setTimeout(() => {
 
         // --- MANTRA BARU: Fungsi untuk render tabel (dengan pagination) ---
         const renderTable = () => {
-        const selectedKelas = filterKelas.value;
-        const selectedGuild = filterGuild.value;
+            const selectedKelas = filterKelas.value;
+            const selectedGuild = filterGuild.value;
 
-        const filteredStudents = allStudents.filter(([_, student]) => {
-            const kelasMatch = selectedKelas === 'semua' || student.kelas === selectedKelas;
-            const guildMatch = selectedGuild === 'semua' || (student.guild || 'No Guild') === selectedGuild;
-            return kelasMatch && guildMatch;
-        });
+            const filteredStudents = allStudents.filter(([_, student]) => {
+                const kelasMatch = selectedKelas === 'semua' || student.kelas === selectedKelas;
+                const guildMatch = selectedGuild === 'semua' || (student.guild || 'No Guild') === selectedGuild;
+                return kelasMatch && guildMatch;
+            });
 
-        // --- Logika Pagination ---
-        const startIndex = (currentPage - 1) * itemsPerPage;
-        const endIndex = startIndex + itemsPerPage;
-        const paginatedStudents = filteredStudents.slice(startIndex, endIndex);
+            // --- Logika Pagination ---
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const paginatedStudents = filteredStudents.slice(startIndex, endIndex);
 
-        studentTableBody.innerHTML = '';
-        let totalStudents = 0, totalLevel = 0, totalCoins = 0;
+            studentTableBody.innerHTML = '';
+            let totalStudents = 0, totalLevel = 0, totalCoins = 0;
 
-        if (paginatedStudents.length === 0) {
-            studentTableBody.innerHTML = '<tr><td colspan="7" class="text-center p-8 text-gray-400">Tidak ada siswa yang cocok.</td></tr>';
-        } else {
-            paginatedStudents.forEach(([key, student]) => {
-                // --- Tambahkan indikator online/offline ---
-                const isOnline = student.presence === true;
-                const statusDot = `<span title="${isOnline ? 'Online' : 'Offline'}" class="inline-block w-3 h-3 rounded-full mr-2 align-middle ${isOnline ? 'bg-green-500' : 'bg-red-500'} border border-white shadow"></span>`;
+            if (paginatedStudents.length === 0) {
+                studentTableBody.innerHTML = '<tr><td colspan="7" class="text-center p-8 text-gray-400">Tidak ada siswa yang cocok.</td></tr>';
+            } else {
+                paginatedStudents.forEach(([key, student]) => {
+                    // --- Tambahkan indikator online/offline ---
+                    const isOnline = student.presence === true;
+                    const statusDot = `<span title="${isOnline ? 'Online' : 'Offline'}" class="inline-block w-3 h-3 rounded-full mr-2 align-middle ${isOnline ? 'bg-green-500' : 'bg-red-500'} border border-white shadow"></span>`;
 
-                const studentRow = document.createElement('tr');
-                const maxHp = (student.level || 1) * 100;
-                const hpPercent = (student.hp / maxHp) * 100;
-                studentRow.className = 'bg-white/90 backdrop-blur-sm border-b hover:bg-gray-50';
-                const avatar = student.fotoProfilBase64 ?
-                    `<img src="${student.fotoProfilBase64}" alt="${student.nama}" class="w-10 h-10 rounded-full object-cover">` :
-                    `<div class="w-10 h-10 bg-gray-700 text-white flex items-center justify-center rounded-full font-bold">${student.nama.charAt(0)}</div>`;
+                    const studentRow = document.createElement('tr');
+                    const maxHp = (student.level || 1) * 100;
+                    const hpPercent = (student.hp / maxHp) * 100;
+                    studentRow.className = 'bg-white/90 backdrop-blur-sm border-b hover:bg-gray-50';
+                    const avatar = student.fotoProfilBase64 ?
+                        `<img src="${student.fotoProfilBase64}" alt="${student.nama}" class="w-10 h-10 rounded-full object-cover">` :
+                        `<div class="w-10 h-10 bg-gray-700 text-white flex items-center justify-center rounded-full font-bold">${student.nama.charAt(0)}</div>`;
 
-                let statusEffectsHtml = '';
-                if (student.statusEffects && Object.keys(student.statusEffects).length > 0) {
-                    const effectMap = { 
-                        racun: { icon: 'skull', color: 'text-red-500', title: 'Racun' }, 
-                        diam: { icon: 'thumbs-down', color: 'text-gray-500', title: 'Diam' }, 
-                        knock: { icon: 'tornado', color: 'text-yellow-500', title: 'Pusing' },
-                        buff_attack: { icon: 'arrow-big-up-dash', color: 'text-orange-500', title: 'Attack Up' },
-                        buff_defense: { icon: 'shield', color: 'text-blue-500', title: 'Defense Up' },
-                        buff_hp_regen: { icon: 'heart-pulse', color: 'text-green-500', title: 'Regen HP' }
-                    , buff_admin_key: { icon: 'key-round', text: 'Kunci Admin', color: 'text-yellow-500' } // Buff Kunci
-                     };
-                    statusEffectsHtml += '<div class="flex justify-left items-left gap-2">';
-                    for (const effectKey in student.statusEffects) { if (effectMap[effectKey]) { const effect = effectMap[effectKey]; statusEffectsHtml += `<i data-lucide="${effect.icon}" class="w-4 h-4 ${effect.color}" title="${effect.title}"></i>`; } }
-                    statusEffectsHtml += '</div>';
-                } else { statusEffectsHtml = '<span class="text-xs text-gray-400">-</span>'; }
+                    let statusEffectsHtml = '';
+                    if (student.statusEffects && Object.keys(student.statusEffects).length > 0) {
+                        const effectMap = {
+                            racun: { icon: 'skull', color: 'text-red-500', title: 'Racun' },
+                            diam: { icon: 'thumbs-down', color: 'text-gray-500', title: 'Diam' },
+                            knock: { icon: 'tornado', color: 'text-yellow-500', title: 'Pusing' },
+                            buff_attack: { icon: 'arrow-big-up-dash', color: 'text-orange-500', title: 'Attack Up' },
+                            buff_defense: { icon: 'shield', color: 'text-blue-500', title: 'Defense Up' },
+                            buff_hp_regen: { icon: 'heart-pulse', color: 'text-green-500', title: 'Regen HP' }
+                            , buff_admin_key: { icon: 'key-round', text: 'Kunci Admin', color: 'text-yellow-500' } // Buff Kunci
+                        };
+                        statusEffectsHtml += '<div class="flex justify-left items-left gap-2">';
+                        for (const effectKey in student.statusEffects) { if (effectMap[effectKey]) { const effect = effectMap[effectKey]; statusEffectsHtml += `<i data-lucide="${effect.icon}" class="w-4 h-4 ${effect.color}" title="${effect.title}"></i>`; } }
+                        statusEffectsHtml += '</div>';
+                    } else { statusEffectsHtml = '<span class="text-xs text-gray-400">-</span>'; }
 
-                studentRow.innerHTML = `
+                    studentRow.innerHTML = `
                     <td class="px-6 py-3 font-medium text-gray-900 whitespace-nowrap flex items-center">${statusDot}${avatar}<div class="ml-4">${statusEffectsHtml}<div class="font-bold">${student.nama}</div><div class="text-xs text-gray-500">NIS: ${student.nis} | ${student.kelas} | ${student.guild || 'No Guild'}</div></div></td>
                     <td class="px-6 py-3 text-center text-lg font-bold no-print">${student.level || 1}</td>
                     <td class="px-6 py-3 text-center no-print">${student.xp || 0}</td>
@@ -4192,23 +4207,23 @@ setTimeout(() => {
                         <button class="edit-btn p-2 bg-blue-100 text-blue-600 hover:bg-blue-200 rounded-lg" data-id="${key}" title="Edit Siswa"><i data-lucide="edit" class="w-4 h-4"></i></button>
                         <button class="delete-btn p-2 bg-gray-100 text-gray-600 hover:bg-gray-200 rounded-lg" data-id="${key}" title="Hapus Siswa"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                     </td>`;
-                studentTableBody.appendChild(studentRow);
+                    studentTableBody.appendChild(studentRow);
+                });
+            }
+
+            // Update summary stats berdasarkan SEMUA siswa yang terfilter, bukan hanya yang di halaman ini
+            filteredStudents.forEach(([_, student]) => {
+                totalStudents++;
+                totalLevel += (student.level || 1);
+                totalCoins += (student.coin || 0);
             });
-        }
 
-        // Update summary stats berdasarkan SEMUA siswa yang terfilter, bukan hanya yang di halaman ini
-        filteredStudents.forEach(([_, student]) => {
-            totalStudents++;
-            totalLevel += (student.level || 1);
-            totalCoins += (student.coin || 0);
-        });
-
-        document.getElementById('total-students').textContent = totalStudents;
-        document.getElementById('average-level').textContent = totalStudents > 0 ? (totalLevel / totalStudents).toFixed(1) : '0';
-        document.getElementById('total-coins').textContent = totalCoins;
-        createLucideIcons();
-        renderPaginationControls(filteredStudents.length); // Render kontrol berdasarkan jumlah total item yang terfilter
-    };
+            document.getElementById('total-students').textContent = totalStudents;
+            document.getElementById('average-level').textContent = totalStudents > 0 ? (totalLevel / totalStudents).toFixed(1) : '0';
+            document.getElementById('total-coins').textContent = totalCoins;
+            createLucideIcons();
+            renderPaginationControls(filteredStudents.length); // Render kontrol berdasarkan jumlah total item yang terfilter
+        };
 
         // Pasang pendengar di filter dan panggil renderTable pertama kali
         filterKelas.onchange = () => { currentPage = 1; renderTable(); }; // Reset ke halaman 1 saat filter berubah
@@ -4226,22 +4241,22 @@ setTimeout(() => {
         const xpPerLevel = 1000;
         let calculatedLevel = Math.floor(totalXpInput / xpPerLevel) + 1;
         let remainingXp = totalXpInput % xpPerLevel;
-        
+
         let studentData = {
-    nama: document.getElementById('nama').value,
-    nis: document.getElementById('nis').value,
-    kelas: document.getElementById('kelas').value,
-    peran: document.getElementById('peran').value,
-    guild: document.getElementById('guild').value,
-    jenisKelamin: document.getElementById('jenis-kelamin').value,
-    catatan: document.getElementById('catatan').value,
-    hp: parseInt(document.getElementById('hp').value),
-    coin: parseInt(document.getElementById('coin').value),
-    mp: parseInt(document.getElementById('mp').value), // Tambahkan ini
-    level: calculatedLevel,
-    xp: remainingXp,
-};
-        
+            nama: document.getElementById('nama').value,
+            nis: document.getElementById('nis').value,
+            kelas: document.getElementById('kelas').value,
+            peran: document.getElementById('peran').value,
+            guild: document.getElementById('guild').value,
+            jenisKelamin: document.getElementById('jenis-kelamin').value,
+            catatan: document.getElementById('catatan').value,
+            hp: parseInt(document.getElementById('hp').value),
+            coin: parseInt(document.getElementById('coin').value),
+            mp: parseInt(document.getElementById('mp').value), // Tambahkan ini
+            level: calculatedLevel,
+            xp: remainingXp,
+        };
+
         try {
             if (fotoFile) {
                 showToast('Memproses foto...');
@@ -4249,15 +4264,15 @@ setTimeout(() => {
                 const resizedBase64 = await resizeImage(base64String);
                 studentData.fotoProfilBase64 = resizedBase64;
             }
-            
-            if (id) { 
+
+            if (id) {
                 await update(ref(db, `students/${id}`), studentData);
                 showToast('Data siswa berhasil diperbarui!');
-            } else { 
+            } else {
                 const email = document.getElementById('email-modal').value;
                 const password = document.getElementById('password-modal').value;
                 if (!email || !password) throw new Error('Email dan Password harus diisi!');
-                studentData.inventory = [null, null]; 
+                studentData.inventory = [null, null];
                 const userCredential = await createUserWithEmailAndPassword(auth, email, password);
                 await set(ref(db, `students/${userCredential.user.uid}`), studentData);
                 await set(ref(db, `roles/${userCredential.user.uid}`), { isStudent: true });
@@ -4285,7 +4300,7 @@ setTimeout(() => {
         const target = e.target.closest('button');
         if (!target) return;
         const id = target.dataset.id;
-        
+
         if (target.classList.contains('delete-btn')) {
             if (confirm('Yakin mau hapus data siswa ini, Beb? (Akun login tidak ikut terhapus)')) {
                 await remove(ref(db, `students/${id}`));
@@ -4318,62 +4333,62 @@ setTimeout(() => {
             openMonsterSelectionModal(studentId);
         }
     });
-// =======================================================
-//          MANTRA BARU: DETAK JANTUNG DUNIA DREAMY
-// =======================================================
-async function gameTick() {
-    console.log("GAME TICK: Memeriksa kondisi seluruh siswa...");
-    const studentsRef = ref(db, 'students');
-    const snapshot = await get(studentsRef);
+    // =======================================================
+    //          MANTRA BARU: DETAK JANTUNG DUNIA DREAMY
+    // =======================================================
+    async function gameTick() {
+        console.log("GAME TICK: Memeriksa kondisi seluruh siswa...");
+        const studentsRef = ref(db, 'students');
+        const snapshot = await get(studentsRef);
 
-    if (!snapshot.exists()) {
-        console.log("GAME TICK: Tidak ada siswa untuk diperiksa.");
-        return;
-    }
+        if (!snapshot.exists()) {
+            console.log("GAME TICK: Tidak ada siswa untuk diperiksa.");
+            return;
+        }
 
-    const allStudents = snapshot.val();
-    const updates = {};
-    const today = getLocalDateString(new Date()); // Kita butuh tanggal hari ini
+        const allStudents = snapshot.val();
+        const updates = {};
+        const today = getLocalDateString(new Date()); // Kita butuh tanggal hari ini
 
-    for (const uid in allStudents) {
-        const student = allStudents[uid];
-        const lastCheck = student.lastHpPenaltyCheck || '';
+        for (const uid in allStudents) {
+            const student = allStudents[uid];
+            const lastCheck = student.lastHpPenaltyCheck || '';
 
-        // Cek jika HP di bawah 10 DAN hari ini belum dapat penalti
-        if (student.hp < 10 && lastCheck !== today) {
-            const currentXp = student.xp || 0;
-            const penaltyXp = 5; // Jumlah XP yang dikurangi
-            
-            // Kurangi XP, tapi jangan sampai minus ya, kasian
-            const newXp = Math.max(0, currentXp - penaltyXp);
+            // Cek jika HP di bawah 10 DAN hari ini belum dapat penalti
+            if (student.hp < 10 && lastCheck !== today) {
+                const currentXp = student.xp || 0;
+                const penaltyXp = 5; // Jumlah XP yang dikurangi
 
-            updates[`/students/${uid}/xp`] = newXp;
-            updates[`/students/${uid}/lastHpPenaltyCheck`] = today; // Tandai sudah kena penalti hari ini
+                // Kurangi XP, tapi jangan sampai minus ya, kasian
+                const newXp = Math.max(0, currentXp - penaltyXp);
 
-            console.log(`PENALTI: HP ${student.nama} kritis. XP dikurangi ${penaltyXp}.`);
-            
-            // Kirim notifikasi ke siswa biar dia sadar!
-            addNotification(
-                `😥 Gawat! HP-mu kritis (kurang dari 10). XP-mu berkurang ${penaltyXp} hari ini. Segera pulihkan HP!`,
-                'hp_penalty',
-                { studentId: uid },
-                uid // Kirim notifikasi ini ke siswa yang bersangkutan
-            );
+                updates[`/students/${uid}/xp`] = newXp;
+                updates[`/students/${uid}/lastHpPenaltyCheck`] = today; // Tandai sudah kena penalti hari ini
+
+                console.log(`PENALTI: HP ${student.nama} kritis. XP dikurangi ${penaltyXp}.`);
+
+                // Kirim notifikasi ke siswa biar dia sadar!
+                addNotification(
+                    `😥 Gawat! HP-mu kritis (kurang dari 10). XP-mu berkurang ${penaltyXp} hari ini. Segera pulihkan HP!`,
+                    'hp_penalty',
+                    { studentId: uid },
+                    uid // Kirim notifikasi ini ke siswa yang bersangkutan
+                );
+            }
+        }
+
+        // Kalau ada data yang perlu di-update, kirim ke Firebase!
+        if (Object.keys(updates).length > 0) {
+            try {
+                await update(ref(db), updates);
+                console.log("GAME TICK: Penalti XP berhasil diterapkan pada siswa yang HP-nya kritis.");
+            } catch (error) {
+                console.error("GAME TICK: Gagal menerapkan penalti XP.", error);
+            }
+        } else {
+            console.log("GAME TICK: Tidak ada siswa yang perlu diberi penalti XP hari ini.");
         }
     }
-
-    // Kalau ada data yang perlu di-update, kirim ke Firebase!
-    if (Object.keys(updates).length > 0) {
-        try {
-            await update(ref(db), updates);
-            console.log("GAME TICK: Penalti XP berhasil diterapkan pada siswa yang HP-nya kritis.");
-        } catch (error) {
-            console.error("GAME TICK: Gagal menerapkan penalti XP.", error);
-        }
-    } else {
-        console.log("GAME TICK: Tidak ada siswa yang perlu diberi penalti XP hari ini.");
-    }
-}
     // =======================================================
     //                  LOGIKA HALAMAN QUESTS
     // =======================================================
@@ -4431,10 +4446,10 @@ async function gameTick() {
             <button type="button" class="absolute top-2 right-2 text-red-500 hover:text-red-700 remove-question-btn">&times;</button>
             <input type="text" placeholder="Tulis pertanyaan..." value="${data.question || ''}" class="w-full p-2 border rounded-md question-input">
             <div class="grid grid-cols-2 gap-2">
-                ${[0,1,2,3].map(i => `
+                ${[0, 1, 2, 3].map(i => `
                 <div class="flex items-center">
                     <input type="radio" name="correct-answer-${questionId}" value="${i}" ${data.answer === i ? 'checked' : ''} class="mr-2 correct-answer-radio">
-                    <input type="text" placeholder="Pilihan ${i+1}" value="${data.options?.[i] || ''}" class="w-full p-1 border rounded-md option-input">
+                    <input type="text" placeholder="Pilihan ${i + 1}" value="${data.options?.[i] || ''}" class="w-full p-1 border rounded-md option-input">
                 </div>`).join('')}
             </div>
         `;
@@ -4442,7 +4457,7 @@ async function gameTick() {
         field.querySelector('.remove-question-btn').onclick = () => field.remove();
     };
 
-    monsterImageInput.onchange = async function() {
+    monsterImageInput.onchange = async function () {
         if (this.files && this.files[0]) {
             const base64 = await processImageToBase64(this.files[0]);
             const resized = await resizeImage(base64, 200, 200);
@@ -4543,20 +4558,20 @@ async function gameTick() {
     const cancelAdminBountyButton = document.getElementById('cancel-admin-bounty-button');
     const adminBountyListContainer = document.getElementById('admin-bounty-list-container');
     const adminBountyImageInput = document.getElementById('admin-bounty-image');
-const adminBountyImagePreview = document.getElementById('admin-bounty-image-preview');
-   // --- MANTRA BARU UNTUK TAMPILIN GAMBAR MISI ADMIN ---
-if (adminBountyImageInput && adminBountyImagePreview) {
-    adminBountyImageInput.onchange = async function() {
-        if (this.files && this.files[0]) {
-            const base64 = await processImageToBase64(this.files[0]);
-            const resized = await resizeImage(base64, 300, 200); // Ukuran bisa disesuaikan
-            adminBountyImagePreview.src = resized;
-            adminBountyImagePreview.classList.remove('hidden');
-        }
-    };
-}
-// --- AKHIR MANTRA ---
-if (addAdminBountyButton && adminBountyModal && adminBountyForm && adminBountyListContainer) {
+    const adminBountyImagePreview = document.getElementById('admin-bounty-image-preview');
+    // --- MANTRA BARU UNTUK TAMPILIN GAMBAR MISI ADMIN ---
+    if (adminBountyImageInput && adminBountyImagePreview) {
+        adminBountyImageInput.onchange = async function () {
+            if (this.files && this.files[0]) {
+                const base64 = await processImageToBase64(this.files[0]);
+                const resized = await resizeImage(base64, 300, 200); // Ukuran bisa disesuaikan
+                adminBountyImagePreview.src = resized;
+                adminBountyImagePreview.classList.remove('hidden');
+            }
+        };
+    }
+    // --- AKHIR MANTRA ---
+    if (addAdminBountyButton && adminBountyModal && adminBountyForm && adminBountyListContainer) {
         const openAdminBountyModal = () => {
             audioPlayer.openModal();
             adminBountyForm.reset();
@@ -4590,7 +4605,7 @@ if (addAdminBountyButton && adminBountyModal && adminBountyForm && adminBountyLi
                     creatorAvatar: 'https://placehold.co/128x128/1d4ed8/ffffff?text=A',
                     title: document.getElementById('admin-bounty-title').value,
                     description: document.getElementById('admin-bounty-description').value,
-                   imageUrl: adminBountyImagePreview.src.startsWith('data:image') ? adminBountyImagePreview.src : null,
+                    imageUrl: adminBountyImagePreview.src.startsWith('data:image') ? adminBountyImagePreview.src : null,
                     takerLimit: parseInt(document.getElementById('admin-bounty-taker-limit').value),
                     rewardXp: parseInt(document.getElementById('admin-bounty-reward-xp').value),
                     rewardCoin: parseInt(document.getElementById('admin-bounty-reward-coin').value),
@@ -4650,82 +4665,82 @@ if (addAdminBountyButton && adminBountyModal && adminBountyForm && adminBountyLi
             });
             createLucideIcons();
         });
-// Di dalam setupAdminDashboard()
-adminBountyListContainer.addEventListener('click', async (e) => {
-    const gradeButton = e.target.closest('.grade-admin-bounty-btn');
-    const cancelButton = e.target.closest('.cancel-admin-bounty-btn'); // <-- TAMBAHKAN INI
+        // Di dalam setupAdminDashboard()
+        adminBountyListContainer.addEventListener('click', async (e) => {
+            const gradeButton = e.target.closest('.grade-admin-bounty-btn');
+            const cancelButton = e.target.closest('.cancel-admin-bounty-btn'); // <-- TAMBAHKAN INI
 
-    if (gradeButton) {
-        const bountyId = gradeButton.dataset.id;
-        openGradeBountyModal(bountyId);
-    } else if (cancelButton) { // <-- TAMBAHKAN BLOK BARU INI
-        const bountyId = cancelButton.dataset.id;
-        if (!confirm('Yakin ingin membatalkan dan menghapus misi ini secara permanen? Tindakan ini tidak dapat diurungkan.')) return;
+            if (gradeButton) {
+                const bountyId = gradeButton.dataset.id;
+                openGradeBountyModal(bountyId);
+            } else if (cancelButton) { // <-- TAMBAHKAN BLOK BARU INI
+                const bountyId = cancelButton.dataset.id;
+                if (!confirm('Yakin ingin membatalkan dan menghapus misi ini secara permanen? Tindakan ini tidak dapat diurungkan.')) return;
 
-        cancelButton.disabled = true;
-        cancelButton.textContent = 'Menghapus...';
+                cancelButton.disabled = true;
+                cancelButton.textContent = 'Menghapus...';
 
-        try {
-            // Langsung hapus data misi dari database
-            const bountyRef = ref(db, `bounties/${bountyId}`);
-            await remove(bountyRef);
-            showToast('Misi admin berhasil dibatalkan dan dihapus.');
-            audioPlayer.success();
-        } catch (error) {
-            showToast(`Gagal membatalkan misi: ${error.message}`, true);
-            cancelButton.disabled = false;
-            cancelButton.innerHTML = `<i data-lucide="trash-2" class="w-4 h-4 mr-1"></i> Batal`;
-            createLucideIcons();
-        }
-    }
-});
-// FUNGSI BARU 1: MEMBUKA MODAL PENILAIAN
-async function openGradeBountyModal(bountyId) {
-    const modal = document.getElementById('grade-bounty-modal');
-    const titleEl = document.getElementById('grade-bounty-title');
-    const studentListEl = document.getElementById('grade-bounty-student-list');
-    const confirmButton = document.getElementById('confirm-grade-bounty-button');
-    const closeButton = document.getElementById('close-grade-bounty-modal-button');
+                try {
+                    // Langsung hapus data misi dari database
+                    const bountyRef = ref(db, `bounties/${bountyId}`);
+                    await remove(bountyRef);
+                    showToast('Misi admin berhasil dibatalkan dan dihapus.');
+                    audioPlayer.success();
+                } catch (error) {
+                    showToast(`Gagal membatalkan misi: ${error.message}`, true);
+                    cancelButton.disabled = false;
+                    cancelButton.innerHTML = `<i data-lucide="trash-2" class="w-4 h-4 mr-1"></i> Batal`;
+                    createLucideIcons();
+                }
+            }
+        });
+        // FUNGSI BARU 1: MEMBUKA MODAL PENILAIAN
+        async function openGradeBountyModal(bountyId) {
+            const modal = document.getElementById('grade-bounty-modal');
+            const titleEl = document.getElementById('grade-bounty-title');
+            const studentListEl = document.getElementById('grade-bounty-student-list');
+            const confirmButton = document.getElementById('confirm-grade-bounty-button');
+            const closeButton = document.getElementById('close-grade-bounty-modal-button');
 
-    if (!modal) return;
+            if (!modal) return;
 
-    // Reset dan tampilkan modal
-    studentListEl.innerHTML = LOADER_HTML;
-    audioPlayer.openModal();
-    modal.classList.remove('hidden');
-    setTimeout(() => modal.classList.remove('opacity-0'), 10);
+            // Reset dan tampilkan modal
+            studentListEl.innerHTML = LOADER_HTML;
+            audioPlayer.openModal();
+            modal.classList.remove('hidden');
+            setTimeout(() => modal.classList.remove('opacity-0'), 10);
 
-    const closeModal = () => {
-        modal.classList.add('opacity-0');
-        setTimeout(() => modal.classList.add('hidden'), 300);
-        confirmButton.onclick = null; // Hapus listener lama
-    };
-    closeButton.onclick = closeModal;
+            const closeModal = () => {
+                modal.classList.add('opacity-0');
+                setTimeout(() => modal.classList.add('hidden'), 300);
+                confirmButton.onclick = null; // Hapus listener lama
+            };
+            closeButton.onclick = closeModal;
 
-    // Ambil data misi
-    const bountySnap = await get(ref(db, `bounties/${bountyId}`));
-    if (!bountySnap.exists()) {
-        showToast("Misi tidak ditemukan!", true);
-        closeModal();
-        return;
-    }
-    const bountyData = bountySnap.val();
-    titleEl.textContent = `Misi: ${bountyData.title}`;
+            // Ambil data misi
+            const bountySnap = await get(ref(db, `bounties/${bountyId}`));
+            if (!bountySnap.exists()) {
+                showToast("Misi tidak ditemukan!", true);
+                closeModal();
+                return;
+            }
+            const bountyData = bountySnap.val();
+            titleEl.textContent = `Misi: ${bountyData.title}`;
 
-    // Ambil data para pengambil misi (takers)
-    studentListEl.innerHTML = '';
-    if (bountyData.takers && Object.keys(bountyData.takers).length > 0) {
-        const takerIds = Object.keys(bountyData.takers);
-        const takerPromises = takerIds.map(uid => get(ref(db, `students/${uid}`)));
-        const takerSnaps = await Promise.all(takerPromises);
+            // Ambil data para pengambil misi (takers)
+            studentListEl.innerHTML = '';
+            if (bountyData.takers && Object.keys(bountyData.takers).length > 0) {
+                const takerIds = Object.keys(bountyData.takers);
+                const takerPromises = takerIds.map(uid => get(ref(db, `students/${uid}`)));
+                const takerSnaps = await Promise.all(takerPromises);
 
-        takerSnaps.forEach((snap, index) => {
-            if (snap.exists()) {
-                const student = snap.val();
-                const studentId = takerIds[index];
-                const studentLabel = document.createElement('label');
-                studentLabel.className = 'flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer transition-colors';
-                studentLabel.innerHTML = `
+                takerSnaps.forEach((snap, index) => {
+                    if (snap.exists()) {
+                        const student = snap.val();
+                        const studentId = takerIds[index];
+                        const studentLabel = document.createElement('label');
+                        studentLabel.className = 'flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer transition-colors';
+                        studentLabel.innerHTML = `
                     <input type="checkbox" data-uid="${studentId}" class="bounty-winner-checkbox h-5 w-5 rounded mr-4">
                     <img src="${student.fotoProfilBase64 || `https://placehold.co/40x40/e2e8f0/3d4852?text=${student.nama.charAt(0)}`}" class="w-10 h-10 rounded-full object-cover mr-3">
                     <div>
@@ -4733,80 +4748,80 @@ async function openGradeBountyModal(bountyId) {
                         <p class="text-xs text-gray-500">${student.kelas}</p>
                     </div>
                 `;
-                studentListEl.appendChild(studentLabel);
+                        studentListEl.appendChild(studentLabel);
+                    }
+                });
+            } else {
+                studentListEl.innerHTML = '<p class="text-center text-gray-500">Belum ada siswa yang mengambil misi ini.</p>';
             }
-        });
-    } else {
-        studentListEl.innerHTML = '<p class="text-center text-gray-500">Belum ada siswa yang mengambil misi ini.</p>';
-    }
 
-    // Set event untuk tombol konfirmasi
-    confirmButton.onclick = () => handleGiveAdminReward(bountyId, bountyData, closeModal);
-}
+            // Set event untuk tombol konfirmasi
+            confirmButton.onclick = () => handleGiveAdminReward(bountyId, bountyData, closeModal);
+        }
 
-// FUNGSI BARU 2: MEMBERIKAN HADIAH & MENYELESAIKAN MISI
-async function handleGiveAdminReward(bountyId, bountyData, closeModalCallback) {
-    const selectedCheckboxes = document.querySelectorAll('.bounty-winner-checkbox:checked');
-    if (selectedCheckboxes.length === 0) {
-        showToast('Pilih minimal satu siswa untuk diberi hadiah!', true);
-        return;
-    }
-
-    const confirmButton = document.getElementById('confirm-grade-bounty-button');
-    confirmButton.disabled = true;
-    confirmButton.textContent = 'Memproses...';
-
-    try {
-        const winnerUids = Array.from(selectedCheckboxes).map(cb => cb.dataset.uid);
-        const updates = {};
-
-        // Tandai misi sebagai selesai
-        updates[`/bounties/${bountyId}/status`] = 'completed';
-
-        // Ambil data semua pemenang
-        const winnerPromises = winnerUids.map(uid => get(ref(db, `students/${uid}`)));
-        const winnerSnaps = await Promise.all(winnerPromises);
-
-        winnerSnaps.forEach(snap => {
-            if (snap.exists()) {
-                const student = snap.val();
-                const uid = snap.key;
-                const xpPerLevel = 1000;
-
-                // Hitung XP baru
-                const currentTotalXp = ((student.level || 1) - 1) * xpPerLevel + (student.xp || 0);
-                const newTotalXp = currentTotalXp + (bountyData.rewardXp || 0);
-                
-                updates[`/students/${uid}/level`] = Math.floor(newTotalXp / xpPerLevel) + 1;
-                updates[`/students/${uid}/xp`] = newTotalXp % xpPerLevel;
-
-                // Hitung Koin baru
-                updates[`/students/${uid}/coin`] = (student.coin || 0) + (bountyData.rewardCoin || 0);
+        // FUNGSI BARU 2: MEMBERIKAN HADIAH & MENYELESAIKAN MISI
+        async function handleGiveAdminReward(bountyId, bountyData, closeModalCallback) {
+            const selectedCheckboxes = document.querySelectorAll('.bounty-winner-checkbox:checked');
+            if (selectedCheckboxes.length === 0) {
+                showToast('Pilih minimal satu siswa untuk diberi hadiah!', true);
+                return;
             }
-        });
 
-        await update(ref(db), updates);
-        showToast(`Hadiah berhasil diberikan kepada ${winnerUids.length} siswa!`);
-        audioPlayer.success();
-        closeModalCallback();
+            const confirmButton = document.getElementById('confirm-grade-bounty-button');
+            confirmButton.disabled = true;
+            confirmButton.textContent = 'Memproses...';
 
-    } catch (error) {
-        showToast(`Gagal memberikan hadiah: ${error.message}`, true);
-    } finally {
-        confirmButton.disabled = false;
-        confirmButton.textContent = 'Berikan Hadiah & Selesaikan Misi';
+            try {
+                const winnerUids = Array.from(selectedCheckboxes).map(cb => cb.dataset.uid);
+                const updates = {};
+
+                // Tandai misi sebagai selesai
+                updates[`/bounties/${bountyId}/status`] = 'completed';
+
+                // Ambil data semua pemenang
+                const winnerPromises = winnerUids.map(uid => get(ref(db, `students/${uid}`)));
+                const winnerSnaps = await Promise.all(winnerPromises);
+
+                winnerSnaps.forEach(snap => {
+                    if (snap.exists()) {
+                        const student = snap.val();
+                        const uid = snap.key;
+                        const xpPerLevel = 1000;
+
+                        // Hitung XP baru
+                        const currentTotalXp = ((student.level || 1) - 1) * xpPerLevel + (student.xp || 0);
+                        const newTotalXp = currentTotalXp + (bountyData.rewardXp || 0);
+
+                        updates[`/students/${uid}/level`] = Math.floor(newTotalXp / xpPerLevel) + 1;
+                        updates[`/students/${uid}/xp`] = newTotalXp % xpPerLevel;
+
+                        // Hitung Koin baru
+                        updates[`/students/${uid}/coin`] = (student.coin || 0) + (bountyData.rewardCoin || 0);
+                    }
+                });
+
+                await update(ref(db), updates);
+                showToast(`Hadiah berhasil diberikan kepada ${winnerUids.length} siswa!`);
+                audioPlayer.success();
+                closeModalCallback();
+
+            } catch (error) {
+                showToast(`Gagal memberikan hadiah: ${error.message}`, true);
+            } finally {
+                confirmButton.disabled = false;
+                confirmButton.textContent = 'Berikan Hadiah & Selesaikan Misi';
+            }
+        }
     }
-}
-}
-// =======================================================
+    // =======================================================
     //               LOGIKA HALAMAN MAGIC CONTROLS
     // =======================================================
     async function setupMagicControlsPage() {
-    const container = document.getElementById('magic-student-list-container');
-    const selectAllCheckbox = document.getElementById('select-all-students-magic');
-    const filterKelas = document.getElementById('magic-filter-kelas');
-    const filterGuild = document.getElementById('magic-filter-guild');
-         if (!container || !filterKelas || !filterGuild) return;
+        const container = document.getElementById('magic-student-list-container');
+        const selectAllCheckbox = document.getElementById('select-all-students-magic');
+        const filterKelas = document.getElementById('magic-filter-kelas');
+        const filterGuild = document.getElementById('magic-filter-guild');
+        if (!container || !filterKelas || !filterGuild) return;
 
         container.innerHTML = LOADER_HTML;
 
@@ -4818,94 +4833,94 @@ async function handleGiveAdminReward(bountyId, bountyData, closeModalCallback) {
 
         container.innerHTML = '';
         const studentsData = studentsSnap.val();
-       const allStudents = Object.entries(studentsData); // Simpan data asli
-       // --- MANTRA BARU: Mengisi pilihan filter ---
-    const uniqueKelas = new Set(allStudents.map(([_, student]) => student.kelas));
-    const uniqueGuilds = new Set(allStudents.map(([_, student]) => student.guild || 'No Guild'));
+        const allStudents = Object.entries(studentsData); // Simpan data asli
+        // --- MANTRA BARU: Mengisi pilihan filter ---
+        const uniqueKelas = new Set(allStudents.map(([_, student]) => student.kelas));
+        const uniqueGuilds = new Set(allStudents.map(([_, student]) => student.guild || 'No Guild'));
 
-    filterKelas.innerHTML = '<option value="semua">Semua Kelas</option>';
-    uniqueKelas.forEach(kelas => {
-        filterKelas.innerHTML += `<option value="${kelas}">${kelas}</option>`;
-    });
-
-    filterGuild.innerHTML = '<option value="semua">Semua Guild</option>';
-    uniqueGuilds.forEach(guild => {
-        filterGuild.innerHTML += `<option value="${guild}">${guild}</option>`;
-    });
-
-    // --- MANTRA BARU: Fungsi untuk menampilkan siswa sesuai filter ---
-    const renderFilteredStudents = () => {
-        const selectedKelas = filterKelas.value;
-        const selectedGuild = filterGuild.value;
-
-        const filteredStudents = allStudents.filter(([_, student]) => {
-            const kelasMatch = selectedKelas === 'semua' || student.kelas === selectedKelas;
-            const guildMatch = selectedGuild === 'semua' || (student.guild || 'No Guild') === selectedGuild;
-            return kelasMatch && guildMatch;
+        filterKelas.innerHTML = '<option value="semua">Semua Kelas</option>';
+        uniqueKelas.forEach(kelas => {
+            filterKelas.innerHTML += `<option value="${kelas}">${kelas}</option>`;
         });
 
-        container.innerHTML = ''; // Kosongkan daftar
-        if (filteredStudents.length === 0) {
-            container.innerHTML = '<p class="text-center text-gray-500">Tidak ada siswa yang cocok dengan filter.</p>';
-            return;
-        }
+        filterGuild.innerHTML = '<option value="semua">Semua Guild</option>';
+        uniqueGuilds.forEach(guild => {
+            filterGuild.innerHTML += `<option value="${guild}">${guild}</option>`;
+        });
 
-        filteredStudents.forEach(([uid, student]) => {
-            const studentLabel = document.createElement('label');
-            studentLabel.className = 'flex items-center p-2 rounded-md hover:bg-gray-100 cursor-pointer';
-            studentLabel.innerHTML = `
+        // --- MANTRA BARU: Fungsi untuk menampilkan siswa sesuai filter ---
+        const renderFilteredStudents = () => {
+            const selectedKelas = filterKelas.value;
+            const selectedGuild = filterGuild.value;
+
+            const filteredStudents = allStudents.filter(([_, student]) => {
+                const kelasMatch = selectedKelas === 'semua' || student.kelas === selectedKelas;
+                const guildMatch = selectedGuild === 'semua' || (student.guild || 'No Guild') === selectedGuild;
+                return kelasMatch && guildMatch;
+            });
+
+            container.innerHTML = ''; // Kosongkan daftar
+            if (filteredStudents.length === 0) {
+                container.innerHTML = '<p class="text-center text-gray-500">Tidak ada siswa yang cocok dengan filter.</p>';
+                return;
+            }
+
+            filteredStudents.forEach(([uid, student]) => {
+                const studentLabel = document.createElement('label');
+                studentLabel.className = 'flex items-center p-2 rounded-md hover:bg-gray-100 cursor-pointer';
+                studentLabel.innerHTML = `
                 <input type="checkbox" data-uid="${uid}" class="magic-student-checkbox mr-3 rounded">
                 <img src="${student.fotoProfilBase64 || `https://placehold.co/40x40/e2e8f0/3d4852?text=${student.nama.charAt(0)}`}" class="w-10 h-10 rounded-full object-cover mr-3">
                 <span class="font-medium">${student.nama}</span>
                 <span class="text-sm text-gray-500 ml-auto">${student.kelas}</span>
             `;
-            container.appendChild(studentLabel);
-        });
-        selectAllCheckbox.checked = false; // Reset checkbox "Pilih Semua"
-    };
+                container.appendChild(studentLabel);
+            });
+            selectAllCheckbox.checked = false; // Reset checkbox "Pilih Semua"
+        };
 
-    // --- MANTRA BARU: Pasang pendengar di filter ---
-    filterKelas.addEventListener('change', renderFilteredStudents);
-    filterGuild.addEventListener('change', renderFilteredStudents);
+        // --- MANTRA BARU: Pasang pendengar di filter ---
+        filterKelas.addEventListener('change', renderFilteredStudents);
+        filterGuild.addEventListener('change', renderFilteredStudents);
 
-    selectAllCheckbox.onchange = (e) => {
-        container.querySelectorAll('.magic-student-checkbox').forEach(checkbox => {
-            checkbox.checked = e.target.checked;
-        });
-    };
+        selectAllCheckbox.onchange = (e) => {
+            container.querySelectorAll('.magic-student-checkbox').forEach(checkbox => {
+                checkbox.checked = e.target.checked;
+            });
+        };
 
-    // Tampilkan semua siswa saat pertama kali halaman dibuka
-    renderFilteredStudents();
+        // Tampilkan semua siswa saat pertama kali halaman dibuka
+        renderFilteredStudents();
 
-    // --- MANTRA BARU: Event listener untuk Scan QR di halaman Magic ---
-    // Diletakkan di sini agar listener di-refresh setiap kali halaman dibuka,
-    // dan memiliki akses ke fungsi-fungsi di dalam scope setupAdminDashboard.
-    const scanQrMagicButton = document.getElementById('scan-qr-magic-button');
-    if (scanQrMagicButton) {
-        // Fungsi khusus untuk memilih siswa dari hasil scan
-        const selectStudentByNis = async (nis) => {
-            const snapshot = await get(query(ref(db, 'students'), orderByChild('nis'), equalTo(nis)));
-            if (snapshot.exists()) {
-                const [uid, student] = Object.entries(snapshot.val())[0];
-                const checkbox = document.querySelector(`#magic-student-list-container input[data-uid="${uid}"]`);
-                if (checkbox) {
-                    checkbox.checked = true; // Ceklis kotak siswa yang ditemukan
-                    showToast(`${student.nama} berhasil dipilih sebagai target!`);
+        // --- MANTRA BARU: Event listener untuk Scan QR di halaman Magic ---
+        // Diletakkan di sini agar listener di-refresh setiap kali halaman dibuka,
+        // dan memiliki akses ke fungsi-fungsi di dalam scope setupAdminDashboard.
+        const scanQrMagicButton = document.getElementById('scan-qr-magic-button');
+        if (scanQrMagicButton) {
+            // Fungsi khusus untuk memilih siswa dari hasil scan
+            const selectStudentByNis = async (nis) => {
+                const snapshot = await get(query(ref(db, 'students'), orderByChild('nis'), equalTo(nis)));
+                if (snapshot.exists()) {
+                    const [uid, student] = Object.entries(snapshot.val())[0];
+                    const checkbox = document.querySelector(`#magic-student-list-container input[data-uid="${uid}"]`);
+                    if (checkbox) {
+                        checkbox.checked = true; // Ceklis kotak siswa yang ditemukan
+                        showToast(`${student.nama} berhasil dipilih sebagai target!`);
+                    } else {
+                        showToast(`${student.nama} tidak ada di daftar filter saat ini.`, true);
+                    }
                 } else {
-                    showToast(`${student.nama} tidak ada di daftar filter saat ini.`, true);
+                    showToast(`Siswa dengan NIS ${nis} tidak ditemukan!`, true);
                 }
-            } else {
-                showToast(`Siswa dengan NIS ${nis} tidak ditemukan!`, true);
-            }
-        };
+            };
 
-        // Menggunakan .onclick untuk memastikan hanya ada satu listener aktif,
-        // mencegah penumpukan listener jika tab diklik berulang kali.
-        scanQrMagicButton.onclick = () => {
-            openQrModal(selectStudentByNis); // Buka modal dan langsung jalankan scanner dengan callback
-        };
+            // Menggunakan .onclick untuk memastikan hanya ada satu listener aktif,
+            // mencegah penumpukan listener jika tab diklik berulang kali.
+            scanQrMagicButton.onclick = () => {
+                openQrModal(selectStudentByNis); // Buka modal dan langsung jalankan scanner dengan callback
+            };
+        }
     }
-}
 
     async function applyMagicToSelectedStudents(action) {
         const selectedCheckboxes = document.querySelectorAll('.magic-student-checkbox:checked');
@@ -4913,16 +4928,16 @@ async function handleGiveAdminReward(bountyId, bountyData, closeModalCallback) {
             showToast('Pilih minimal satu siswa target!', true);
             return;
         }
-        
+
         const uids = Array.from(selectedCheckboxes).map(cb => cb.dataset.uid);
         const updates = {};
         let successMessage = '';
-        
+
         try {
             // Ambil semua data siswa yang dipilih dalam satu panggilan
             const studentPromises = uids.map(uid => get(ref(db, `students/${uid}`)));
             const studentSnapshots = await Promise.all(studentPromises);
-            
+
             for (const studentSnap of studentSnapshots) {
                 if (studentSnap.exists()) {
                     const uid = studentSnap.key;
@@ -4932,10 +4947,10 @@ async function handleGiveAdminReward(bountyId, bountyData, closeModalCallback) {
                         const stat = document.getElementById('stat-type').value;
                         const value = parseInt(document.getElementById('stat-value').value);
                         let currentValue = parseInt(studentData[stat] || 0);
-                        
+
                         let newValue = action.operation === 'add' ? currentValue + value : currentValue - value;
 
-                       if (stat === 'hp') {
+                        if (stat === 'hp') {
                             const maxHp = (studentData.level || 1) * 100;
                             newValue = Math.max(0, Math.min(maxHp, newValue));
                             if (newValue <= 0) {
@@ -4952,24 +4967,24 @@ async function handleGiveAdminReward(bountyId, bountyData, closeModalCallback) {
 
                         // Logika khusus untuk XP dan Level
                         if (stat === 'xp') {
-                             const xpPerLevel = 1000;
-                             const currentTotalXp = ((studentData.level || 1) - 1) * xpPerLevel + (studentData.xp || 0);
-                             const newTotalXp = action.operation === 'add' ? currentTotalXp + value : Math.max(0, currentTotalXp - value);
-                             
-                             updates[`/students/${uid}/level`] = Math.floor(newTotalXp / xpPerLevel) + 1;
-                             updates[`/students/${uid}/xp`] = newTotalXp % xpPerLevel;
+                            const xpPerLevel = 1000;
+                            const currentTotalXp = ((studentData.level || 1) - 1) * xpPerLevel + (studentData.xp || 0);
+                            const newTotalXp = action.operation === 'add' ? currentTotalXp + value : Math.max(0, currentTotalXp - value);
+
+                            updates[`/students/${uid}/level`] = Math.floor(newTotalXp / xpPerLevel) + 1;
+                            updates[`/students/${uid}/xp`] = newTotalXp % xpPerLevel;
                         } else {
                             updates[`/students/${uid}/${stat}`] = newValue;
                         }
                         successMessage = `${action.operation === 'add' ? 'Menambahkan' : 'Mengurangi'} ${value} ${stat.toUpperCase()} untuk ${uids.length} siswa.`;
-                        
+
                         // --- ADD NOTIFICATION HERE ---
                         const notifMsg = `Admin ${action.operation === 'add' ? 'memberikan' : 'mengurangi'} ${value} ${stat.toUpperCase()} kepadamu melalui Sihir nya.`;
                         addNotification(notifMsg, 'magic_control', {}, uid);
-                        
+
                     } else if (action.type === 'effect') {
                         const effect = document.getElementById('effect-type').value;
-                        
+
                         // --- MANTRA BARU: Durasi buff kunci lebih lama ---
                         let durationInDays = 3; // Durasi default
                         if (effect === 'buff_admin_key') {
@@ -4986,14 +5001,14 @@ async function handleGiveAdminReward(bountyId, bountyData, closeModalCallback) {
                                 updates[`/students/${uid}/hp`] = 10;
                             }
                             successMessage = `Memberikan efek ${effect} ke ${uids.length} siswa (durasi ${durationInDays} hari).`;
-                            
+
                             // --- ADD NOTIFICATION HERE ---
                             const notifMsg = `Admin memberikan efek status: ${effect} kepadamu melalui Sihir nya.`;
                             addNotification(notifMsg, 'magic_control', {}, uid);
                         } else {
                             updates[`/students/${uid}/statusEffects/${effect}`] = null; // Hapus efek
                             successMessage = `Menghapus efek ${effect} dari ${uids.length} siswa.`;
-                            
+
                             // --- ADD NOTIFICATION HERE ---
                             const notifMsg = `Admin menghapus efek status: ${effect} darimu melalui Sihir nya.`;
                             addNotification(notifMsg, 'magic_control', {}, uid);
@@ -5013,12 +5028,12 @@ async function handleGiveAdminReward(bountyId, bountyData, closeModalCallback) {
             console.error(error);
         }
     }
-    
+
     // Event Listeners untuk Tombol Sihir
-    document.getElementById('apply-stat-addition')?.addEventListener('click', () => applyMagicToSelectedStudents({type: 'stat', operation: 'add'}));
-    document.getElementById('apply-stat-subtraction')?.addEventListener('click', () => applyMagicToSelectedStudents({type: 'stat', operation: 'subtract'}));
-    document.getElementById('apply-effect')?.addEventListener('click', () => applyMagicToSelectedStudents({type: 'effect', operation: 'add'}));
-    document.getElementById('remove-effect')?.addEventListener('click', () => applyMagicToSelectedStudents({type: 'effect', operation: 'remove'}));
+    document.getElementById('apply-stat-addition')?.addEventListener('click', () => applyMagicToSelectedStudents({ type: 'stat', operation: 'add' }));
+    document.getElementById('apply-stat-subtraction')?.addEventListener('click', () => applyMagicToSelectedStudents({ type: 'stat', operation: 'subtract' }));
+    document.getElementById('apply-effect')?.addEventListener('click', () => applyMagicToSelectedStudents({ type: 'effect', operation: 'add' }));
+    document.getElementById('remove-effect')?.addEventListener('click', () => applyMagicToSelectedStudents({ type: 'effect', operation: 'remove' }));
     questListContainer.addEventListener('click', async (e) => {
         const button = e.target.closest('button');
         if (!button) return;
@@ -5082,7 +5097,7 @@ async function handleGiveAdminReward(bountyId, bountyData, closeModalCallback) {
     closeShopItemModalButton.onclick = closeShopItemModal;
     cancelShopItemButton.onclick = closeShopItemModal;
 
-    itemImageInput.onchange = async function() {
+    itemImageInput.onchange = async function () {
         if (this.files && this.files[0]) {
             const base64 = await processImageToBase64(this.files[0]);
             const resized = await resizeImage(base64, 200, 200);
@@ -5095,7 +5110,7 @@ async function handleGiveAdminReward(bountyId, bountyData, closeModalCallback) {
         e.preventDefault();
         const itemId = document.getElementById('shop-item-id').value;
         const submitButton = document.getElementById('submit-shop-item-button');
-        
+
         const itemData = {
             name: document.getElementById('item-name').value,
             description: document.getElementById('item-description').value,
@@ -5178,241 +5193,241 @@ async function handleGiveAdminReward(bountyId, bountyData, closeModalCallback) {
             }
         }
     });
-// =======================================================
-//          LOGIKA BARU: DETEKTOR KEBISINGAN
-// =======================================================
-function setupNoiseDetector() {
-    // Elemen UI
-    const openButton = document.getElementById('open-noise-detector-button');
-    const modal = document.getElementById('noise-detector-modal');
-    const closeButton = document.getElementById('close-noise-detector-modal');
-    const startButton = document.getElementById('start-noise-detection');
-    const stopButton = document.getElementById('stop-noise-detection');
-    const finishButton = document.getElementById('finish-and-reward');
-    const slider = document.getElementById('noise-threshold-slider');
-    const thresholdValueDisplay = document.getElementById('noise-threshold-value');
-    const meterBar = document.getElementById('noise-meter-bar');
-    const meterValue = document.getElementById('noise-meter-value');
-    const thresholdLine = document.getElementById('noise-meter-threshold-line');
-    const penaltyLog = document.getElementById('noise-penalty-log');
-    const classFilter = document.getElementById('noise-filter-kelas');
-    const studentListContainer = document.getElementById('noise-student-list');
+    // =======================================================
+    //          LOGIKA BARU: DETEKTOR KEBISINGAN
+    // =======================================================
+    function setupNoiseDetector() {
+        // Elemen UI
+        const openButton = document.getElementById('open-noise-detector-button');
+        const modal = document.getElementById('noise-detector-modal');
+        const closeButton = document.getElementById('close-noise-detector-modal');
+        const startButton = document.getElementById('start-noise-detection');
+        const stopButton = document.getElementById('stop-noise-detection');
+        const finishButton = document.getElementById('finish-and-reward');
+        const slider = document.getElementById('noise-threshold-slider');
+        const thresholdValueDisplay = document.getElementById('noise-threshold-value');
+        const meterBar = document.getElementById('noise-meter-bar');
+        const meterValue = document.getElementById('noise-meter-value');
+        const thresholdLine = document.getElementById('noise-meter-threshold-line');
+        const penaltyLog = document.getElementById('noise-penalty-log');
+        const classFilter = document.getElementById('noise-filter-kelas');
+        const studentListContainer = document.getElementById('noise-student-list');
 
-    // Variabel untuk audio
-    let audioContext, analyser, microphone, javascriptNode;
-    let isDetecting = false;
-    let animationFrameId;
-    let allStudentsData = {};
-    let penalizedStudents = new Set();
+        // Variabel untuk audio
+        let audioContext, analyser, microphone, javascriptNode;
+        let isDetecting = false;
+        let animationFrameId;
+        let allStudentsData = {};
+        let penalizedStudents = new Set();
 
-    // Fungsi untuk membuka modal & mengisi data
-    const openModal = async () => {
-        modal.classList.remove('hidden');
-        setTimeout(() => modal.classList.remove('opacity-0'), 10);
+        // Fungsi untuk membuka modal & mengisi data
+        const openModal = async () => {
+            modal.classList.remove('hidden');
+            setTimeout(() => modal.classList.remove('opacity-0'), 10);
 
-        const studentsSnap = await get(ref(db, 'students'));
-        if (studentsSnap.exists()) {
-            allStudentsData = studentsSnap.val();
-            const uniqueKelas = [...new Set(Object.values(allStudentsData).map(s => s.kelas))];
-            classFilter.innerHTML = '<option value="semua">Pilih Semua Kelas</option>';
-            uniqueKelas.sort().forEach(k => {
-                classFilter.innerHTML += `<option value="${k}">${k}</option>`;
-            });
-        }
-    };
+            const studentsSnap = await get(ref(db, 'students'));
+            if (studentsSnap.exists()) {
+                allStudentsData = studentsSnap.val();
+                const uniqueKelas = [...new Set(Object.values(allStudentsData).map(s => s.kelas))];
+                classFilter.innerHTML = '<option value="semua">Pilih Semua Kelas</option>';
+                uniqueKelas.sort().forEach(k => {
+                    classFilter.innerHTML += `<option value="${k}">${k}</option>`;
+                });
+            }
+        };
 
-    const closeModal = () => {
-        if (isDetecting) stopDetection();
-        modal.classList.add('opacity-0');
-        setTimeout(() => modal.classList.add('hidden'), 300);
-    };
+        const closeModal = () => {
+            if (isDetecting) stopDetection();
+            modal.classList.add('opacity-0');
+            setTimeout(() => modal.classList.add('hidden'), 300);
+        };
 
-    classFilter.onchange = () => {
-        const selectedKelas = classFilter.value;
-        studentListContainer.innerHTML = '';
-        penalizedStudents.clear(); // Reset daftar hukuman
-        penaltyLog.innerHTML = '<p class="text-gray-400">Log akan muncul di sini...</p>';
+        classFilter.onchange = () => {
+            const selectedKelas = classFilter.value;
+            studentListContainer.innerHTML = '';
+            penalizedStudents.clear(); // Reset daftar hukuman
+            penaltyLog.innerHTML = '<p class="text-gray-400">Log akan muncul di sini...</p>';
 
-        const studentsToDisplay = Object.entries(allStudentsData).filter(([_, student]) => 
-            selectedKelas === 'semua' || student.kelas === selectedKelas
-        );
+            const studentsToDisplay = Object.entries(allStudentsData).filter(([_, student]) =>
+                selectedKelas === 'semua' || student.kelas === selectedKelas
+            );
 
-        if(studentsToDisplay.length === 0) {
-             studentListContainer.innerHTML = '<p class="text-xs text-gray-400">Tidak ada siswa di kelas ini.</p>';
-             return;
-        }
+            if (studentsToDisplay.length === 0) {
+                studentListContainer.innerHTML = '<p class="text-xs text-gray-400">Tidak ada siswa di kelas ini.</p>';
+                return;
+            }
 
-        // Tambahkan checkbox "Pilih Semua"
-        studentListContainer.innerHTML = `
+            // Tambahkan checkbox "Pilih Semua"
+            studentListContainer.innerHTML = `
             <label class="flex items-center p-1 font-bold border-b">
                 <input type="checkbox" id="noise-select-all" class="mr-2 rounded">
                 <span>Pilih Semua Siswa</span>
             </label>
         `;
 
-        studentsToDisplay.forEach(([uid, student]) => {
-            const label = document.createElement('label');
-            label.className = "flex items-center p-1 hover:bg-gray-100";
-            label.innerHTML = `<input type="checkbox" data-uid="${uid}" class="noise-student-checkbox mr-2 rounded"><span>${student.nama}</span>`;
-            studentListContainer.appendChild(label);
-        });
-
-        document.getElementById('noise-select-all').onchange = (e) => {
-             studentListContainer.querySelectorAll('.noise-student-checkbox').forEach(cb => cb.checked = e.target.checked);
-        };
-    };
-
-
-    const startDetection = async () => {
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            analyser = audioContext.createAnalyser();
-            microphone = audioContext.createMediaStreamSource(stream);
-            javascriptNode = audioContext.createScriptProcessor(2048, 1, 1);
-
-            analyser.smoothingTimeConstant = 0.8;
-            analyser.fftSize = 1024;
-
-            microphone.connect(analyser);
-            analyser.connect(javascriptNode);
-            javascriptNode.connect(audioContext.destination);
-
-            javascriptNode.onaudioprocess = () => {
-                const array = new Uint8Array(analyser.frequencyBinCount);
-                analyser.getByteFrequencyData(array);
-                let values = 0;
-                const length = array.length;
-                for (let i = 0; i < length; i++) {
-                    values += (array[i]);
-                }
-                const average = values / length;
-                updateMeter(average);
-            };
-
-            isDetecting = true;
-            startButton.disabled = true;
-            stopButton.disabled = false;
-            finishButton.disabled = true;
-            penaltyLog.innerHTML = '<p class="text-gray-400">Mendengarkan...</p>';
-
-        } catch (err) {
-            alert('Gagal mengakses mikrofon. Pastikan kamu memberi izin ya, Beb!');
-            console.error(err);
-        }
-    };
-
-    const stopDetection = () => {
-    // Hentikan proses render visual
-    cancelAnimationFrame(animationFrameId);
-
-    // Matikan track mikrofon
-    if (microphone && microphone.mediaStream) {
-        microphone.mediaStream.getTracks().forEach(track => track.stop());
-    }
-
-    // --- Mantra Baru: Cek dulu sebelum menutup! ---
-    if (audioContext && audioContext.state !== 'closed') {
-        audioContext.close();
-    }
-
-    isDetecting = false;
-    startButton.disabled = false;
-    stopButton.disabled = true;
-    finishButton.disabled = false;
-};
-
-    const updateMeter = (volume) => {
-        const volumeLevel = Math.min(100, Math.floor(volume));
-        meterBar.style.width = `${volumeLevel}%`;
-        meterValue.textContent = volumeLevel;
-
-        if (volumeLevel < 30) meterBar.className = 'bg-green-500 h-8 rounded-full transition-all duration-100';
-        else if (volumeLevel < 60) meterBar.className = 'bg-yellow-500 h-8 rounded-full transition-all duration-100';
-        else meterBar.className = 'bg-red-500 h-8 rounded-full transition-all duration-100';
-
-        // Logika Hukuman
-        const threshold = parseInt(slider.value);
-        if (volumeLevel > threshold) {
-            const selectedCheckboxes = studentListContainer.querySelectorAll('.noise-student-checkbox:checked');
-            selectedCheckboxes.forEach(cb => {
-                const uid = cb.dataset.uid;
-                if (!penalizedStudents.has(uid)) {
-                    penalizedStudents.add(uid);
-                    applyPenalty(uid);
-                }
+            studentsToDisplay.forEach(([uid, student]) => {
+                const label = document.createElement('label');
+                label.className = "flex items-center p-1 hover:bg-gray-100";
+                label.innerHTML = `<input type="checkbox" data-uid="${uid}" class="noise-student-checkbox mr-2 rounded"><span>${student.nama}</span>`;
+                studentListContainer.appendChild(label);
             });
-        }
-    };
 
-    const applyPenalty = async (uid) => {
-        const studentData = allStudentsData[uid];
-        if (!studentData) return;
+            document.getElementById('noise-select-all').onchange = (e) => {
+                studentListContainer.querySelectorAll('.noise-student-checkbox').forEach(cb => cb.checked = e.target.checked);
+            };
+        };
 
-        const penaltyAmount = Math.floor(studentData.hp * 0.10);
-        const newHp = Math.max(0, studentData.hp - penaltyAmount);
 
-        await update(ref(db, `students/${uid}`), { hp: newHp });
+        const startDetection = async () => {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = audioContext.createAnalyser();
+                microphone = audioContext.createMediaStreamSource(stream);
+                javascriptNode = audioContext.createScriptProcessor(2048, 1, 1);
 
-        const logEntry = document.createElement('p');
-        logEntry.className = "text-red-600";
-        logEntry.innerHTML = `<strong>${studentData.nama}</strong> berisik! HP berkurang ${penaltyAmount}.`;
-        if (penaltyLog.querySelector('.text-gray-400')) penaltyLog.innerHTML = '';
-        penaltyLog.appendChild(logEntry);
-        penaltyLog.scrollTop = penaltyLog.scrollHeight;
-        audioPlayer.hpLoss();
-    };
+                analyser.smoothingTimeConstant = 0.8;
+                analyser.fftSize = 1024;
 
-    const finishAndGiveReward = async () => {
-        stopDetection();
-        const selectedUIDs = [...studentListContainer.querySelectorAll('.noise-student-checkbox:checked')].map(cb => cb.dataset.uid);
+                microphone.connect(analyser);
+                analyser.connect(javascriptNode);
+                javascriptNode.connect(audioContext.destination);
 
-        const quietStudents = selectedUIDs.filter(uid => !penalizedStudents.has(uid));
+                javascriptNode.onaudioprocess = () => {
+                    const array = new Uint8Array(analyser.frequencyBinCount);
+                    analyser.getByteFrequencyData(array);
+                    let values = 0;
+                    const length = array.length;
+                    for (let i = 0; i < length; i++) {
+                        values += (array[i]);
+                    }
+                    const average = values / length;
+                    updateMeter(average);
+                };
 
-        if (quietStudents.length === 0) {
-            showToast("Tidak ada siswa yang berhak dapat hadiah.", true);
-            return;
-        }
+                isDetecting = true;
+                startButton.disabled = true;
+                stopButton.disabled = false;
+                finishButton.disabled = true;
+                penaltyLog.innerHTML = '<p class="text-gray-400">Mendengarkan...</p>';
 
-        const updates = {};
-        let rewardLog = '<strong>Hadiah untuk siswa teladan:</strong><br>';
+            } catch (err) {
+                alert('Gagal mengakses mikrofon. Pastikan kamu memberi izin ya, Beb!');
+                console.error(err);
+            }
+        };
 
-        for (const uid of quietStudents) {
+        const stopDetection = () => {
+            // Hentikan proses render visual
+            cancelAnimationFrame(animationFrameId);
+
+            // Matikan track mikrofon
+            if (microphone && microphone.mediaStream) {
+                microphone.mediaStream.getTracks().forEach(track => track.stop());
+            }
+
+            // --- Mantra Baru: Cek dulu sebelum menutup! ---
+            if (audioContext && audioContext.state !== 'closed') {
+                audioContext.close();
+            }
+
+            isDetecting = false;
+            startButton.disabled = false;
+            stopButton.disabled = true;
+            finishButton.disabled = false;
+        };
+
+        const updateMeter = (volume) => {
+            const volumeLevel = Math.min(100, Math.floor(volume));
+            meterBar.style.width = `${volumeLevel}%`;
+            meterValue.textContent = volumeLevel;
+
+            if (volumeLevel < 30) meterBar.className = 'bg-green-500 h-8 rounded-full transition-all duration-100';
+            else if (volumeLevel < 60) meterBar.className = 'bg-yellow-500 h-8 rounded-full transition-all duration-100';
+            else meterBar.className = 'bg-red-500 h-8 rounded-full transition-all duration-100';
+
+            // Logika Hukuman
+            const threshold = parseInt(slider.value);
+            if (volumeLevel > threshold) {
+                const selectedCheckboxes = studentListContainer.querySelectorAll('.noise-student-checkbox:checked');
+                selectedCheckboxes.forEach(cb => {
+                    const uid = cb.dataset.uid;
+                    if (!penalizedStudents.has(uid)) {
+                        penalizedStudents.add(uid);
+                        applyPenalty(uid);
+                    }
+                });
+            }
+        };
+
+        const applyPenalty = async (uid) => {
             const studentData = allStudentsData[uid];
-            const randomCoin = Math.floor(Math.random() * 10) + 5; // 5-14 koin
-            const randomXp = Math.floor(Math.random() * 10) + 5;   // 5-14 XP
+            if (!studentData) return;
 
-            const newCoin = (studentData.coin || 0) + randomCoin;
-            const newTotalXp = ((studentData.level - 1) * 1000) + studentData.xp + randomXp;
-            const newLevel = Math.floor(newTotalXp / 1000) + 1;
-            const newXp = newTotalXp % 1000;
+            const penaltyAmount = Math.floor(studentData.hp * 0.10);
+            const newHp = Math.max(0, studentData.hp - penaltyAmount);
 
-            updates[`/students/${uid}/coin`] = newCoin;
-            updates[`/students/${uid}/level`] = newLevel;
-            updates[`/students/${uid}/xp`] = newXp;
+            await update(ref(db, `students/${uid}`), { hp: newHp });
 
-            rewardLog += `• ${studentData.nama} +${randomCoin} koin, +${randomXp} XP<br>`;
-        }
+            const logEntry = document.createElement('p');
+            logEntry.className = "text-red-600";
+            logEntry.innerHTML = `<strong>${studentData.nama}</strong> berisik! HP berkurang ${penaltyAmount}.`;
+            if (penaltyLog.querySelector('.text-gray-400')) penaltyLog.innerHTML = '';
+            penaltyLog.appendChild(logEntry);
+            penaltyLog.scrollTop = penaltyLog.scrollHeight;
+            audioPlayer.hpLoss();
+        };
 
-        await update(ref(db), updates);
-        penaltyLog.innerHTML = rewardLog;
-        showToast(`Hadiah berhasil diberikan kepada ${quietStudents.length} siswa!`);
-        finishButton.disabled = true;
-    };
+        const finishAndGiveReward = async () => {
+            stopDetection();
+            const selectedUIDs = [...studentListContainer.querySelectorAll('.noise-student-checkbox:checked')].map(cb => cb.dataset.uid);
+
+            const quietStudents = selectedUIDs.filter(uid => !penalizedStudents.has(uid));
+
+            if (quietStudents.length === 0) {
+                showToast("Tidak ada siswa yang berhak dapat hadiah.", true);
+                return;
+            }
+
+            const updates = {};
+            let rewardLog = '<strong>Hadiah untuk siswa teladan:</strong><br>';
+
+            for (const uid of quietStudents) {
+                const studentData = allStudentsData[uid];
+                const randomCoin = Math.floor(Math.random() * 10) + 5; // 5-14 koin
+                const randomXp = Math.floor(Math.random() * 10) + 5;   // 5-14 XP
+
+                const newCoin = (studentData.coin || 0) + randomCoin;
+                const newTotalXp = ((studentData.level - 1) * 1000) + studentData.xp + randomXp;
+                const newLevel = Math.floor(newTotalXp / 1000) + 1;
+                const newXp = newTotalXp % 1000;
+
+                updates[`/students/${uid}/coin`] = newCoin;
+                updates[`/students/${uid}/level`] = newLevel;
+                updates[`/students/${uid}/xp`] = newXp;
+
+                rewardLog += `• ${studentData.nama} +${randomCoin} koin, +${randomXp} XP<br>`;
+            }
+
+            await update(ref(db), updates);
+            penaltyLog.innerHTML = rewardLog;
+            showToast(`Hadiah berhasil diberikan kepada ${quietStudents.length} siswa!`);
+            finishButton.disabled = true;
+        };
 
 
-    // Event Listeners
-    openButton.onclick = openModal;
-    closeButton.onclick = closeModal;
-    slider.oninput = () => {
-        const val = slider.value;
-        thresholdValueDisplay.textContent = val;
-        thresholdLine.style.left = `${val}%`;
-    };
-    startButton.onclick = startDetection;
-    stopButton.onclick = stopDetection;
-    finishButton.onclick = finishAndGiveReward;
-}
+        // Event Listeners
+        openButton.onclick = openModal;
+        closeButton.onclick = closeModal;
+        slider.oninput = () => {
+            const val = slider.value;
+            thresholdValueDisplay.textContent = val;
+            thresholdLine.style.left = `${val}%`;
+        };
+        startButton.onclick = startDetection;
+        stopButton.onclick = stopDetection;
+        finishButton.onclick = finishAndGiveReward;
+    }
     // =======================================================
     //                  LOGIKA BATTLE BARU
     // =======================================================
@@ -5423,7 +5438,7 @@ function setupNoiseDetector() {
         const closeButton = document.getElementById('close-monster-selection-modal-button');
 
         monsterListDiv.innerHTML = LOADER_HTML;
-        
+
         audioPlayer.openModal();
         monsterSelectionModal.classList.remove('hidden');
         setTimeout(() => monsterSelectionModal.classList.remove('opacity-0'), 10);
@@ -5481,7 +5496,7 @@ function setupNoiseDetector() {
 
         let student = { id: studentId, ...studentSnap.val() };
         let monster = { id: monsterId, ...monsterSnap.val() };
-        
+
         // --- DEBUGGING: Cek data siswa sebelum battle dimulai ---
         console.log("Memulai SOLO BATTLE. Data siswa:", JSON.parse(JSON.stringify(student)));
         // --- END DEBUGGING ---
@@ -5490,12 +5505,12 @@ function setupNoiseDetector() {
         monster.maxHp = monster.monsterMaxHp || monster.monsterHp;
         student.currentHp = student.hp;
         student.maxHp = 100;
-        
+
         const party = [student]; // Untuk solo battle, party berisi 1 siswa
 
         setupBattleUI(party, monster);
     }
-    
+
     // --- LOGIKA PARTY BATTLE ---
     async function openPartyBattleModal(options = {}) {
         const partyBattleModal = document.getElementById('party-battle-modal');
@@ -5518,7 +5533,7 @@ function setupNoiseDetector() {
 
         const renderManualStudentList = (filter = '') => {
             studentListDiv.innerHTML = '';
-            const filteredStudents = allStudentsForSelection.filter(([_, student]) => 
+            const filteredStudents = allStudentsForSelection.filter(([_, student]) =>
                 student.nama.toLowerCase().includes(filter.toLowerCase())
             );
 
@@ -5547,25 +5562,25 @@ function setupNoiseDetector() {
             const guilds = new Set(); // Menggunakan Set agar nama guild tidak duplikat
             const classes = new Set(); // <-- MANTRA BARU: Buat wadah untuk kelas
             let allStudentsData = []; // <-- MANTRA BARU: Simpan data siswa untuk nanti
-           if (studentsSnap.exists()) {
-        allStudentsData = Object.values(studentsSnap.val()); // Simpan semua data siswa
-        allStudentsData.forEach(student => {
-            if (student.guild && student.guild.trim() !== '') {
-                guilds.add(student.guild);
+            if (studentsSnap.exists()) {
+                allStudentsData = Object.values(studentsSnap.val()); // Simpan semua data siswa
+                allStudentsData.forEach(student => {
+                    if (student.guild && student.guild.trim() !== '') {
+                        guilds.add(student.guild);
+                    }
+                    if (student.kelas && student.kelas.trim() !== '') {
+                        classes.add(student.kelas); // <-- MANTRA BARU: Kumpulkan semua kelas unik
+                    }
+                });
             }
-            if (student.kelas && student.kelas.trim() !== '') {
-                classes.add(student.kelas); // <-- MANTRA BARU: Kumpulkan semua kelas unik
+            classSelect.innerHTML = '<option value="SEMUA_KELAS">Semua Kelas</option>'; // Opsi "Semua Kelas"
+            if (classes.size > 0) {
+                // Urutkan kelas biar rapi (misal: X RPL, XI RPL, XII RPL)
+                const sortedClasses = [...classes].sort();
+                sortedClasses.forEach(kelas => {
+                    classSelect.innerHTML += `<option value="${kelas}">${kelas}</option>`;
+                });
             }
-        });
-    }
-classSelect.innerHTML = '<option value="SEMUA_KELAS">Semua Kelas</option>'; // Opsi "Semua Kelas"
-    if (classes.size > 0) {
-        // Urutkan kelas biar rapi (misal: X RPL, XI RPL, XII RPL)
-        const sortedClasses = [...classes].sort();
-        sortedClasses.forEach(kelas => {
-            classSelect.innerHTML += `<option value="${kelas}">${kelas}</option>`;
-        });
-    }
             guildSelect.innerHTML = ''; // Hapus pesan "Memuat..."
             if (guilds.size > 0) {
                 guilds.forEach(guild => {
@@ -5586,7 +5601,7 @@ classSelect.innerHTML = '<option value="SEMUA_KELAS">Semua Kelas</option>'; // O
         audioPlayer.openModal();
         partyBattleModal.classList.remove('hidden');
         setTimeout(() => partyBattleModal.classList.remove('opacity-0'), 10);
-        
+
         const questsRef = ref(db, 'quests');
         const snapshot = await get(questsRef);
 
@@ -5605,7 +5620,7 @@ classSelect.innerHTML = '<option value="SEMUA_KELAS">Semua Kelas</option>'; // O
                 `;
             });
         }
-        
+
         const closePartyModal = () => {
             audioPlayer.closeModal();
             partyBattleModal.classList.add('opacity-0');
@@ -5614,73 +5629,73 @@ classSelect.innerHTML = '<option value="SEMUA_KELAS">Semua Kelas</option>'; // O
 
         closeButton.onclick = closePartyModal;
         // GANTI SELURUH KODE startButton.onclick DENGAN INI
-    startButton.onclick = async () => {
-        const selectedMonsterId = document.querySelector('input[name="monster-select"]:checked')?.value;
-        if (!selectedMonsterId) {
-            showToast("Pilih monster dulu, Beb!", true);
-            return;
-        }
+        startButton.onclick = async () => {
+            const selectedMonsterId = document.querySelector('input[name="monster-select"]:checked')?.value;
+            if (!selectedMonsterId) {
+                showToast("Pilih monster dulu, Beb!", true);
+                return;
+            }
 
-        const manuallySelectedCheckboxes = document.querySelectorAll('#party-manual-student-selection-list .party-student-checkbox:checked');
-        let party = [];
+            const manuallySelectedCheckboxes = document.querySelectorAll('#party-manual-student-selection-list .party-student-checkbox:checked');
+            let party = [];
 
-        const allStudentsSnap = await get(ref(db, 'students'));
-        if (!allStudentsSnap.exists()) {
-            showToast(`Tidak ada data siswa ditemukan!`, true);
-            return;
-        }
-        const allStudentsData = allStudentsSnap.val();
+            const allStudentsSnap = await get(ref(db, 'students'));
+            if (!allStudentsSnap.exists()) {
+                showToast(`Tidak ada data siswa ditemukan!`, true);
+                return;
+            }
+            const allStudentsData = allStudentsSnap.val();
 
-        if (manuallySelectedCheckboxes.length > 0) {
-            // --- LOGIKA BARU: Gunakan siswa yang dipilih manual ---
-            const selectedUids = Array.from(manuallySelectedCheckboxes).map(cb => cb.dataset.uid);
-            party = selectedUids.map(uid => ({ id: uid, ...allStudentsData[uid] }));
-            showToast(`Memulai battle dengan ${party.length} siswa pilihan.`);
+            if (manuallySelectedCheckboxes.length > 0) {
+                // --- LOGIKA BARU: Gunakan siswa yang dipilih manual ---
+                const selectedUids = Array.from(manuallySelectedCheckboxes).map(cb => cb.dataset.uid);
+                party = selectedUids.map(uid => ({ id: uid, ...allStudentsData[uid] }));
+                showToast(`Memulai battle dengan ${party.length} siswa pilihan.`);
 
-        } else {
-            // --- LOGIKA LAMA: Fallback ke filter Kelas/Guild ---
-            const selectedGuild = document.getElementById('guild-select').value;
-            const selectedClass = document.getElementById('class-select').value;
+            } else {
+                // --- LOGIKA LAMA: Fallback ke filter Kelas/Guild ---
+                const selectedGuild = document.getElementById('guild-select').value;
+                const selectedClass = document.getElementById('class-select').value;
 
-            const allStudents = [];
-            allStudentsSnap.forEach(childSnap => {
-                allStudents.push({ id: childSnap.key, ...childSnap.val() });
-            });
+                const allStudents = [];
+                allStudentsSnap.forEach(childSnap => {
+                    allStudents.push({ id: childSnap.key, ...childSnap.val() });
+                });
 
-            party = allStudents.filter(student => {
-                const guildMatch = (selectedGuild === 'SEMUA_GUILD') || (student.guild === selectedGuild);
-                const classMatch = (selectedClass === 'SEMUA_KELAS') || (student.kelas === selectedClass);
-                return guildMatch && classMatch;
-            });
-            showToast(`Memulai battle dengan ${party.length} siswa dari filter.`);
-        }
+                party = allStudents.filter(student => {
+                    const guildMatch = (selectedGuild === 'SEMUA_GUILD') || (student.guild === selectedGuild);
+                    const classMatch = (selectedClass === 'SEMUA_KELAS') || (student.kelas === selectedClass);
+                    return guildMatch && classMatch;
+                });
+                showToast(`Memulai battle dengan ${party.length} siswa dari filter.`);
+            }
 
-    if (party.length === 0) {
-        showToast(`Tidak ada siswa yang cocok dengan kriteria yang dipilih!`, true);
-        return;
+            if (party.length === 0) {
+                showToast(`Tidak ada siswa yang cocok dengan kriteria yang dipilih!`, true);
+                return;
+            }
+
+            // Sisa kodenya sama persis, tidak perlu diubah
+            const monsterSnap = await get(ref(db, `quests/${selectedMonsterId}`));
+            if (!monsterSnap.exists()) {
+                showToast("Monster tidak ditemukan!", true);
+                return;
+            }
+
+            let monster = { id: selectedMonsterId, ...monsterSnap.val() };
+            monster.monsterHp *= party.length;
+            monster.monsterMaxHp = monster.monsterHp;
+
+            // --- DEBUGGING: Cek data party sebelum battle dimulai ---
+            console.log("Memulai PARTY BATTLE. Data party:", JSON.parse(JSON.stringify(party)));
+            // --- END DEBUGGING ---
+
+            closePartyModal();
+            setupBattleUI(party, monster, options);
+        };
     }
-    
-    // Sisa kodenya sama persis, tidak perlu diubah
-    const monsterSnap = await get(ref(db, `quests/${selectedMonsterId}`));
-    if (!monsterSnap.exists()) {
-         showToast("Monster tidak ditemukan!", true);
-         return;
-    }
-    
-    let monster = { id: selectedMonsterId, ...monsterSnap.val() };
-    monster.monsterHp *= party.length;
-    monster.monsterMaxHp = monster.monsterHp;
 
-    // --- DEBUGGING: Cek data party sebelum battle dimulai ---
-    console.log("Memulai PARTY BATTLE. Data party:", JSON.parse(JSON.stringify(party)));
-    // --- END DEBUGGING ---
 
-    closePartyModal();
-    setupBattleUI(party, monster, options);
-    };
-    }
-    
-    
     // FUNGSI INTI UNTUK MENGATUR BATTLE (SOLO & PARTY)
     async function setupBattleUI(party, monster, options = {}) {
         const battleType = options.battleType || 'ai'; // Default ke AI battle
@@ -5754,19 +5769,19 @@ classSelect.innerHTML = '<option value="SEMUA_KELAS">Semua Kelas</option>'; // O
         const sleep = ms => new Promise(res => setTimeout(res, ms));
         // Inisialisasi state pertarungan
         party.forEach(p => {
-    p.currentHp = p.hp;
-    let baseMaxHp = (p.level || 1) * 100;
+            p.currentHp = p.hp;
+            let baseMaxHp = (p.level || 1) * 100;
 
-    // Skill Pasif Prajurit: HP lebih tebal
-    if (p.peran === 'Prajurit') {
-        p.maxHp = Math.floor(baseMaxHp * 1.20); // Bonus 20% HP
-        p.currentHp = Math.min(p.hp, p.maxHp); // Pastikan HP saat ini tidak melebihi max HP baru
-    } else {
-        p.maxHp = baseMaxHp;
-    }
+            // Skill Pasif Prajurit: HP lebih tebal
+            if (p.peran === 'Prajurit') {
+                p.maxHp = Math.floor(baseMaxHp * 1.20); // Bonus 20% HP
+                p.currentHp = Math.min(p.hp, p.maxHp); // Pastikan HP saat ini tidak melebihi max HP baru
+            } else {
+                p.maxHp = baseMaxHp;
+            }
 
-    if (!p.statusEffects) p.statusEffects = {};
-});
+            if (!p.statusEffects) p.statusEffects = {};
+        });
         monster.currentHp = monster.monsterHp;
         monster.maxHp = monster.monsterMaxHp || monster.monsterHp;
 
@@ -5819,25 +5834,25 @@ classSelect.innerHTML = '<option value="SEMUA_KELAS">Semua Kelas</option>'; // O
                 `;
             });
             createLucideIcons();
-            
+
             // Update Info Monster
             const monsterHpPercent = Math.max(0, (monster.currentHp / monster.maxHp) * 100);
             monsterInfoDiv.innerHTML = `
                 <h4 class="text-xl font-bold">${monster.monsterName}</h4>
                 <img src="${monster.monsterImageBase64 || 'https://placehold.co/128x128/a0aec0/ffffff?text=M'}" class="w-32 h-32 object-contain mx-auto my-2">
                 <div class="w-full bg-gray-200 rounded-full h-6 relative"><div class="bg-green-500 h-6 rounded-full" style="width: ${monsterHpPercent}%"></div><span class="absolute inset-0 text-center font-bold text-white leading-6">${monster.currentHp} / ${monster.maxHp}</span></div>`;
-            
+
             // Update giliran
             turnIndicator.textContent = `Giliran: ${party[currentTurnIndex].nama}`;
         };
-        
+
         const loadQuestion = async () => {
             isAnswerLocked = false;
             turnIndicator.textContent = `Giliran: ${party[currentTurnIndex].nama}`;
 
             if (battleType === 'adminQuestion') {
                 adminCorrectButton.onclick = () => handleAnswer(true);
-            adminIncorrectButton.onclick = () => handleAnswer(false);
+                adminIncorrectButton.onclick = () => handleAnswer(false);
                 adminQuestionInput.value = '';
                 adminQuestionInput.focus();
                 adminCorrectButton.disabled = false;
@@ -5845,7 +5860,7 @@ classSelect.innerHTML = '<option value="SEMUA_KELAS">Semua Kelas</option>'; // O
             } else { // AI Battle
                 const questionTextEl = document.getElementById('battle-question-text');
                 const optionsContainer = document.getElementById('battle-options-container');
-                
+
                 optionsContainer.innerHTML = '';
                 questionTextEl.parentElement.classList.add('animate-pulse');
                 questionTextEl.innerHTML = '<p class="text-sm text-gray-500">AI sedang meracik soal...</p>';
@@ -5854,7 +5869,7 @@ classSelect.innerHTML = '<option value="SEMUA_KELAS">Semua Kelas</option>'; // O
                     currentQuestionData = await generateAiBattleQuestion(ivySettings);
                     const data = currentQuestionData;
                     questionTextEl.textContent = data.question;
-                    
+
                     data.options.forEach((option, index) => {
                         const button = document.createElement('button');
                         button.className = 'option';
@@ -5882,19 +5897,19 @@ classSelect.innerHTML = '<option value="SEMUA_KELAS">Semua Kelas</option>'; // O
             const updates = {};
             if (isVictory) {
                 document.getElementById('battle-question-text').textContent = "SELAMAT! KALIAN MENANG!";
-                
+
                 const xpRewardPerPerson = monster.rewardXp || 50;
                 const coinRewardPerPerson = Math.ceil((monster.rewardCoin || 0) / party.length);
 
                 party.forEach(p => {
-                     if (p.currentHp > 0) {
+                    if (p.currentHp > 0) {
                         const currentTotalXp = ((p.level || 1) - 1) * 1000 + (p.xp || 0);
                         const newTotalXp = currentTotalXp + xpRewardPerPerson;
                         updates[`/students/${p.id}/xp`] = newTotalXp % 1000;
                         updates[`/students/${p.id}/level`] = Math.floor(newTotalXp / 1000) + 1;
                         updates[`/students/${p.id}/coin`] = (p.coin || 0) + coinRewardPerPerson;
-                     }
-                    
+                    }
+
                     // Simpan HP final dan kelola status efek
                     updates[`/students/${p.id}/hp`] = p.currentHp;
                     const finalStatusEffects = p.statusEffects || {};
@@ -5910,7 +5925,7 @@ classSelect.innerHTML = '<option value="SEMUA_KELAS">Semua Kelas</option>'; // O
                     }
                     updates[`/students/${p.id}/statusEffects`] = finalStatusEffects;
                 });
-                
+
                 addLog(`Setiap anggota yang selamat mendapat ${xpRewardPerPerson} XP dan ${coinRewardPerPerson} Koin.`, 'heal');
                 audioPlayer.success();
 
@@ -5965,31 +5980,31 @@ classSelect.innerHTML = '<option value="SEMUA_KELAS">Semua Kelas</option>'; // O
 
                 options.forEach(btn => btn.classList.add('disabled'));
                 if (isCorrect) {
-                    if(selectedButton) selectedButton.classList.add('correct');
+                    if (selectedButton) selectedButton.classList.add('correct');
                     audioPlayer.success();
                 } else {
-                    if(selectedButton) selectedButton.classList.add('incorrect');
-                    if(options[correctAnswerIndex]) options[correctAnswerIndex].classList.add('correct');
+                    if (selectedButton) selectedButton.classList.add('incorrect');
+                    if (options[correctAnswerIndex]) options[correctAnswerIndex].classList.add('correct');
                     audioPlayer.error();
                 }
                 await sleep(1500);
             }
 
             const currentPlayer = party[currentTurnIndex];
-    // Ambil data skill pasif dari Kitab
-    const skillIndex = Math.min(currentPlayer.level - 1, 4);
-    const passiveSkill = SKILL_BOOK[currentPlayer.peran].passive[skillIndex];
+            // Ambil data skill pasif dari Kitab
+            const skillIndex = Math.min(currentPlayer.level - 1, 4);
+            const passiveSkill = SKILL_BOOK[currentPlayer.peran].passive[skillIndex];
 
-    // Cek & kurangi MP untuk skill pasif
-    let passiveIsActive = false;
-    if (currentPlayer.mp >= passiveSkill.mpCost) {
-        currentPlayer.mp -= passiveSkill.mpCost;
-        passiveIsActive = true;
-        addLog(`✨ Skill Pasif [${passiveSkill.name}] aktif! (-${passiveSkill.mpCost} MP)`, 'heal');
-    } else {
-        addLog(`⚠️ MP tidak cukup! Skill Pasif tidak aktif.`, 'damage');
-    }
-    
+            // Cek & kurangi MP untuk skill pasif
+            let passiveIsActive = false;
+            if (currentPlayer.mp >= passiveSkill.mpCost) {
+                currentPlayer.mp -= passiveSkill.mpCost;
+                passiveIsActive = true;
+                addLog(`✨ Skill Pasif [${passiveSkill.name}] aktif! (-${passiveSkill.mpCost} MP)`, 'heal');
+            } else {
+                addLog(`⚠️ MP tidak cukup! Skill Pasif tidak aktif.`, 'damage');
+            }
+
 
             // --- DEBUGGING: Cek status efek pemain saat giliran mereka ---
             console.log(`Giliran ${currentPlayer.nama}. Status Efek:`, JSON.parse(JSON.stringify(currentPlayer.statusEffects)));
@@ -6018,157 +6033,157 @@ classSelect.innerHTML = '<option value="SEMUA_KELAS">Semua Kelas</option>'; // O
             }
 
             if (isCorrect) {
-        addLog(`Jawaban BENAR! ${currentPlayer.nama} bersiap menyerang...`);
-        await sleep(800);// Jeda sedikit biar dramatis
+                addLog(`Jawaban BENAR! ${currentPlayer.nama} bersiap menyerang...`);
+                await sleep(800);// Jeda sedikit biar dramatis
 
-    // --- Logika untuk PRAJURIT ---
-    if (currentPlayer.peran === 'Prajurit') {
-        let studentDamage = 25 + Math.floor(Math.random() * 10);
-        // Skill Aktif: Peluang Critical Hit 25%
-        if (Math.random() < 0.25) { 
-            studentDamage = Math.floor(studentDamage * 1.5); // Damage 150%
-            addLog(`💥 SERANGAN PERKASA! ${currentPlayer.nama} mendaratkan serangan kritis, ${studentDamage} damage!`, 'heal');
-        } else {
-            addLog(`⚔️ ${currentPlayer.nama} menyerang, ${studentDamage} damage.`, 'normal');
-        }
-        monster.currentHp = Math.max(0, monster.currentHp - studentDamage);
-    }
+                // --- Logika untuk PRAJURIT ---
+                if (currentPlayer.peran === 'Prajurit') {
+                    let studentDamage = 25 + Math.floor(Math.random() * 10);
+                    // Skill Aktif: Peluang Critical Hit 25%
+                    if (Math.random() < 0.25) {
+                        studentDamage = Math.floor(studentDamage * 1.5); // Damage 150%
+                        addLog(`💥 SERANGAN PERKASA! ${currentPlayer.nama} mendaratkan serangan kritis, ${studentDamage} damage!`, 'heal');
+                    } else {
+                        addLog(`⚔️ ${currentPlayer.nama} menyerang, ${studentDamage} damage.`, 'normal');
+                    }
+                    monster.currentHp = Math.max(0, monster.currentHp - studentDamage);
+                }
 
-    // --- Logika untuk PENYEMBUH ---
-    else if (currentPlayer.peran === 'Penyembuh') {
-        // Jika sendirian, pulihkan diri sendiri
-        if (party.length === 1) {
-            const healAmount = Math.floor(currentPlayer.maxHp * 0.20); // Pulihkan 20%
-            currentPlayer.currentHp = Math.min(currentPlayer.maxHp, currentPlayer.currentHp + healAmount);
-            addLog(`💖 PEMULIHAN AJAIB! ${currentPlayer.nama} memulihkan dirinya sendiri sebesar ${healAmount} HP.`, 'heal');
-        } else { // Jika party, cari teman dengan HP terendah
-            let target = party.filter(p => p.currentHp > 0)
-                              .sort((a, b) => (a.currentHp / a.maxHp) - (b.currentHp / b.maxHp))[0];
-            const healAmount = Math.floor(target.maxHp * 0.15); // Pulihkan 15%
-            target.currentHp = Math.min(target.maxHp, target.currentHp + healAmount);
-            addLog(`💖 ${currentPlayer.nama} menyembuhkan ${target.nama} sebesar ${healAmount} HP.`, 'heal');
-        }
-    }
+                // --- Logika untuk PENYEMBUH ---
+                else if (currentPlayer.peran === 'Penyembuh') {
+                    // Jika sendirian, pulihkan diri sendiri
+                    if (party.length === 1) {
+                        const healAmount = Math.floor(currentPlayer.maxHp * 0.20); // Pulihkan 20%
+                        currentPlayer.currentHp = Math.min(currentPlayer.maxHp, currentPlayer.currentHp + healAmount);
+                        addLog(`💖 PEMULIHAN AJAIB! ${currentPlayer.nama} memulihkan dirinya sendiri sebesar ${healAmount} HP.`, 'heal');
+                    } else { // Jika party, cari teman dengan HP terendah
+                        let target = party.filter(p => p.currentHp > 0)
+                            .sort((a, b) => (a.currentHp / a.maxHp) - (b.currentHp / b.maxHp))[0];
+                        const healAmount = Math.floor(target.maxHp * 0.15); // Pulihkan 15%
+                        target.currentHp = Math.min(target.maxHp, target.currentHp + healAmount);
+                        addLog(`💖 ${currentPlayer.nama} menyembuhkan ${target.nama} sebesar ${healAmount} HP.`, 'heal');
+                    }
+                }
 
-    // --- Logika untuk PENYIHIR ---
-    else if (currentPlayer.peran === 'Penyihir') {
-        let studentDamage = 25 + Math.floor(Math.random() * 10); // Damage standar
-         addLog(`✨ ${currentPlayer.nama} merapal sihir, ${studentDamage} damage.`, 'normal');
-        monster.currentHp = Math.max(0, monster.currentHp - studentDamage);
+                // --- Logika untuk PENYIHIR ---
+                else if (currentPlayer.peran === 'Penyihir') {
+                    let studentDamage = 25 + Math.floor(Math.random() * 10); // Damage standar
+                    addLog(`✨ ${currentPlayer.nama} merapal sihir, ${studentDamage} damage.`, 'normal');
+                    monster.currentHp = Math.max(0, monster.currentHp - studentDamage);
 
-        // 50% kemungkinan serangan skill, 50% fisik
-        if (Math.random() > 0.5) {
-            // Serangan Skill (contoh sederhana)
-            let skillDamage = 30 + Math.floor(Math.random() * 15);
-            if(passiveIsActive && currentPlayer.peran === 'Penyihir' && Math.random() < 0.15) { // Cek critical
-                 skillDamage = Math.floor(skillDamage * 1.5);
-                 addLog(`✨ CRITICAL HIT!`, 'heal');
+                    // 50% kemungkinan serangan skill, 50% fisik
+                    if (Math.random() > 0.5) {
+                        // Serangan Skill (contoh sederhana)
+                        let skillDamage = 30 + Math.floor(Math.random() * 15);
+                        if (passiveIsActive && currentPlayer.peran === 'Penyihir' && Math.random() < 0.15) { // Cek critical
+                            skillDamage = Math.floor(skillDamage * 1.5);
+                            addLog(`✨ CRITICAL HIT!`, 'heal');
+                        }
+                        monster.currentHp = Math.max(0, monster.currentHp - skillDamage);
+                        addLog(`🔮 ${currentPlayer.nama} menggunakan serangan skill, ${skillDamage} damage!`, 'heal');
+                    } else {
+                        // Serangan Fisik Biasa
+                        let physicalDamage = 25 + Math.floor(Math.random() * 10);
+                        if (passiveIsActive && currentPlayer.peran === 'Penyihir') {
+                            physicalDamage = Math.floor(physicalDamage * 1.05); // Bonus 5% dari skill
+                        }
+                        monster.currentHp = Math.max(0, monster.currentHp - physicalDamage);
+                        addLog(`⚔️ ${currentPlayer.nama} menyerang secara fisik, ${physicalDamage} damage!`, 'heal');
+                    }
+                }
+
+                // --- Logika Default (jika peran tidak terdefinisi) ---
+                else {
+                    let studentDamage = 25 + Math.floor(Math.random() * 10);
+                    addLog(`👤 ${currentPlayer.nama} menyerang, ${studentDamage} damage.`, 'normal');
+                    monster.currentHp = Math.max(0, monster.currentHp - studentDamage);
+                }
+
+                updateUI();
+                if (monster.currentHp <= 0) { endBattle(true); return; }
+                // --- GANTI BLOK 'ELSE' YANG LAMA DENGAN INI ---
+            } else {
+                // Logika jawaban SALAH (giliran monster menyerang)
+                addLog(`Jawaban SALAH! ${monster.monsterName} bersiap menyerang ${currentPlayer.nama}...`);
+                await sleep(800); // Kasih jeda biar dramatis
+
+                const availableSkills = monster.skills ? Object.keys(monster.skills).filter(s => monster.skills[s]) : [];
+                const monsterActionChoice = Math.random(); // Acak angka antara 0 dan 1
+
+                // 50% kemungkinan pakai skill (jika punya), 50% serangan fisik
+                if (availableSkills.length > 0 && monsterActionChoice > 0.5) {
+                    // --- MONSTER PAKAI SKILL ---
+                    const randomSkill = availableSkills[Math.floor(Math.random() * availableSkills.length)];
+                    const updates = {};
+
+                    switch (randomSkill) {
+                        case 'racun': // Grouping racun and diam as they have similar application logic
+                        case 'diam': {
+                            const durationInDays = 2;
+                            const expiryTimestamp = Date.now() + (durationInDays * 24 * 60 * 60 * 1000);
+                            updates[`/students/${currentPlayer.id}/statusEffects/${randomSkill}`] = { expires: expiryTimestamp };
+                            await update(ref(db), updates);
+                            addLog(`☠️ ${monster.monsterName} menggunakan skill ${randomSkill}! ${currentPlayer.nama} terkena kutukan!`, 'damage');
+                            break;
+                        }
+                        case 'knock': {
+                            const durationInDays = 2;
+                            const expiryTimestamp = Date.now() + (durationInDays * 24 * 60 * 60 * 1000);
+                            currentPlayer.currentHp = 10; // Langsung ubah HP di state battle
+                            updates[`/students/${currentPlayer.id}/statusEffects/knock`] = { expires: expiryTimestamp };
+                            updates[`/students/${currentPlayer.id}/hp`] = 10; // Simpan HP baru ke database
+                            await update(ref(db), updates);
+                            addLog(`😵 ${monster.monsterName} menggunakan skill Knock! HP ${currentPlayer.nama} menjadi 10!`, 'damage');
+                            break;
+                        }
+
+                        case 'mencuri':
+                            const stolenCoins = Math.floor(Math.random() * 11) + 5; // Curi 5-15 koin
+                            const newPlayerCoin = Math.max(0, (currentPlayer.coin || 0) - stolenCoins);
+                            updates[`/students/${currentPlayer.id}/coin`] = newPlayerCoin;
+                            await update(ref(db), updates);
+                            addLog(`💰 ${monster.monsterName} menggunakan skill Mencuri! ${stolenCoins} koin ${currentPlayer.nama} dicuri!`, 'damage');
+                            break;
+
+                        case 'hisap':
+                            const absorbedXp = Math.floor(Math.random() * 11) + 10; // Hisap 10-20 XP
+                            const currentTotalXp = ((currentPlayer.level - 1) * 1000) + currentPlayer.xp;
+                            const newTotalXp = Math.max(0, currentTotalXp - absorbedXp);
+
+                            updates[`/students/${currentPlayer.id}/level`] = Math.floor(newTotalXp / 1000) + 1;
+                            updates[`/students/${currentPlayer.id}/xp`] = newTotalXp % 1000;
+                            await update(ref(db), updates);
+                            addLog(`✨ ${monster.monsterName} menggunakan skill Hisap Energi! ${absorbedXp} XP ${currentPlayer.nama} terhisap!`, 'damage');
+                            break;
+
+                        default:
+                            // Jika skill tidak dikenali, lakukan serangan fisik biasa
+                            performPhysicalAttack();
+                            break;
+                    }
+
+                } else {
+                    // --- MONSTER PAKAI SERANGAN FISIK BIASA ---
+                    performPhysicalAttack();
+                }
+
+                // Fungsi bantuan untuk serangan fisik (biar nggak nulis kode 2x)
+                function performPhysicalAttack() {
+                    let monsterDamage = 15 + Math.floor(Math.random() * 10);
+                    if (passiveIsActive && currentPlayer.peran === 'Prajurit') {
+                        const reduction = Math.floor(monsterDamage * (passiveSkill.name.includes("12%") ? 0.12 : 0.06));
+                        monsterDamage -= reduction;
+                        addLog(`🛡️ Skill Pasif [${passiveSkill.name}] mengurangi ${reduction} damage!`, 'heal');
+                    }
+                    currentPlayer.currentHp = Math.max(0, currentPlayer.currentHp - monsterDamage);
+                    addLog(`⚔️ ${monster.monsterName} menyerang secara fisik, ${monsterDamage} damage diterima!`, 'damage');
+                }
+
+                audioPlayer.hpLoss();
+                updateUI();
+                if (party.every(p => p.currentHp <= 0)) { endBattle(false); return; }
             }
-            monster.currentHp = Math.max(0, monster.currentHp - skillDamage);
-            addLog(`🔮 ${currentPlayer.nama} menggunakan serangan skill, ${skillDamage} damage!`, 'heal');
-        } else {
-            // Serangan Fisik Biasa
-            let physicalDamage = 25 + Math.floor(Math.random() * 10);
-            if(passiveIsActive && currentPlayer.peran === 'Penyihir') {
-                 physicalDamage = Math.floor(physicalDamage * 1.05); // Bonus 5% dari skill
-            }
-            monster.currentHp = Math.max(0, monster.currentHp - physicalDamage);
-            addLog(`⚔️ ${currentPlayer.nama} menyerang secara fisik, ${physicalDamage} damage!`, 'heal');
-        }
-    }
 
-    // --- Logika Default (jika peran tidak terdefinisi) ---
-    else {
-        let studentDamage = 25 + Math.floor(Math.random() * 10);
-        addLog(`👤 ${currentPlayer.nama} menyerang, ${studentDamage} damage.`, 'normal');
-        monster.currentHp = Math.max(0, monster.currentHp - studentDamage);
-    }
-
-    updateUI();
-    if (monster.currentHp <= 0) { endBattle(true); return; }
-           // --- GANTI BLOK 'ELSE' YANG LAMA DENGAN INI ---
-} else {
-    // Logika jawaban SALAH (giliran monster menyerang)
-    addLog(`Jawaban SALAH! ${monster.monsterName} bersiap menyerang ${currentPlayer.nama}...`);
-    await sleep(800); // Kasih jeda biar dramatis
-
-    const availableSkills = monster.skills ? Object.keys(monster.skills).filter(s => monster.skills[s]) : [];
-    const monsterActionChoice = Math.random(); // Acak angka antara 0 dan 1
-
-    // 50% kemungkinan pakai skill (jika punya), 50% serangan fisik
-    if (availableSkills.length > 0 && monsterActionChoice > 0.5) {
-        // --- MONSTER PAKAI SKILL ---
-        const randomSkill = availableSkills[Math.floor(Math.random() * availableSkills.length)];
-        const updates = {};
-
-        switch (randomSkill) {
-            case 'racun': // Grouping racun and diam as they have similar application logic
-            case 'diam': {
-                const durationInDays = 2;
-                const expiryTimestamp = Date.now() + (durationInDays * 24 * 60 * 60 * 1000);
-                updates[`/students/${currentPlayer.id}/statusEffects/${randomSkill}`] = { expires: expiryTimestamp };
-                await update(ref(db), updates);
-                addLog(`☠️ ${monster.monsterName} menggunakan skill ${randomSkill}! ${currentPlayer.nama} terkena kutukan!`, 'damage');
-                break;
-            }
-            case 'knock': {
-                const durationInDays = 2;
-                const expiryTimestamp = Date.now() + (durationInDays * 24 * 60 * 60 * 1000);
-                currentPlayer.currentHp = 10; // Langsung ubah HP di state battle
-                updates[`/students/${currentPlayer.id}/statusEffects/knock`] = { expires: expiryTimestamp };
-                updates[`/students/${currentPlayer.id}/hp`] = 10; // Simpan HP baru ke database
-                await update(ref(db), updates);
-                addLog(`😵 ${monster.monsterName} menggunakan skill Knock! HP ${currentPlayer.nama} menjadi 10!`, 'damage');
-                break;
-            }
-
-            case 'mencuri':
-                const stolenCoins = Math.floor(Math.random() * 11) + 5; // Curi 5-15 koin
-                const newPlayerCoin = Math.max(0, (currentPlayer.coin || 0) - stolenCoins);
-                updates[`/students/${currentPlayer.id}/coin`] = newPlayerCoin;
-                await update(ref(db), updates);
-                addLog(`💰 ${monster.monsterName} menggunakan skill Mencuri! ${stolenCoins} koin ${currentPlayer.nama} dicuri!`, 'damage');
-                break;
-
-            case 'hisap':
-                const absorbedXp = Math.floor(Math.random() * 11) + 10; // Hisap 10-20 XP
-                const currentTotalXp = ((currentPlayer.level - 1) * 1000) + currentPlayer.xp;
-                const newTotalXp = Math.max(0, currentTotalXp - absorbedXp);
-
-                updates[`/students/${currentPlayer.id}/level`] = Math.floor(newTotalXp / 1000) + 1;
-                updates[`/students/${currentPlayer.id}/xp`] = newTotalXp % 1000;
-                await update(ref(db), updates);
-                addLog(`✨ ${monster.monsterName} menggunakan skill Hisap Energi! ${absorbedXp} XP ${currentPlayer.nama} terhisap!`, 'damage');
-                break;
-
-            default:
-                // Jika skill tidak dikenali, lakukan serangan fisik biasa
-                performPhysicalAttack();
-                break;
-        }
-
-    } else {
-        // --- MONSTER PAKAI SERANGAN FISIK BIASA ---
-        performPhysicalAttack();
-    }
-
-    // Fungsi bantuan untuk serangan fisik (biar nggak nulis kode 2x)
-    function performPhysicalAttack() {
-        let monsterDamage = 15 + Math.floor(Math.random() * 10);
-        if(passiveIsActive && currentPlayer.peran === 'Prajurit'){
-            const reduction = Math.floor(monsterDamage * (passiveSkill.name.includes("12%") ? 0.12 : 0.06));
-            monsterDamage -= reduction;
-            addLog(`🛡️ Skill Pasif [${passiveSkill.name}] mengurangi ${reduction} damage!`, 'heal');
-        }
-        currentPlayer.currentHp = Math.max(0, currentPlayer.currentHp - monsterDamage);
-        addLog(`⚔️ ${monster.monsterName} menyerang secara fisik, ${monsterDamage} damage diterima!`, 'damage');
-    }
-
-    audioPlayer.hpLoss();
-    updateUI();
-    if (party.every(p => p.currentHp <= 0)) { endBattle(false); return; }
-}
-            
             await sleep(1200);
             nextTurn();
         };
@@ -6191,72 +6206,72 @@ classSelect.innerHTML = '<option value="SEMUA_KELAS">Semua Kelas</option>'; // O
         setTimeout(() => battleModal.classList.remove('opacity-0'), 10);
     }
 
-    
+
     // --- LOGIKA HALAMAN ATTENDANCE ---
-async function setupAttendancePage() {
-    const attendanceContainer = document.getElementById('attendance-container');
-    const attendanceDateInput = document.getElementById('attendance-date');
-    const loadAttendanceButton = document.getElementById('load-attendance-button');
+    async function setupAttendancePage() {
+        const attendanceContainer = document.getElementById('attendance-container');
+        const attendanceDateInput = document.getElementById('attendance-date');
+        const loadAttendanceButton = document.getElementById('load-attendance-button');
 
-    // Set tanggal hari ini sebagai default
-    if (attendanceDateInput) {
-        attendanceDateInput.value = getLocalDateString(new Date());
-    }
-
-    const renderAttendanceList = async () => {
-        const selectedDate = attendanceDateInput.value;
-        if (!selectedDate) {
-            showToast('Silakan pilih tanggal terlebih dahulu!', true);
-            return;
+        // Set tanggal hari ini sebagai default
+        if (attendanceDateInput) {
+            attendanceDateInput.value = getLocalDateString(new Date());
         }
 
-        attendanceContainer.innerHTML = LOADER_HTML;
+        const renderAttendanceList = async () => {
+            const selectedDate = attendanceDateInput.value;
+            if (!selectedDate) {
+                showToast('Silakan pilih tanggal terlebih dahulu!', true);
+                return;
+            }
 
-        const [studentsSnap, attendanceSnap] = await Promise.all([
-            get(ref(db, 'students')),
-            get(ref(db, `attendance/${selectedDate}`))
-        ]);
+            attendanceContainer.innerHTML = LOADER_HTML;
 
-        if (!studentsSnap.exists()) {
-            attendanceContainer.innerHTML = '<div class="bg-white/90 backdrop-blur-sm rounded-lg shadow-md p-10 text-center text-gray-500"><p>Belum ada siswa terdaftar.</p></div>';
-            return;
-        }
+            const [studentsSnap, attendanceSnap] = await Promise.all([
+                get(ref(db, 'students')),
+                get(ref(db, `attendance/${selectedDate}`))
+            ]);
 
-        const studentsData = studentsSnap.val();
-        const dailyAttendance = attendanceSnap.exists() ? attendanceSnap.val() : {};
-        
-        const studentsByClass = {};
-        Object.entries(studentsData).forEach(([uid, student]) => {
-            if (!studentsByClass[student.kelas]) studentsByClass[student.kelas] = [];
-            studentsByClass[student.kelas].push({ uid, ...student });
-        });
-        
-        attendanceContainer.innerHTML = '';
-        for (const kelas in studentsByClass) {
-            const classSection = document.createElement('div');
-            classSection.className = 'bg-white/90 backdrop-blur-sm rounded-lg shadow-md';
-            classSection.innerHTML = `<h3 class="text-lg font-bold border-b-2 border-blue-200 p-4">${kelas}</h3>`;
-            const studentGrid = document.createElement('div');
-            studentGrid.className = 'p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4';
-            
-            studentsByClass[kelas].forEach(student => {
-                const studentStatus = dailyAttendance[student.uid]?.status;
-                const avatar = student.fotoProfilBase64 ? 
-                    `<img src="${student.fotoProfilBase64}" alt="${student.nama}" class="w-16 h-16 rounded-full object-cover">` : 
-                    `<div class="w-16 h-16 bg-gray-700 text-white flex items-center justify-center rounded-full font-bold text-2xl">${student.nama.charAt(0)}</div>`;
-                
-                const buttonHtml = ['hadir', 'sakit', 'izin', 'alfa'].map(action => {
-                    const colors = {
-                        hadir: 'bg-blue-500 hover:bg-blue-600',
-                        sakit: 'bg-yellow-500 hover:bg-yellow-600',
-                        izin: 'bg-orange-500 hover:bg-orange-600',
-                        alfa: 'bg-red-500 hover:bg-red-600'
-                    };
-                    const activeClass = studentStatus === action ? 'ring-4 ring-offset-2 ring-green-400' : '';
-                    return `<button data-uid="${student.uid}" data-action="${action}" class="attendance-btn ${colors[action]} text-white text-xs font-bold py-2 px-2 rounded ${activeClass}">${action.charAt(0).toUpperCase() + action.slice(1)}</button>`;
-                }).join('');
+            if (!studentsSnap.exists()) {
+                attendanceContainer.innerHTML = '<div class="bg-white/90 backdrop-blur-sm rounded-lg shadow-md p-10 text-center text-gray-500"><p>Belum ada siswa terdaftar.</p></div>';
+                return;
+            }
 
-                studentGrid.innerHTML += `
+            const studentsData = studentsSnap.val();
+            const dailyAttendance = attendanceSnap.exists() ? attendanceSnap.val() : {};
+
+            const studentsByClass = {};
+            Object.entries(studentsData).forEach(([uid, student]) => {
+                if (!studentsByClass[student.kelas]) studentsByClass[student.kelas] = [];
+                studentsByClass[student.kelas].push({ uid, ...student });
+            });
+
+            attendanceContainer.innerHTML = '';
+            for (const kelas in studentsByClass) {
+                const classSection = document.createElement('div');
+                classSection.className = 'bg-white/90 backdrop-blur-sm rounded-lg shadow-md';
+                classSection.innerHTML = `<h3 class="text-lg font-bold border-b-2 border-blue-200 p-4">${kelas}</h3>`;
+                const studentGrid = document.createElement('div');
+                studentGrid.className = 'p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4';
+
+                studentsByClass[kelas].forEach(student => {
+                    const studentStatus = dailyAttendance[student.uid]?.status;
+                    const avatar = student.fotoProfilBase64 ?
+                        `<img src="${student.fotoProfilBase64}" alt="${student.nama}" class="w-16 h-16 rounded-full object-cover">` :
+                        `<div class="w-16 h-16 bg-gray-700 text-white flex items-center justify-center rounded-full font-bold text-2xl">${student.nama.charAt(0)}</div>`;
+
+                    const buttonHtml = ['hadir', 'sakit', 'izin', 'alfa'].map(action => {
+                        const colors = {
+                            hadir: 'bg-blue-500 hover:bg-blue-600',
+                            sakit: 'bg-yellow-500 hover:bg-yellow-600',
+                            izin: 'bg-orange-500 hover:bg-orange-600',
+                            alfa: 'bg-red-500 hover:bg-red-600'
+                        };
+                        const activeClass = studentStatus === action ? 'ring-4 ring-offset-2 ring-green-400' : '';
+                        return `<button data-uid="${student.uid}" data-action="${action}" class="attendance-btn ${colors[action]} text-white text-xs font-bold py-2 px-2 rounded ${activeClass}">${action.charAt(0).toUpperCase() + action.slice(1)}</button>`;
+                    }).join('');
+
+                    studentGrid.innerHTML += `
                     <div class="bg-gray-50 p-4 rounded-lg shadow-inner flex flex-col gap-4">
                         <div class="flex items-center gap-4">
                             ${avatar}
@@ -6269,18 +6284,18 @@ async function setupAttendancePage() {
                             ${buttonHtml}
                         </div>
                     </div>`;
-            });
-            classSection.appendChild(studentGrid);
-            attendanceContainer.appendChild(classSection);
-        }
-    };
+                });
+                classSection.appendChild(studentGrid);
+                attendanceContainer.appendChild(classSection);
+            }
+        };
 
-    if (loadAttendanceButton) {
-        loadAttendanceButton.onclick = renderAttendanceList;
-        // Secara otomatis memuat absensi untuk hari ini saat halaman pertama kali dibuka
-        renderAttendanceList();
+        if (loadAttendanceButton) {
+            loadAttendanceButton.onclick = renderAttendanceList;
+            // Secara otomatis memuat absensi untuk hari ini saat halaman pertama kali dibuka
+            renderAttendanceList();
+        }
     }
-}
     // --- FUNGSI UPDATE STATS & LOG ABSENSI (DENGAN SUARA) ---
     async function updateStudentStats(uid, action, studentData = null, attendanceDate) {
         const studentRef = ref(db, `students/${uid}`);
@@ -6296,12 +6311,12 @@ async function setupAttendancePage() {
             showToast('Tanggal absensi tidak valid!', true);
             return;
         }
-        
+
         let statUpdates = {};
         let hpPenalty = 0;
         let penaltyMessage = '';
 
-        switch(action) {
+        switch (action) {
             case 'hadir': {
                 const currentTotalXp = ((data.level || 1) - 1) * xpPerLevel + (data.xp || 0);
                 const newTotalXp = currentTotalXp + 10;
@@ -6353,14 +6368,14 @@ async function setupAttendancePage() {
         // dan HP sebelumnya masih di atas ambang batas. Ini mencegah spam notifikasi.
         if (newHp <= hpThreshold && oldHp > hpThreshold) {
             addNotification(
-                `HP <strong>${studentName}</strong> kritis (${newHp} HP)!`, 
-                'hp_critical', 
+                `HP <strong>${studentName}</strong> kritis (${newHp} HP)!`,
+                'hp_critical',
                 { studentId: uid }
             );
         }
     }
 
-    
+
     document.getElementById('attendance-container').addEventListener('click', (e) => {
         const target = e.target.closest('.attendance-btn');
         if (target) {
@@ -6374,50 +6389,50 @@ async function setupAttendancePage() {
             updateStudentStats(target.dataset.uid, target.dataset.action, null, selectedDate);
         }
     });
-    
+
     // --- LOGIKA QR CODE SCANNER ---
     // Event listener untuk tombol utama "Scan QR"
     document.getElementById('scan-qr-button').addEventListener('click', () => {
-    openQrModal(findStudentByNisAndMarkPresent); // Buka modal dan langsung jalankan scanner dengan callback absensi
-});
+        openQrModal(findStudentByNisAndMarkPresent); // Buka modal dan langsung jalankan scanner dengan callback absensi
+    });
     // PERBAIKAN: Menggunakan ID yang benar dari HTML (`close-qr-scanner-modal-button`)
     document.getElementById('close-qr-scanner-modal-button').addEventListener('click', () => closeQrModal(false));
-    
+
     // PERBAIKAN: Fungsi start scanner yang lebih andal
     // --- GANTI FUNGSI LAMA DENGAN VERSI BARU INI ---
-const startQrScanner = (onSuccessCallback) => {
-    const scanResultElement = document.getElementById('scan-result');
-    if (!document.getElementById('qr-reader')) {
-        console.error("Elemen #qr-reader tidak ditemukan.");
-        return;
-    }
-
-    html5QrCode = new Html5Qrcode("qr-reader");
-
-    const onScanSuccess = (decodedText, decodedResult) => {
-        if (html5QrCode && html5QrCode.isScanning) {
-            html5QrCode.stop()
-                .then(() => {
-                    scanResultElement.textContent = `Kode terdeteksi: ${decodedText}. Memproses...`;
-                    audioPlayer.success();
-
-                    // Jalankan perintah spesifik yang diberikan
-                    if (onSuccessCallback) {
-                        onSuccessCallback(decodedText);
-                    }
-
-                    setTimeout(() => closeQrModal(true), 1500);
-                })
-                .catch(err => console.error("Gagal menghentikan scanner.", err));
+    const startQrScanner = (onSuccessCallback) => {
+        const scanResultElement = document.getElementById('scan-result');
+        if (!document.getElementById('qr-reader')) {
+            console.error("Elemen #qr-reader tidak ditemukan.");
+            return;
         }
+
+        html5QrCode = new Html5Qrcode("qr-reader");
+
+        const onScanSuccess = (decodedText, decodedResult) => {
+            if (html5QrCode && html5QrCode.isScanning) {
+                html5QrCode.stop()
+                    .then(() => {
+                        scanResultElement.textContent = `Kode terdeteksi: ${decodedText}. Memproses...`;
+                        audioPlayer.success();
+
+                        // Jalankan perintah spesifik yang diberikan
+                        if (onSuccessCallback) {
+                            onSuccessCallback(decodedText);
+                        }
+
+                        setTimeout(() => closeQrModal(true), 1500);
+                    })
+                    .catch(err => console.error("Gagal menghentikan scanner.", err));
+            }
+        };
+
+        html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 250 } }, onScanSuccess)
+            .catch(err => {
+                scanResultElement.textContent = "Gagal memulai kamera. Beri izin akses kamera.";
+            });
     };
 
-    html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 250 } }, onScanSuccess)
-        .catch(err => {
-            scanResultElement.textContent = "Gagal memulai kamera. Beri izin akses kamera.";
-        });
-};
-    
     async function findStudentByNisAndMarkPresent(nis) {
         const selectedDate = document.getElementById('attendance-date').value;
         if (!selectedDate) {
@@ -6499,7 +6514,7 @@ const startQrScanner = (onSuccessCallback) => {
             .student-name { text-align: left; } @media print { @page { size: landscape; } body { -webkit-print-color-adjust: exact; } }
             </style></head><body><h2>Rekap Absensi Siswa</h2><p>Periode: ${startDate} s/d ${endDate}</p><table><thead>
             <tr><th rowspan="2">No</th><th rowspan="2">Nama Siswa</th><th rowspan="2">NIS</th><th colspan="${dateList.length}">Tanggal</th><th colspan="4">Total</th></tr>
-            <tr>${dateList.map(d => `<th>${d.slice(8,10)}</th>`).join('')}<th>H</th><th>S</th><th>I</th><th>A</th></tr></thead><tbody>`;
+            <tr>${dateList.map(d => `<th>${d.slice(8, 10)}</th>`).join('')}<th>H</th><th>S</th><th>I</th><th>A</th></tr></thead><tbody>`;
 
         let counter = 1;
         for (const uid in reportData) {
@@ -6559,7 +6574,7 @@ function setupJournalPage() {
         document.getElementById('journal-modal-title').textContent = 'Tambah Jurnal Refleksi Baru';
         journalDateInput.value = getLocalDateString(new Date());
         updateDayName(); // Set day name for today
-        
+
         const checkedRadio = document.querySelector('.journal-selector input:checked');
         if (checkedRadio) checkedRadio.checked = false;
 
@@ -6577,7 +6592,7 @@ function setupJournalPage() {
     const setupSelectors = () => {
         const weather = { 'Cerah': 'sun', 'Berawan': 'cloud', 'Hujan': 'cloud-rain', 'Badai': 'cloud-lightning' };
         const feelings = { 'Senang': 'smile', 'Biasa': 'meh', 'Sedih': 'frown', 'Marah': 'angry' };
-        
+
         const weatherContainer = document.getElementById('journal-weather-selector');
         const feelingContainer = document.getElementById('journal-feeling-selector');
 
@@ -6649,7 +6664,7 @@ function setupJournalPage() {
             createLucideIcons();
         });
     };
-    
+
     const handlePrint = async () => {
         const startDate = filterStartDate.value, endDate = filterEndDate.value;
         if (!startDate || !endDate) { showToast('Pilih rentang tanggal untuk mencetak!', true); return; }
@@ -6660,7 +6675,7 @@ function setupJournalPage() {
         journalsSnap.forEach(childSnap => { const j = childSnap.val(); if (j.date >= startDate && j.date <= endDate) journalsToPrint.push(j); });
         if (journalsToPrint.length === 0) { showToast('Tidak ada jurnal pada rentang tanggal yang dipilih.', true); return; }
         let html = `<!DOCTYPE html><html><head><title>Jurnal Refleksi Guru</title><style>body{font-family:'Segoe UI',sans-serif;line-height:1.6}.journal-entry{border:1px solid #ccc;border-radius:8px;padding:15px;margin-bottom:20px;page-break-inside:avoid}h1,h2,h3{color:#333}h3{border-bottom:2px solid #eee;padding-bottom:5px}p{margin:5px 0}strong{color:#555}</style></head><body><h1>Jurnal Refleksi Guru</h1><h2>Nama: Mas Panji Purnomo</h2><p>Periode: ${startDate} s/d ${endDate}</p><hr>`;
-        journalsToPrint.forEach(j => { html += `<div class="journal-entry"><h3>${j.kelas} | ${j.date} - ${j.day} (${j.subject})</h3><p><strong>Cuaca:</strong> ${j.weather} | <strong>Perasaan:</strong> ${j.feeling}</p><p><strong>Tugas:</strong><br>${j.tasks.replace(/\n/g, '<br>')||'-'}</p><p><strong>Pencapaian:</strong><br>${j.achievements.replace(/\n/g, '<br>')||'-'}</p><p><strong>Catatan:</strong><br>${j.notes.replace(/\n/g, '<br>')||'-'}</p><p><strong>Rencana Besok:</strong><br>${j.tomorrowPlan.replace(/\n/g, '<br>')||'-'}</p></div>`; });
+        journalsToPrint.forEach(j => { html += `<div class="journal-entry"><h3>${j.kelas} | ${j.date} - ${j.day} (${j.subject})</h3><p><strong>Cuaca:</strong> ${j.weather} | <strong>Perasaan:</strong> ${j.feeling}</p><p><strong>Tugas:</strong><br>${j.tasks.replace(/\n/g, '<br>') || '-'}</p><p><strong>Pencapaian:</strong><br>${j.achievements.replace(/\n/g, '<br>') || '-'}</p><p><strong>Catatan:</strong><br>${j.notes.replace(/\n/g, '<br>') || '-'}</p><p><strong>Rencana Besok:</strong><br>${j.tomorrowPlan.replace(/\n/g, '<br>') || '-'}</p></div>`; });
         html += `</body></html>`;
         const printWindow = window.open('', '_blank');
         printWindow.document.write(html);
@@ -6745,7 +6760,7 @@ async function setupAdminIvyChat() {
         chatInput.value = '';
         chatInput.disabled = true;
         isThinking = true;
-        
+
         const loadingMsg = appendAdminMsg('Sedang membuka berkas siswa...', 'ivy', true);
 
         try {
@@ -6761,7 +6776,7 @@ async function setupAdminIvyChat() {
 
             const ivySettings = configSnap.val();
             const studentsData = studentsSnap.exists() ? studentsSnap.val() : {};
-            
+
             // 2. Susun Konteks Data Siswa
             let studentsContext = "DATA LENGKAP SISWA:\n";
             let count = 0;
@@ -6817,7 +6832,7 @@ async function setupAdminIvyChat() {
             });
 
             if (!response.ok) throw new Error("Gagal terhubung ke server AI.");
-            
+
             const result = await response.json();
             const reply = result.candidates[0].content.parts[0].text;
 
@@ -6893,12 +6908,12 @@ function setupAdminChatUI() {
         if (chatPanel.classList.contains('hidden')) {
             chatPanel.classList.remove('hidden');
             chatPanel.classList.add('chat-panel-animation');
-            
+
             const badge = document.getElementById('admin-chat-badge');
             if (badge) badge.classList.add('hidden');
 
             loadAdminStudentsList();
-            
+
             if (currentChatState.selectedRecipientId) {
                 deleteBtn?.classList.remove('hidden');
             } else {
@@ -6916,7 +6931,7 @@ function setupAdminChatUI() {
     // Delete chat history
     deleteBtn?.addEventListener('click', async () => {
         if (!currentChatState.selectedRecipientId) return;
-        
+
         if (confirm(`Yakin ingin menghapus semua riwayat chat dengan ${currentChatState.selectedRecipientName}?`)) {
             try {
                 const adminId = currentChatState.currentUserId;
@@ -6985,14 +7000,14 @@ function loadAdminStudentsList() {
 
         const students = snap.val();
         recipientsContainer.innerHTML = '';
-        
+
         Object.entries(students).forEach(([uid, data]) => {
             const item = document.createElement('button');
             item.className = 'chat-recipient-item block w-full';
             if (currentChatState.selectedRecipientId === uid) {
                 item.classList.add('selected');
             }
-            
+
             item.innerHTML = `
                 <div class="flex justify-between items-center">
                     <span class="font-semibold">${data.nama}</span>
@@ -7005,7 +7020,7 @@ function loadAdminStudentsList() {
                 currentChatState.selectedRecipientId = uid;
                 currentChatState.selectedRecipientName = data.nama;
                 currentChatState.selectedRecipientLevel = data.level || 1;
-                
+
                 // Show delete button
                 document.getElementById('admin-chat-delete')?.classList.remove('hidden');
 
@@ -7014,7 +7029,7 @@ function loadAdminStudentsList() {
                     el.classList.remove('selected');
                 });
                 item.classList.add('selected');
-                
+
                 // Load conversation
                 loadAdminChatHistory(uid);
             });
@@ -7029,11 +7044,11 @@ function loadAdminChatHistory(recipientId) {
     if (!messagesContainer) return;
 
     const chatRef = ref(db, `chats/${currentChatState.currentUserId}_${recipientId}`);
-    
+
     // Real-time listener
     onValue(chatRef, (snap) => {
         messagesContainer.innerHTML = '';
-        
+
         if (!snap.exists()) {
             messagesContainer.innerHTML = '<p class="text-sm text-gray-400 text-center py-4">Belum ada chat. Mulai percakapan!</p>';
             return;
@@ -7102,7 +7117,7 @@ function setupStudentChatUI(userId) {
     const chatButton = document.getElementById('student-chat-button');
     const chatPanel = document.getElementById('student-chat-panel');
     const closeBtn = document.getElementById('student-chat-close');
-    
+
     // Tab switching
     const tabReceive = document.getElementById('student-chat-tab-receive');
     const tabSend = document.getElementById('student-chat-tab-send');
@@ -7118,7 +7133,7 @@ function setupStudentChatUI(userId) {
         if (chatPanel.classList.contains('hidden')) {
             chatPanel.classList.remove('hidden');
             chatPanel.classList.add('chat-panel-animation');
-            
+
             const badge = document.getElementById('student-chat-badge');
             if (badge) badge.classList.add('hidden');
 
@@ -7144,12 +7159,12 @@ function setupStudentChatUI(userId) {
         tabReceive.classList.remove('bg-gray-300', 'text-gray-700');
         tabSend.classList.remove('bg-blue-500', 'text-white');
         tabSend.classList.add('bg-gray-300', 'text-gray-700');
-        
+
         receiveContent.classList.remove('hidden');
         sendContent.classList.add('hidden');
         conversationContent?.classList.add('hidden');
         inputArea?.classList.add('hidden');
-        
+
         loadStudentReceivedMessages(userId);
     });
 
@@ -7158,7 +7173,7 @@ function setupStudentChatUI(userId) {
         tabSend.classList.remove('bg-gray-300', 'text-gray-700');
         tabReceive.classList.remove('bg-blue-500', 'text-white');
         tabReceive.classList.add('bg-gray-300', 'text-gray-700');
-        
+
         sendContent.classList.remove('hidden');
         receiveContent.classList.add('hidden');
         conversationContent?.classList.add('hidden');
@@ -7198,7 +7213,7 @@ function enableStudentChatFeatures(userId, studentLevel) {
 
     // Student level 6+ - Enable full chat features
     // inputArea.classList.remove('hidden'); // Jangan tampilkan dulu sebelum pilih teman
-    
+
     // Load friends list (Students AND Admins)
     const studentsRef = ref(db, 'students');
     const rolesRef = ref(db, 'roles');
@@ -7254,12 +7269,12 @@ function enableStudentChatFeatures(userId, studentLevel) {
         currentChatState.selectedRecipientIsAdmin = isAdmin;
 
         recipientName.value = `${name} ${isAdmin ? '(Staff)' : '(Lv' + level + ')'}`;
-        
+
         // UI Toggle: Sembunyikan list, tampilkan chat history & input
         sendContent.classList.add('hidden');
         conversationContent.classList.remove('hidden');
         inputArea.classList.remove('hidden');
-        
+
         loadStudentChatHistory(userId, uid);
     }
 
@@ -7269,7 +7284,7 @@ function enableStudentChatFeatures(userId, studentLevel) {
         currentChatState.selectedRecipientName = null;
         recipientName.value = '';
         chatInput.value = '';
-        
+
         inputArea.classList.add('hidden');
         conversationContent.classList.add('hidden');
         sendContent.classList.remove('hidden'); // Kembali ke list teman
@@ -7314,7 +7329,7 @@ function loadStudentReceivedMessages(userId) {
     if (!messagesContainer) return;
 
     const chatNotificationsRef = ref(db, `chatNotifications/${userId}`);
-    
+
     onValue(chatNotificationsRef, (snap) => {
         messagesContainer.innerHTML = '';
 
@@ -7361,7 +7376,7 @@ function loadStudentReceivedMessages(userId) {
 function loadStudentChatHistory(userId, friendId) {
     const messagesContainer = document.getElementById('student-chat-conversation');
     if (!messagesContainer) return;
-    
+
     // Find the correct chat reference (could be userId_friendId or friendId_userId)
     const chatRef1 = ref(db, `chats/${userId}_${friendId}`);
     const chatRef2 = ref(db, `chats/${friendId}_${userId}`);
@@ -7456,12 +7471,12 @@ document.addEventListener('DOMContentLoaded', () => {
 function displayReceivedMessages(messages) {
     const container = document.getElementById('student-chat-received-messages');
     container.innerHTML = '';
-    
+
     if (messages.length === 0) {
         container.innerHTML = '<p class="text-sm text-gray-400 text-center py-4">Tidak ada pesan.</p>';
         return;
     }
-    
+
     messages.forEach(msg => {
         const messageEl = document.createElement('div');
         messageEl.className = 'p-3 bg-blue-50 rounded-lg border-l-4 border-blue-500 cursor-pointer hover:bg-blue-100';
@@ -7470,16 +7485,16 @@ function displayReceivedMessages(messages) {
             <p class="text-sm text-gray-600">${msg.message}</p>
             <p class="text-xs text-gray-400 mt-1">${new Date(msg.timestamp).toLocaleString()}</p>
         `;
-        
+
         // Tandai pesan sebagai sudah dibaca saat diklik
         messageEl.addEventListener('click', () => {
             markMessageAsRead(msg.id);
             messageEl.classList.add('opacity-60');
         });
-        
+
         container.appendChild(messageEl);
     });
-    
+
     // Periksa apakah ada pesan yang belum dibaca
     checkUnreadMessages();
 }
@@ -7491,22 +7506,22 @@ function markMessageAsRead(messageId) {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' }
     })
-    .then(res => res.json())
-    .then(() => {
-        // Update UI setelah berhasil
-        checkUnreadMessages();
-    })
-    .catch(err => console.error('Error marking message as read:', err));
+        .then(res => res.json())
+        .then(() => {
+            // Update UI setelah berhasil
+            checkUnreadMessages();
+        })
+        .catch(err => console.error('Error marking message as read:', err));
 }
 
 // Fungsi untuk memeriksa apakah ada pesan yang belum dibaca
 function checkUnreadMessages() {
     const chatBadge = document.getElementById('student-chat-badge');
     const receivedMessagesContainer = document.getElementById('student-chat-received-messages');
-    
+
     // Cek apakah ada pesan yang belum dibaca (tidak memiliki class 'opacity-60')
     const unreadMessages = receivedMessagesContainer.querySelectorAll('div:not(.opacity-60)');
-    
+
     if (unreadMessages.length > 0) {
         chatBadge.classList.remove('hidden');
     } else {
