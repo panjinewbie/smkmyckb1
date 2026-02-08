@@ -7238,9 +7238,8 @@ function loadAdminChatHistory(recipientId) {
                 // Update status 'read' di database utama
                 update(ref(db, `chats/${chatId}/${msgId}`), { read: true });
 
-                // Hapus warning/notif dari admin jika ada (misal di chatNotifications/admin)
-                // Note: Saat ini notifikasi admin tersimpan di client-side atau query real-time, 
-                // tapi best practice adalah update state chat itu sendiri.
+                // Hapus dari chatNotifications agar badge hilang
+                remove(ref(db, `chatNotifications/${currentChatState.currentUserId}/${msgId}`));
             }
         });
     });
