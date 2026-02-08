@@ -1,23 +1,27 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DREAMY - Dasbor Siswa</title>
-    
+
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Press+Start+2P&display=swap"
+        rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script> 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
     <script src="https://cdn.lordicon.com/lordicon.js"></script><!-- MANTRA BARU DISINI -->
     <link rel="stylesheet" href="style.css">
-<link rel="icon" href="asset/gambar/logomymadival.png" type="image/png" sizes="16x16">
+    <link rel="icon" href="asset/gambar/logomymadival.png" type="image/png" sizes="16x16">
 </head>
+
 <body class="min-h-screen student-rpg-bg">
 
-    <div id="page-loader" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(31, 41, 55, 0.9); display: flex; justify-content: center; align-items: center; z-index: 9999; transition: opacity 0.5s ease;">
+    <div id="page-loader"
+        style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(31, 41, 55, 0.9); display: flex; justify-content: center; align-items: center; z-index: 9999; transition: opacity 0.5s ease;">
         <style>
             .page-loader-graphic {
                 --fill-color: #5c3d99;
@@ -28,217 +32,470 @@
                 position: relative;
                 filter: drop-shadow(0 0 10px var(--shine-color));
             }
-            .page-loader-graphic #pegtopone { position: absolute; animation: flowe-one 1s linear infinite; }
-            .page-loader-graphic #pegtoptwo { position: absolute; opacity: 0; transform: scale(0) translateY(-200px) translateX(-100px); animation: flowe-two 1s linear infinite; animation-delay: 0.3s; }
-            .page-loader-graphic #pegtopthree { position: absolute; opacity: 0; transform: scale(0) translateY(-200px) translateX(100px); animation: flowe-three 1s linear infinite; animation-delay: 0.6s; }
-            .page-loader-graphic svg g path:first-child { fill: var(--fill-color); }
-            @keyframes flowe-one { 0% { transform: scale(0.5) translateY(-200px); opacity: 0; } 25% { transform: scale(0.75) translateY(-100px); opacity: 1; } 50% { transform: scale(1) translateY(0px); opacity: 1; } 75% { transform: scale(0.5) translateY(50px); opacity: 1; } 100% { transform: scale(0) translateY(100px); opacity: 0; } }
-            @keyframes flowe-two { 0% { transform: scale(0.5) rotateZ(-10deg) translateY(-200px) translateX(-100px); opacity: 0; } 25% { transform: scale(1) rotateZ(-5deg) translateY(-100px) translateX(-50px); opacity: 1; } 50% { transform: scale(1) rotateZ(0deg) translateY(0px) translateX(-25px); opacity: 1; } 75% { transform: scale(0.5) rotateZ(5deg) translateY(50px) translateX(0px); opacity: 1; } 100% { transform: scale(0) rotateZ(10deg) translateY(100px) translateX(25px); opacity: 0; } }
-            @keyframes flowe-three { 0% { transform: scale(0.5) rotateZ(10deg) translateY(-200px) translateX(100px); opacity: 0; } 25% { transform: scale(1) rotateZ(5deg) translateY(-100px) translateX(50px); opacity: 1; } 50% { transform: scale(1) rotateZ(0deg) translateY(0px) translateX(25px); opacity: 1; } 75% { transform: scale(0.5) rotateZ(-5deg) translateY(50px) translateX(0px); opacity: 1; } 100% { transform: scale(0) rotateZ(-10deg) translateY(100px) translateX(-25px); opacity: 0; } }
+
+            .page-loader-graphic #pegtopone {
+                position: absolute;
+                animation: flowe-one 1s linear infinite;
+            }
+
+            .page-loader-graphic #pegtoptwo {
+                position: absolute;
+                opacity: 0;
+                transform: scale(0) translateY(-200px) translateX(-100px);
+                animation: flowe-two 1s linear infinite;
+                animation-delay: 0.3s;
+            }
+
+            .page-loader-graphic #pegtopthree {
+                position: absolute;
+                opacity: 0;
+                transform: scale(0) translateY(-200px) translateX(100px);
+                animation: flowe-three 1s linear infinite;
+                animation-delay: 0.6s;
+            }
+
+            .page-loader-graphic svg g path:first-child {
+                fill: var(--fill-color);
+            }
+
+            @keyframes flowe-one {
+                0% {
+                    transform: scale(0.5) translateY(-200px);
+                    opacity: 0;
+                }
+
+                25% {
+                    transform: scale(0.75) translateY(-100px);
+                    opacity: 1;
+                }
+
+                50% {
+                    transform: scale(1) translateY(0px);
+                    opacity: 1;
+                }
+
+                75% {
+                    transform: scale(0.5) translateY(50px);
+                    opacity: 1;
+                }
+
+                100% {
+                    transform: scale(0) translateY(100px);
+                    opacity: 0;
+                }
+            }
+
+            @keyframes flowe-two {
+                0% {
+                    transform: scale(0.5) rotateZ(-10deg) translateY(-200px) translateX(-100px);
+                    opacity: 0;
+                }
+
+                25% {
+                    transform: scale(1) rotateZ(-5deg) translateY(-100px) translateX(-50px);
+                    opacity: 1;
+                }
+
+                50% {
+                    transform: scale(1) rotateZ(0deg) translateY(0px) translateX(-25px);
+                    opacity: 1;
+                }
+
+                75% {
+                    transform: scale(0.5) rotateZ(5deg) translateY(50px) translateX(0px);
+                    opacity: 1;
+                }
+
+                100% {
+                    transform: scale(0) rotateZ(10deg) translateY(100px) translateX(25px);
+                    opacity: 0;
+                }
+            }
+
+            @keyframes flowe-three {
+                0% {
+                    transform: scale(0.5) rotateZ(10deg) translateY(-200px) translateX(100px);
+                    opacity: 0;
+                }
+
+                25% {
+                    transform: scale(1) rotateZ(5deg) translateY(-100px) translateX(50px);
+                    opacity: 1;
+                }
+
+                50% {
+                    transform: scale(1) rotateZ(0deg) translateY(0px) translateX(25px);
+                    opacity: 1;
+                }
+
+                75% {
+                    transform: scale(0.5) rotateZ(-5deg) translateY(50px) translateX(0px);
+                    opacity: 1;
+                }
+
+                100% {
+                    transform: scale(0) rotateZ(-10deg) translateY(100px) translateX(-25px);
+                    opacity: 0;
+                }
+            }
         </style>
         <div class="page-loader-graphic">
-            <svg id="pegtopone" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 100 100">
+            <svg id="pegtopone" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+                viewBox="0 0 100 100">
                 <defs>
-                    <filter id="shine"><feGaussianBlur stdDeviation="3"></feGaussianBlur></filter>
-                    <mask id="mask"><path d="M63,37c-6.7-4-4-27-13-27s-6.3,23-13,27-27,4-27,13,20.3,9,27,13,4,27,13,27,6.3-23,13-27,27-4,27-13-20.3-9-27-13Z" fill="white"></path></mask>
-                    <radialGradient id="gradient-1" cx="50" cy="66" fx="50" fy="66" r="30" gradientTransform="translate(0 35) scale(1 0.5)" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="black" stop-opacity="0.3"></stop><stop offset="50%" stop-color="black" stop-opacity="0.1"></stop><stop offset="100%" stop-color="black" stop-opacity="0"></stop></radialGradient>
-                    <radialGradient id="gradient-2" cx="55" cy="20" fx="55" fy="20" r="30" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="white" stop-opacity="0.3"></stop><stop offset="50%" stop-color="white" stop-opacity="0.1"></stop><stop offset="100%" stop-color="white" stop-opacity="0"></stop></radialGradient>
-                    <radialGradient id="gradient-3" cx="85" cy="50" fx="85" fy="50" xlink:href="#gradient-2"></radialGradient>
-                    <radialGradient id="gradient-4" cx="50" cy="58" fx="50" fy="58" r="60" gradientTransform="translate(0 47) scale(1 0.2)" xlink:href="#gradient-3"></radialGradient>
-                    <linearGradient id="gradient-5" x1="50" y1="90" x2="50" y2="10" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="black" stop-opacity="0.2"></stop><stop offset="40%" stop-color="black" stop-opacity="0"></stop></linearGradient>
+                    <filter id="shine">
+                        <feGaussianBlur stdDeviation="3"></feGaussianBlur>
+                    </filter>
+                    <mask id="mask">
+                        <path
+                            d="M63,37c-6.7-4-4-27-13-27s-6.3,23-13,27-27,4-27,13,20.3,9,27,13,4,27,13,27,6.3-23,13-27,27-4,27-13-20.3-9-27-13Z"
+                            fill="white"></path>
+                    </mask>
+                    <radialGradient id="gradient-1" cx="50" cy="66" fx="50" fy="66" r="30"
+                        gradientTransform="translate(0 35) scale(1 0.5)" gradientUnits="userSpaceOnUse">
+                        <stop offset="0%" stop-color="black" stop-opacity="0.3"></stop>
+                        <stop offset="50%" stop-color="black" stop-opacity="0.1"></stop>
+                        <stop offset="100%" stop-color="black" stop-opacity="0"></stop>
+                    </radialGradient>
+                    <radialGradient id="gradient-2" cx="55" cy="20" fx="55" fy="20" r="30"
+                        gradientUnits="userSpaceOnUse">
+                        <stop offset="0%" stop-color="white" stop-opacity="0.3"></stop>
+                        <stop offset="50%" stop-color="white" stop-opacity="0.1"></stop>
+                        <stop offset="100%" stop-color="white" stop-opacity="0"></stop>
+                    </radialGradient>
+                    <radialGradient id="gradient-3" cx="85" cy="50" fx="85" fy="50" xlink:href="#gradient-2">
+                    </radialGradient>
+                    <radialGradient id="gradient-4" cx="50" cy="58" fx="50" fy="58" r="60"
+                        gradientTransform="translate(0 47) scale(1 0.2)" xlink:href="#gradient-3"></radialGradient>
+                    <linearGradient id="gradient-5" x1="50" y1="90" x2="50" y2="10" gradientUnits="userSpaceOnUse">
+                        <stop offset="0%" stop-color="black" stop-opacity="0.2"></stop>
+                        <stop offset="40%" stop-color="black" stop-opacity="0"></stop>
+                    </linearGradient>
                 </defs>
-                <g><path d="M63,37c-6.7-4-4-27-13-27s-6.3,23-13,27-27,4-27,13,20.3,9,27,13,4,27,13,27,6.3-23,13-27,27-4,27-13-20.3-9-27-13Z" fill="currentColor"></path><path d="M63,37c-6.7-4-4-27-13-27s-6.3,23-13,27-27,4-27,13,20.3,9,27,13,4,27,13,27,6.3-23,13-27,27-4,27-13-20.3-9-27-13Z" fill="url(#gradient-1)"></path><path d="M63,37c-6.7-4-4-27-13-27s-6.3,23-13,27-27,4-27,13,20.3,9,27,13,4,27,13,27,6.3-23,13-27,27-4,27-13-20.3-9-27-13Z" fill="none" stroke="white" opacity="0.3" stroke-width="3" filter="url(#shine)" mask="url(#mask)"></path><path d="M63,37c-6.7-4-4-27-13-27s-6.3,23-13,27-27,4-27,13,20.3,9,27,13,4,27,13,27,6.3-23,13-27,27-4,27-13-20.3-9-27-13Z" fill="url(#gradient-2)"></path><path d="M63,37c-6.7-4-4-27-13-27s-6.3,23-13,27-27,4-27,13,20.3,9,27,13,4,27,13,27,6.3-23,13-27,27-4,27-13-20.3-9-27-13Z" fill="url(#gradient-3)"></path><path d="M63,37c-6.7-4-4-27-13-27s-6.3,23-13,27-27,4-27,13,20.3,9,27,13,4,27,13,27,6.3-23,13-27,27-4,27-13-20.3-9-27-13Z" fill="url(#gradient-4)"></path><path d="M63,37c-6.7-4-4-27-13-27s-6.3,23-13,27-27,4-27,13,20.3,9,27,13,4,27,13,27,6.3-23,13-27,27-4,27-13-20.3-9-27-13Z" fill="url(#gradient-5)"></path></g>
+                <g>
+                    <path
+                        d="M63,37c-6.7-4-4-27-13-27s-6.3,23-13,27-27,4-27,13,20.3,9,27,13,4,27,13,27,6.3-23,13-27,27-4,27-13-20.3-9-27-13Z"
+                        fill="currentColor"></path>
+                    <path
+                        d="M63,37c-6.7-4-4-27-13-27s-6.3,23-13,27-27,4-27,13,20.3,9,27,13,4,27,13,27,6.3-23,13-27,27-4,27-13-20.3-9-27-13Z"
+                        fill="url(#gradient-1)"></path>
+                    <path
+                        d="M63,37c-6.7-4-4-27-13-27s-6.3,23-13,27-27,4-27,13,20.3,9,27,13,4,27,13,27,6.3-23,13-27,27-4,27-13-20.3-9-27-13Z"
+                        fill="none" stroke="white" opacity="0.3" stroke-width="3" filter="url(#shine)"
+                        mask="url(#mask)"></path>
+                    <path
+                        d="M63,37c-6.7-4-4-27-13-27s-6.3,23-13,27-27,4-27,13,20.3,9,27,13,4,27,13,27,6.3-23,13-27,27-4,27-13-20.3-9-27-13Z"
+                        fill="url(#gradient-2)"></path>
+                    <path
+                        d="M63,37c-6.7-4-4-27-13-27s-6.3,23-13,27-27,4-27,13,20.3,9,27,13,4,27,13,27,6.3-23,13-27,27-4,27-13-20.3-9-27-13Z"
+                        fill="url(#gradient-3)"></path>
+                    <path
+                        d="M63,37c-6.7-4-4-27-13-27s-6.3,23-13,27-27,4-27,13,20.3,9,27,13,4,27,13,27,6.3-23,13-27,27-4,27-13-20.3-9-27-13Z"
+                        fill="url(#gradient-4)"></path>
+                    <path
+                        d="M63,37c-6.7-4-4-27-13-27s-6.3,23-13,27-27,4-27,13,20.3,9,27,13,4,27,13,27,6.3-23,13-27,27-4,27-13-20.3-9-27-13Z"
+                        fill="url(#gradient-5)"></path>
+                </g>
             </svg>
-            <svg id="pegtoptwo" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 100 100">
-                <g><path d="M63,37c-6.7-4-4-27-13-27s-6.3,23-13,27-27,4-27,13,20.3,9,27,13,4,27,13,27,6.3-23,13-27,27-4,27-13-20.3-9-27-13Z" fill="currentColor"></path><path d="M63,37c-6.7-4-4-27-13-27s-6.3,23-13,27-27,4-27,13,20.3,9,27,13,4,27,13,27,6.3-23,13-27,27-4,27-13-20.3-9-27-13Z" fill="url(#gradient-1)"></path><path d="M63,37c-6.7-4-4-27-13-27s-6.3,23-13,27-27,4-27,13,20.3,9,27,13,4,27,13,27,6.3-23,13-27,27-4,27-13-20.3-9-27-13Z" fill="none" stroke="white" opacity="0.3" stroke-width="3" filter="url(#shine)" mask="url(#mask)"></path><path d="M63,37c-6.7-4-4-27-13-27s-6.3,23-13,27-27,4-27,13,20.3,9,27,13,4,27,13,27,6.3-23,13-27,27-4,27-13-20.3-9-27-13Z" fill="url(#gradient-2)"></path><path d="M63,37c-6.7-4-4-27-13-27s-6.3,23-13,27-27,4-27,13,20.3,9,27,13,4,27,13,27,6.3-23,13-27,27-4,27-13-20.3-9-27-13Z" fill="url(#gradient-3)"></path><path d="M63,37c-6.7-4-4-27-13-27s-6.3,23-13,27-27,4-27,13,20.3,9,27,13,4,27,13,27,6.3-23,13-27,27-4,27-13-20.3-9-27-13Z" fill="url(#gradient-4)"></path><path d="M63,37c-6.7-4-4-27-13-27s-6.3,23-13,27-27,4-27,13,20.3,9,27,13,4,27,13,27,6.3-23,13-27,27-4,27-13-20.3-9-27-13Z" fill="url(#gradient-5)"></path></g>
+            <svg id="pegtoptwo" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+                viewBox="0 0 100 100">
+                <g>
+                    <path
+                        d="M63,37c-6.7-4-4-27-13-27s-6.3,23-13,27-27,4-27,13,20.3,9,27,13,4,27,13,27,6.3-23,13-27,27-4,27-13-20.3-9-27-13Z"
+                        fill="currentColor"></path>
+                    <path
+                        d="M63,37c-6.7-4-4-27-13-27s-6.3,23-13,27-27,4-27,13,20.3,9,27,13,4,27,13,27,6.3-23,13-27,27-4,27-13-20.3-9-27-13Z"
+                        fill="url(#gradient-1)"></path>
+                    <path
+                        d="M63,37c-6.7-4-4-27-13-27s-6.3,23-13,27-27,4-27,13,20.3,9,27,13,4,27,13,27,6.3-23,13-27,27-4,27-13-20.3-9-27-13Z"
+                        fill="none" stroke="white" opacity="0.3" stroke-width="3" filter="url(#shine)"
+                        mask="url(#mask)"></path>
+                    <path
+                        d="M63,37c-6.7-4-4-27-13-27s-6.3,23-13,27-27,4-27,13,20.3,9,27,13,4,27,13,27,6.3-23,13-27,27-4,27-13-20.3-9-27-13Z"
+                        fill="url(#gradient-2)"></path>
+                    <path
+                        d="M63,37c-6.7-4-4-27-13-27s-6.3,23-13,27-27,4-27,13,20.3,9,27,13,4,27,13,27,6.3-23,13-27,27-4,27-13-20.3-9-27-13Z"
+                        fill="url(#gradient-3)"></path>
+                    <path
+                        d="M63,37c-6.7-4-4-27-13-27s-6.3,23-13,27-27,4-27,13,20.3,9,27,13,4,27,13,27,6.3-23,13-27,27-4,27-13-20.3-9-27-13Z"
+                        fill="url(#gradient-4)"></path>
+                    <path
+                        d="M63,37c-6.7-4-4-27-13-27s-6.3,23-13,27-27,4-27,13,20.3,9,27,13,4,27,13,27,6.3-23,13-27,27-4,27-13-20.3-9-27-13Z"
+                        fill="url(#gradient-5)"></path>
+                </g>
             </svg>
-            <svg id="pegtopthree" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 100 100">
-                <g><path d="M63,37c-6.7-4-4-27-13-27s-6.3,23-13,27-27,4-27,13,20.3,9,27,13,4,27,13,27,6.3-23,13-27,27-4,27-13-20.3-9-27-13Z" fill="currentColor"></path><path d="M63,37c-6.7-4-4-27-13-27s-6.3,23-13,27-27,4-27,13,20.3,9,27,13,4,27,13,27,6.3-23,13-27,27-4,27-13-20.3-9-27-13Z" fill="url(#gradient-1)"></path><path d="M63,37c-6.7-4-4-27-13-27s-6.3,23-13,27-27,4-27,13,20.3,9,27,13,4,27,13,27,6.3-23,13-27,27-4,27-13-20.3-9-27-13Z" fill="none" stroke="white" opacity="0.3" stroke-width="3" filter="url(#shine)" mask="url(#mask)"></path><path d="M63,37c-6.7-4-4-27-13-27s-6.3,23-13,27-27,4-27,13,20.3,9,27,13,4,27,13,27,6.3-23,13-27,27-4,27-13-20.3-9-27-13Z" fill="url(#gradient-2)"></path><path d="M63,37c-6.7-4-4-27-13-27s-6.3,23-13,27-27,4-27,13,20.3,9,27,13,4,27,13,27,6.3-23,13-27,27-4,27-13-20.3-9-27-13Z" fill="url(#gradient-3)"></path><path d="M63,37c-6.7-4-4-27-13-27s-6.3,23-13,27-27,4-27,13,20.3,9,27,13,4,27,13,27,6.3-23,13-27,27-4,27-13-20.3-9-27-13Z" fill="url(#gradient-4)"></path><path d="M63,37c-6.7-4-4-27-13-27s-6.3,23-13,27-27,4-27,13,20.3,9,27,13,4,27,13,27,6.3-23,13-27,27-4,27-13-20.3-9-27-13Z" fill="url(#gradient-5)"></path></g>
+            <svg id="pegtopthree" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+                viewBox="0 0 100 100">
+                <g>
+                    <path
+                        d="M63,37c-6.7-4-4-27-13-27s-6.3,23-13,27-27,4-27,13,20.3,9,27,13,4,27,13,27,6.3-23,13-27,27-4,27-13-20.3-9-27-13Z"
+                        fill="currentColor"></path>
+                    <path
+                        d="M63,37c-6.7-4-4-27-13-27s-6.3,23-13,27-27,4-27,13,20.3,9,27,13,4,27,13,27,6.3-23,13-27,27-4,27-13-20.3-9-27-13Z"
+                        fill="url(#gradient-1)"></path>
+                    <path
+                        d="M63,37c-6.7-4-4-27-13-27s-6.3,23-13,27-27,4-27,13,20.3,9,27,13,4,27,13,27,6.3-23,13-27,27-4,27-13-20.3-9-27-13Z"
+                        fill="none" stroke="white" opacity="0.3" stroke-width="3" filter="url(#shine)"
+                        mask="url(#mask)"></path>
+                    <path
+                        d="M63,37c-6.7-4-4-27-13-27s-6.3,23-13,27-27,4-27,13,20.3,9,27,13,4,27,13,27,6.3-23,13-27,27-4,27-13-20.3-9-27-13Z"
+                        fill="url(#gradient-2)"></path>
+                    <path
+                        d="M63,37c-6.7-4-4-27-13-27s-6.3,23-13,27-27,4-27,13,20.3,9,27,13,4,27,13,27,6.3-23,13-27,27-4,27-13-20.3-9-27-13Z"
+                        fill="url(#gradient-3)"></path>
+                    <path
+                        d="M63,37c-6.7-4-4-27-13-27s-6.3,23-13,27-27,4-27,13,20.3,9,27,13,4,27,13,27,6.3-23,13-27,27-4,27-13-20.3-9-27-13Z"
+                        fill="url(#gradient-4)"></path>
+                    <path
+                        d="M63,37c-6.7-4-4-27-13-27s-6.3,23-13,27-27,4-27,13,20.3,9,27,13,4,27,13,27,6.3-23,13-27,27-4,27-13-20.3-9-27-13Z"
+                        fill="url(#gradient-5)"></path>
+                </g>
             </svg>
         </div>
     </div>
 
 
     <div id="student-dashboard-page" class="min-h-screen">
-        
-         <header class="bg-white/90 backdrop-blur-sm/80 backdrop-blur-sm shadow-md sticky top-0 z-20">
-            <div class="container mx-auto px-4"><div class="h-20 flex items-center justify-between"><h1 class="text-2xl font-bold text-blue-600 font-game tracking-tighter">DREAMY</h1><div class="flex items-center space-x-2 md:space-x-4">
-                 <div class="relative">
-        <button id="student-notification-button" class="p-2 rounded-full relative" title="sok merenyaho">
-            <lord-icon
-    src="https://cdn.lordicon.com/psnhyobz.json"
-    trigger="hover"
-    style="width:25px;height:25px">
-</lord-icon>
-            <span id="student-notification-badge" class="absolute top-1 right-1 block h-2 w-2 rounded-full bg-red-500 ring-1 ring-white hidden"></span>
-        </button>
-        <div id="student-notification-panel" class="absolute right-0 mt-2 w-80 sm:w-96 bg-white/90 backdrop-blur-sm rounded-lg shadow-xl z-40 hidden">
-            <div class="p-4 border-b flex justify-between items-center">
-                <h4 class="font-semibold text-gray-800">Notifikasi</h4>
-                <button id="student-mark-all-read-button" class="text-xs text-blue-600 hover:underline font-medium">Bersihkan Semua</button>
-            </div>
-            <div id="student-notification-list" class="max-h-96 overflow-y-auto">
-                </div>
-        </div>
-    </div>
-                <!-- TOMBOL BARU: Chat dengan Guru/Siswa Lain -->
-                <div class="relative">
-                    <button id="student-chat-button" class="p-2 rounded-full relative" title="Ngobrol Sareng Guru/Siswa Lain">
-                        <lord-icon
-                            src="https://cdn.lordicon.com/bpptgtfr.json"
-                            trigger="hover"
-                            style="width:25px;height:25px">
-                        </lord-icon>
-                        <span id="student-chat-badge" class="absolute top-1 right-1 block h-2 w-2 rounded-full bg-blue-500 ring-1 ring-white hidden"></span>
-                    </button>
-                    <!-- Chat Popup Modal -->
-                    <div id="student-chat-panel" class="absolute right-0 mt-2 w-96 bg-white/90 backdrop-blur-sm rounded-lg shadow-xl z-40 hidden flex flex-col max-h-96">
-                        <div class="p-4 border-b flex justify-between items-center">
-                            <h4 class="font-semibold text-gray-800">Chat</h4>
-                            <button id="student-chat-close" class="text-gray-500 hover:text-gray-700">
-                                <i data-lucide="x" class="w-4 h-4"></i>
+
+        <header class="bg-white/90 backdrop-blur-sm/80 backdrop-blur-sm shadow-md sticky top-0 z-20">
+            <div class="container mx-auto px-4">
+                <div class="h-20 flex items-center justify-between">
+                    <h1 class="text-2xl font-bold text-blue-600 font-game tracking-tighter">DREAMY</h1>
+                    <div class="flex items-center space-x-2 md:space-x-4">
+                        <div class="relative">
+                            <button id="student-notification-button" class="p-2 rounded-full relative"
+                                title="sok merenyaho">
+                                <lord-icon src="https://cdn.lordicon.com/psnhyobz.json" trigger="hover"
+                                    style="width:25px;height:25px">
+                                </lord-icon>
+                                <span id="student-notification-badge"
+                                    class="absolute top-1 right-1 block h-2 w-2 rounded-full bg-red-500 ring-1 ring-white hidden"></span>
                             </button>
-                        </div>
-                        <div id="student-chat-tab-buttons" class="p-2 border-b flex gap-2 bg-gray-50">
-                            <button id="student-chat-tab-receive" class="px-4 py-1 bg-blue-500 text-white rounded text-sm font-medium">Pesan Masuk</button>
-                            <button id="student-chat-tab-send" class="px-4 py-1 bg-gray-300 text-gray-700 rounded text-sm font-medium" title="kebuka kalau level 6">Teman Chat</button>
-                        </div>
-                        <!-- Tab: Pesan Masuk -->
-                        <div id="student-chat-receive-content" class="flex-1 overflow-y-auto">
-                            <div id="student-chat-received-messages" class="p-4 space-y-3">
-                                <!-- Pesan masuk akan ditampilkan di sini -->
-                            </div>
-                        </div>
-                        <!-- Tab: Teman Chat -->
-                        <div id="student-chat-send-content" class="flex-1 overflow-y-auto hidden">
-                            <div class="p-4">
-                                <input type="text" id="student-chat-friend-search" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm mb-3" placeholder="Cari teman...">
-                                <div id="student-chat-friends-list" class="space-y-2 max-h-32 overflow-y-auto">
-                                    <p class="text-sm text-gray-500">Muat teman chat...</p>
+                            <div id="student-notification-panel"
+                                class="absolute right-0 mt-2 w-80 sm:w-96 bg-white/90 backdrop-blur-sm rounded-lg shadow-xl z-40 hidden">
+                                <div class="p-4 border-b flex justify-between items-center">
+                                    <h4 class="font-semibold text-gray-800">Notifikasi</h4>
+                                    <button id="student-mark-all-read-button"
+                                        class="text-xs text-blue-600 hover:underline font-medium">Bersihkan
+                                        Semua</button>
+                                </div>
+                                <div id="student-notification-list" class="max-h-96 overflow-y-auto">
                                 </div>
                             </div>
                         </div>
-                        <!-- Conversation History (Hidden by default) -->
-                        <div id="student-chat-conversation" class="flex-1 overflow-y-auto hidden p-4 space-y-3 bg-gray-50">
-                            <!-- Chat bubbles go here -->
-                        </div>
-                        <!-- Chat Input -->
-                        <div id="student-chat-input-area" class="p-4 border-t bg-white hidden">
-                            <div class="flex gap-2">
-                                <input type="text" id="student-chat-recipient-name" class="flex-1 px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-sm" placeholder="Pilih teman..." readonly>
-                                <button id="student-chat-clear-recipient" class="bg-gray-300 hover:bg-gray-400 text-gray-700 px-2 py-2 rounded-lg text-sm">
-                                    <i data-lucide="x" class="w-4 h-4"></i>
-                                </button>
+                        <!-- TOMBOL BARU: Chat dengan Guru/Siswa Lain -->
+                        <div class="relative">
+                            <button id="student-chat-button" class="p-2 rounded-full relative"
+                                title="Ngobrol Sareng Guru/Siswa Lain">
+                                <lord-icon src="https://cdn.lordicon.com/bpptgtfr.json" trigger="hover"
+                                    style="width:25px;height:25px">
+                                </lord-icon>
+                                <span id="student-chat-badge"
+                                    class="absolute top-1 right-1 block h-2 w-2 rounded-full bg-blue-500 ring-1 ring-white hidden"></span>
+                            </button>
+                            <!-- Chat Popup Modal -->
+                            <div id="student-chat-panel"
+                                class="fixed right-0 mt-2 w-96 bg-white/90 backdrop-blur-sm rounded-lg shadow-xl z-40 hidden flex flex-col max-h-96">
+                                <div class="p-4 border-b flex justify-between items-center">
+                                    <h4 class="font-semibold text-gray-800">Chat</h4>
+                                    <button id="student-chat-close" class="text-gray-500 hover:text-gray-700">
+                                        <i data-lucide="x" class="w-4 h-4"></i>
+                                    </button>
+                                </div>
+                                <div id="student-chat-tab-buttons" class="p-2 border-b flex gap-2 bg-gray-50">
+                                    <button id="student-chat-tab-receive"
+                                        class="px-4 py-1 bg-blue-500 text-white rounded text-sm font-medium">Pesan
+                                        Masuk</button>
+                                    <button id="student-chat-tab-send"
+                                        class="px-4 py-1 bg-gray-300 text-gray-700 rounded text-sm font-medium"
+                                        title="kebuka kalau level 6">Teman Chat</button>
+                                </div>
+                                <!-- Tab: Pesan Masuk -->
+                                <div id="student-chat-receive-content" class="flex-1 overflow-y-auto">
+                                    <div id="student-chat-received-messages" class="p-4 space-y-3">
+                                        <!-- Pesan masuk akan ditampilkan di sini -->
+                                    </div>
+                                </div>
+                                <!-- Tab: Teman Chat -->
+                                <div id="student-chat-send-content" class="flex-1 overflow-y-auto hidden">
+                                    <div class="p-4">
+                                        <input type="text" id="student-chat-friend-search"
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm mb-3"
+                                            placeholder="Cari teman...">
+                                        <div id="student-chat-friends-list" class="space-y-2 max-h-32 overflow-y-auto">
+                                            <p class="text-sm text-gray-500">Muat teman chat...</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Conversation History (Hidden by default) -->
+                                <div id="student-chat-conversation"
+                                    class="flex-1 overflow-y-auto hidden p-4 space-y-3 bg-gray-50">
+                                    <!-- Chat bubbles go here -->
+                                </div>
+                                <!-- Chat Input -->
+                                <div id="student-chat-input-area" class="p-4 border-t bg-white hidden">
+                                    <div class="flex gap-2">
+                                        <input type="text" id="student-chat-recipient-name"
+                                            class="flex-1 px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-sm"
+                                            placeholder="Pilih teman..." readonly>
+                                        <button id="student-chat-clear-recipient"
+                                            class="bg-gray-300 hover:bg-gray-400 text-gray-700 px-2 py-2 rounded-lg text-sm">
+                                            <i data-lucide="x" class="w-4 h-4"></i>
+                                        </button>
+                                    </div>
+                                    <div class="flex gap-2 mt-2">
+                                        <input type="text" id="student-chat-input"
+                                            class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            placeholder="Ketik pesan...">
+                                        <button id="student-chat-send"
+                                            class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg">
+                                            <i data-lucide="send" class="w-4 h-4"></i>
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="flex gap-2 mt-2">
-                                <input type="text" id="student-chat-input" class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ketik pesan...">
-                                <button id="student-chat-send" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg" >
-                                    <i data-lucide="send" class="w-4 h-4"></i>
-                                </button>
-                            </div>
                         </div>
-                    </div>
-                </div>
 
-                <a href="https://gemini.google.com/share/b176cf14e1b4" target="_blank" rel="noopener noreferrer" class="p-2 rounded-full"title="Baca Panduan">
-   
-<lord-icon
-    src="https://cdn.lordicon.com/rrbmabsx.json"
-    trigger="hover"
-    stroke="bold"
-    style="width:25px;height:25px">
-</lord-icon></a><button id="open-ivy-chat-button" class="p-2 rounded-full " title="Ngabacot jeung Ivy">
-<lord-icon
-    src="https://cdn.lordicon.com/dwhxbrvz.json"
-    trigger="hover"
-    stroke="bold"
-    style="width:30px;height:30px">
-</lord-icon></button>
-                <button id="student-logout-button" class="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg" title="Jalema beki mantok"><span class="hidden md:inline">Logout</span><i data-lucide="log-out" class="w-5 h-5"></i></button></div></div></div>
-            <nav class="border-t border-gray-200"><div class="container mx-auto px-4"><div class="flex items-center space-x-4 md:space-x-6 overflow-x-auto"><a href="#" class="nav-link active flex items-center px-2 py-4 text-sm font-semibold border-b-2"><i data-lucide="user-2" class="w-4 h-4 mr-2"></i>Profil</a><a href="#bounty-board" id="bounty-board-nav-link" class="nav-link text-gray-500 hover:text-blue-600 flex items-center px-2 py-4 text-sm font-semibold border-b-2 border-transparent"><i data-lucide="clipboard-list" class="w-4 h-4 mr-2"></i>Bounty Board</a><a href="#shop" class="nav-link text-gray-500 hover:text-blue-600 flex items-center px-2 py-4 text-sm font-semibold border-b-2 border-transparent"><i data-lucide="shopping-cart" class="w-4 h-4 mr-2"></i>Shop</a><a href="#guild" class="nav-link text-gray-500 hover:text-blue-600 flex items-center px-2 py-4 text-sm font-semibold border-b-2 border-transparent"><i data-lucide="users" class="w-4 h-4 mr-2"></i>Guild</a></div></div></nav>
-            </header>
-            <div class="vector Vleft"></div>
-        
-        <main id="student-main-content" class="container mx-auto p-4 md:p-6 opacity-0 transition-opacity duration-500">
-           
-        
-            <div class="flex flex-col md:flex-row items-center md:items-start gap-6 mb-6">
-            <div class="grid grid-cols-1 lg:grid-cols-4 lg:grid-rows-3 gap-6 w-full">
-                <!-- Baris Atas: Info & Stats -->
-                <div class="lg:col-span-4 bg-white/90 backdrop-blur-sm/80 backdrop-blur-sm p-6 rounded-lg shadow-md">
-                    <div class="flex flex-col md:flex-row items-center md:items-start gap-6 mb-6">
-                        <img id="student-avatar" src="https://placehold.co/128x128/e2e8f0/e2e8f0" class="w-32 h-32 rounded-full object-cover border-4 border-gray-700 shadow-lg">
-                        <div class="text-center md:text-left">
-                            <h2 id="student-name" class="text-3xl font-bold text-gray-800 font-sans">Nama Siswa</h2>
-                            <p id="student-class-role" class="text-gray-600 py-2 font-mono">Kelas | Peran</p>
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
-                        <div class="bg-gray-50 p-4 rounded-lg">
-                            <div class="flex justify-between items-center mb-1 text-sm"><span class="font-bold">HP</span><span id="hp-value">100 / 100</span></div>
-                            <div class="w-full bg-gray-200 rounded-full h-4"><div id="hp-bar" class="bg-red-500 h-4 rounded-full hp-bar" style="width: 100%"></div></div>
-                        </div>
-                        <div class="bg-gray-50 p-4 rounded-lg">
-                            <div class="flex justify-between items-center mb-1 text-sm"><span class="font-bold">MP</span><span id="mp-value">50 / 50</span></div>
-                            <div class="w-full bg-gray-200 rounded-full h-4"><div id="mp-bar" class="bg-purple-500 h-4 rounded-full" style="width: 100%"></div></div>
-                        </div>
-                        <div class="bg-gray-50 p-4 rounded-lg">
-                            <div class="flex justify-between items-center mb-1 text-sm"><span class="font-bold">Level <span id="level-value">1</span></span><span id="xp-value">0 / 1000</span></div>
-                            <div class="w-full bg-gray-200 rounded-full h-4"><div id="xp-bar" class="bg-blue-500 h-4 rounded-full xp-bar" style="width: 0%"></div></div>
-                        </div>
-                        <div class="bg-gray-50 p-4 rounded-lg flex items-center gap-4">
-                            <div class="bg-yellow-100 p-3 rounded-full"><i data-lucide="coins" class="w-6 h-6 text-yellow-500"></i></div>
-                            <div><p class="text-sm text-gray-500">Koin</p><p id="coin-value" class="text-1xl font-bold">0</p></div>
-                            <div><p class="text-sm text-gray-500">Login Streak</p><p id="login-streak-value" class="text-1xl font-bold">0 Hari</p></div>
-                        </div>
-                    </div>
-                </div>
+                        <a href="https://gemini.google.com/share/b176cf14e1b4" target="_blank" rel="noopener noreferrer"
+                            class="p-2 rounded-full" title="Baca Panduan">
 
-                <!-- Kolom Kiri: Inventori -->
-                <div class="lg:col-span-2 lg:row-span-2 bg-white/90 backdrop-blur-sm/80 backdrop-blur-sm p-6 rounded-lg shadow-md"> 
-                    <h3 class="text-xl font-semibold mb-4">Skill Aktif</h3>
-                    <div id="active-skill-container" class="p-4 border rounded-lg bg-gray-50/80">
-                        <p class="text-center text-gray-400">Memuat skill...</p>
-                    </div>
-                        <!-- Slot inventori akan dimuat di sini -->
-                    
-                </div>
- <!-- Kanan Atas : Status Efek -->
-                <div class="lg:col-span-2 bg-white/90 backdrop-blur-sm/80 backdrop-blur-sm p-6 rounded-lg shadow-md">
-                    <h3 class="text-xl font-semibold mb-4">Status Efek Aktif</h3>
-                    <div id="active-status-effects" class="flex flex-wrap gap-4 justify-center md:justify-start">
-                        <p class="text-gray-500 text-sm">Tidak ada efek aktif saat ini.</p>
+                            <lord-icon src="https://cdn.lordicon.com/rrbmabsx.json" trigger="hover" stroke="bold"
+                                style="width:25px;height:25px">
+                            </lord-icon></a><button id="open-ivy-chat-button" class="p-2 rounded-full "
+                            title="Ngabacot jeung Ivy">
+                            <lord-icon src="https://cdn.lordicon.com/dwhxbrvz.json" trigger="hover" stroke="bold"
+                                style="width:30px;height:30px">
+                            </lord-icon></button>
+                        <button id="student-logout-button"
+                            class="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg"
+                            title="Jalema beki mantok"><span class="hidden md:inline">Logout</span><i
+                                data-lucide="log-out" class="w-5 h-5"></i></button>
                     </div>
                 </div>
-                <!-- Kanan Bawah: Skill Aktif -->
-                <div class="lg:col-span-2 bg-white/90 backdrop-blur-sm/80 backdrop-blur-sm p-6 rounded-lg shadow-md">
-                    <h3 class="text-xl font-semibold mb-4">Inventori</h3>
-                    <div id="inventory-slots" class="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-                    </div>
-                </div>
-
-               
             </div>
-        </div>
+            <nav class="border-t border-gray-200">
+                <div class="container mx-auto px-4">
+                    <div class="flex items-center space-x-4 md:space-x-6 overflow-x-auto"><a href="#"
+                            class="nav-link active flex items-center px-2 py-4 text-sm font-semibold border-b-2"><i
+                                data-lucide="user-2" class="w-4 h-4 mr-2"></i>Profil</a><a href="#bounty-board"
+                            id="bounty-board-nav-link"
+                            class="nav-link text-gray-500 hover:text-blue-600 flex items-center px-2 py-4 text-sm font-semibold border-b-2 border-transparent"><i
+                                data-lucide="clipboard-list" class="w-4 h-4 mr-2"></i>Bounty Board</a><a href="#shop"
+                            class="nav-link text-gray-500 hover:text-blue-600 flex items-center px-2 py-4 text-sm font-semibold border-b-2 border-transparent"><i
+                                data-lucide="shopping-cart" class="w-4 h-4 mr-2"></i>Shop</a><a href="#guild"
+                            class="nav-link text-gray-500 hover:text-blue-600 flex items-center px-2 py-4 text-sm font-semibold border-b-2 border-transparent"><i
+                                data-lucide="users" class="w-4 h-4 mr-2"></i>Guild</a></div>
+                </div>
+            </nav>
+        </header>
+        <div class="vector Vleft"></div>
+
+        <main id="student-main-content" class="container mx-auto p-4 md:p-6 opacity-0 transition-opacity duration-500">
+
+
+            <div class="flex flex-col md:flex-row items-center md:items-start gap-6 mb-6">
+                <div class="grid grid-cols-1 lg:grid-cols-4 lg:grid-rows-3 gap-6 w-full">
+                    <!-- Baris Atas: Info & Stats -->
+                    <div
+                        class="lg:col-span-4 bg-white/90 backdrop-blur-sm/80 backdrop-blur-sm p-6 rounded-lg shadow-md">
+                        <div class="flex flex-col md:flex-row items-center md:items-start gap-6 mb-6">
+                            <img id="student-avatar" src="https://placehold.co/128x128/e2e8f0/e2e8f0"
+                                class="w-32 h-32 rounded-full object-cover border-4 border-gray-700 shadow-lg">
+                            <div class="text-center md:text-left">
+                                <h2 id="student-name" class="text-3xl font-bold text-gray-800 font-sans">Nama Siswa</h2>
+                                <p id="student-class-role" class="text-gray-600 py-2 font-mono">Kelas | Peran</p>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <div class="flex justify-between items-center mb-1 text-sm"><span
+                                        class="font-bold">HP</span><span id="hp-value">100 / 100</span></div>
+                                <div class="w-full bg-gray-200 rounded-full h-4">
+                                    <div id="hp-bar" class="bg-red-500 h-4 rounded-full hp-bar" style="width: 100%">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <div class="flex justify-between items-center mb-1 text-sm"><span
+                                        class="font-bold">MP</span><span id="mp-value">50 / 50</span></div>
+                                <div class="w-full bg-gray-200 rounded-full h-4">
+                                    <div id="mp-bar" class="bg-purple-500 h-4 rounded-full" style="width: 100%"></div>
+                                </div>
+                            </div>
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <div class="flex justify-between items-center mb-1 text-sm"><span
+                                        class="font-bold">Level <span id="level-value">1</span></span><span
+                                        id="xp-value">0 / 1000</span></div>
+                                <div class="w-full bg-gray-200 rounded-full h-4">
+                                    <div id="xp-bar" class="bg-blue-500 h-4 rounded-full xp-bar" style="width: 0%">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="bg-gray-50 p-4 rounded-lg flex items-center gap-4">
+                                <div class="bg-yellow-100 p-3 rounded-full"><i data-lucide="coins"
+                                        class="w-6 h-6 text-yellow-500"></i></div>
+                                <div>
+                                    <p class="text-sm text-gray-500">Koin</p>
+                                    <p id="coin-value" class="text-1xl font-bold">0</p>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-gray-500">Login Streak</p>
+                                    <p id="login-streak-value" class="text-1xl font-bold">0 Hari</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Kolom Kiri: Inventori -->
+                    <div
+                        class="lg:col-span-2 lg:row-span-2 bg-white/90 backdrop-blur-sm/80 backdrop-blur-sm p-6 rounded-lg shadow-md">
+                        <h3 class="text-xl font-semibold mb-4">Skill Aktif</h3>
+                        <div id="active-skill-container" class="p-4 border rounded-lg bg-gray-50/80">
+                            <p class="text-center text-gray-400">Memuat skill...</p>
+                        </div>
+                        <!-- Slot inventori akan dimuat di sini -->
+
+                    </div>
+                    <!-- Kanan Atas : Status Efek -->
+                    <div
+                        class="lg:col-span-2 bg-white/90 backdrop-blur-sm/80 backdrop-blur-sm p-6 rounded-lg shadow-md">
+                        <h3 class="text-xl font-semibold mb-4">Status Efek Aktif</h3>
+                        <div id="active-status-effects" class="flex flex-wrap gap-4 justify-center md:justify-start">
+                            <p class="text-gray-500 text-sm">Tidak ada efek aktif saat ini.</p>
+                        </div>
+                    </div>
+                    <!-- Kanan Bawah: Skill Aktif -->
+                    <div
+                        class="lg:col-span-2 bg-white/90 backdrop-blur-sm/80 backdrop-blur-sm p-6 rounded-lg shadow-md">
+                        <h3 class="text-xl font-semibold mb-4">Inventori</h3>
+                        <div id="inventory-slots"
+                            class="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                        </div>
+                    </div>
+
+
+                </div>
+            </div>
         </main>
         <div id="bounty-board-page" class="container mx-auto p-4 md:p-6 hidden">
-    <div class="bg-white/90 backdrop-blur-sm/80 backdrop-blur-sm rounded-lg shadow-md">
-        <div class="p-6 border-b border-gray-200 flex flex-wrap gap-4 justify-between items-center">
-            <div>
-                <h2 class="text-xl font-semibold">Bounty Board</h2>
-                <p class="text-sm text-gray-500 mt-1">Lihat, ambil, atau buat misimu sendiri!</p>
+            <div class="bg-white/90 backdrop-blur-sm/80 backdrop-blur-sm rounded-lg shadow-md">
+                <div class="p-6 border-b border-gray-200 flex flex-wrap gap-4 justify-between items-center">
+                    <div>
+                        <h2 class="text-xl font-semibold">Bounty Board</h2>
+                        <p class="text-sm text-gray-500 mt-1">Lihat, ambil, atau buat misimu sendiri!</p>
+                    </div>
+                    <button id="create-bounty-button"
+                        class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg flex items-center">
+                        <i data-lucide="plus-circle" class="w-4 h-4 mr-2"></i>Buat Misi Baru
+                    </button>
+                </div>
+                <div id="bounty-list-container" class="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <p class="text-center text-gray-400 col-span-full">Memuat daftar misi...</p>
+                </div>
             </div>
-            <button id="create-bounty-button" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg flex items-center">
-                <i data-lucide="plus-circle" class="w-4 h-4 mr-2"></i>Buat Misi Baru
-            </button>
+
         </div>
-        <div id="bounty-list-container" class="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <p class="text-center text-gray-400 col-span-full">Memuat daftar misi...</p>
-        </div>
-    </div>
-    
-</div>
-<div id="shop-page" class="container mx-auto p-4 md:p-6 hidden">
+        <div id="shop-page" class="container mx-auto p-4 md:p-6 hidden">
             <div class="bg-white/90 backdrop-blur-sm/80 backdrop-blur-sm rounded-lg shadow-md">
                 <div class="p-6 border-b border-gray-200 flex flex-wrap gap-4 justify-between items-center">
                     <div>
@@ -251,61 +508,75 @@
                         <span id="student-shop-coin-display" class="min-w-[20px]">0</span>
                     </div>
                 </div>
-                <div id="student-shop-item-list" class="selection:bg-fuchsia-300 selection:text-fuchsia-900 p-6 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                <div id="student-shop-item-list"
+                    class="selection:bg-fuchsia-300 selection:text-fuchsia-900 p-6 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                     <p class="text-center text-gray-400 col-span-full">Memuat item toko...</p>
                 </div>
             </div>
         </div>
-<div id="guild-page" class="container mx-auto p-4 md:p-6 hidden">
-    <div class="bg-white/90 backdrop-blur-sm/80 backdrop-blur-sm rounded-lg shadow-md">
-        <div class="p-6 border-b border-gray-200">
-            <h2 id="guild-name-header" class="text-2xl font-bold text-gray-800">Markas Guild</h2>
-            <p class="text-gray-500 mt-1">Selamat datang di markasmu, petualang!</p>
-        </div>
+        <div id="guild-page" class="container mx-auto p-4 md:p-6 hidden">
+            <div class="bg-white/90 backdrop-blur-sm/80 backdrop-blur-sm rounded-lg shadow-md">
+                <div class="p-6 border-b border-gray-200">
+                    <h2 id="guild-name-header" class="text-2xl font-bold text-gray-800">Markas Guild</h2>
+                    <p class="text-gray-500 mt-1">Selamat datang di markasmu, petualang!</p>
+                </div>
 
-       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 p-6">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 p-6">
 
-    <div class="lg:col-span-1 bg-gray-50 p-4 rounded-lg">
-        <h3 class="font-semibold mb-4">Anggota Guild</h3>
-        <div id="guild-member-list" class="space-y-3">
-            <p class="text-sm text-gray-400">Memuat anggota...</p>
+                    <div class="lg:col-span-1 bg-gray-50 p-4 rounded-lg">
+                        <h3 class="font-semibold mb-4">Anggota Guild</h3>
+                        <div id="guild-member-list" class="space-y-3">
+                            <p class="text-sm text-gray-400">Memuat anggota...</p>
+                        </div>
+                    </div>
+
+                    <div class="lg:col-span-2 bg-gray-50 p-4 rounded-lg border">
+                        <h3 class="font-semibold mb-4 text-center">Peti Guild Bersama</h3>
+                        <p id="guild-inventory-capacity" class="text-xs text-center text-gray-500 mb-3">Kapasitas: 0
+                            Slot</p>
+                        <div id="guild-inventory-slots"
+                            class="grid grid-cols-5 sm:grid-cols-6 gap-3 max-h-[45vh] overflow-y-auto pr-2">
+                            <p class="text-xs text-gray-400 col-span-full text-center">Memuat peti guild...</p>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
         </div>
     </div>
 
-    <div class="lg:col-span-2 bg-gray-50 p-4 rounded-lg border">
-        <h3 class="font-semibold mb-4 text-center">Peti Guild Bersama</h3>
-        <p id="guild-inventory-capacity" class="text-xs text-center text-gray-500 mb-3">Kapasitas: 0 Slot</p>
-        <div id="guild-inventory-slots" class="grid grid-cols-5 sm:grid-cols-6 gap-3 max-h-[45vh] overflow-y-auto pr-2">
-            <p class="text-xs text-gray-400 col-span-full text-center">Memuat peti guild...</p>
-        </div>
+    <div id="toast-notification"
+        class="fixed bottom-5 right-5 bg-green-500 text-white py-2 px-4 rounded-lg shadow-lg hidden transition-opacity duration-300">
     </div>
 
-        </div>
-    </div>
-    
-</div>
-    </div>
-
-    <div id="toast-notification" class="fixed bottom-5 right-5 bg-green-500 text-white py-2 px-4 rounded-lg shadow-lg hidden transition-opacity duration-300"></div>
-    
     <!-- Modal Penggunaan Item -->
-    <div id="use-item-modal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-300 z-50">
+    <div id="use-item-modal"
+        class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-300 z-50">
         <div class="bg-white/90 backdrop-blur-sm rounded-lg shadow-xl w-full max-w-sm p-6 text-center">
-            <img id="use-item-icon" src="" alt="Item Icon" class="w-24 h-24 mx-auto mb-4 rounded-lg object-cover bg-gray-200">
+            <img id="use-item-icon" src="" alt="Item Icon"
+                class="w-24 h-24 mx-auto mb-4 rounded-lg object-cover bg-gray-200">
             <h3 id="use-item-name" class="text-2xl font-bold text-gray-800 mb-2">Nama Item</h3>
             <p id="use-item-description" class="text-gray-600 mb-1">Deskripsi singkat item ada di sini.</p>
-            <p id="use-item-effect-text" class="text-blue-600 font-semibold mb-6">Efek item akan ditampilkan di sini.</p>
-            
-           <div class="flex justify-center gap-4">
-    <button id="close-use-item-modal-button" class="px-6 py-2 bg-gray-200 text-gray-800 font-bold rounded-lg hover:bg-gray-300 transition-colors">Batal</button>
-    <button id="deposit-to-guild-button" class="px-6 py-2 bg-yellow-500 text-white font-bold rounded-lg hover:bg-yellow-600 transition-colors">Simpan Guild</button>
-    <button id="use-item-confirm-button" class="px-6 py-2 bg-green-500 text-white font-bold rounded-lg hover:bg-green-600 transition-colors">Gunakan Item</button>
-</div>
+            <p id="use-item-effect-text" class="text-blue-600 font-semibold mb-6">Efek item akan ditampilkan di sini.
+            </p>
+
+            <div class="flex justify-center gap-4">
+                <button id="close-use-item-modal-button"
+                    class="px-6 py-2 bg-gray-200 text-gray-800 font-bold rounded-lg hover:bg-gray-300 transition-colors">Batal</button>
+                <button id="deposit-to-guild-button"
+                    class="px-6 py-2 bg-yellow-500 text-white font-bold rounded-lg hover:bg-yellow-600 transition-colors">Simpan
+                    Guild</button>
+                <button id="use-item-confirm-button"
+                    class="px-6 py-2 bg-green-500 text-white font-bold rounded-lg hover:bg-green-600 transition-colors">Gunakan
+                    Item</button>
+            </div>
         </div>
     </div>
 
     <!-- Modal Toko Siswa -->
-    <div id="student-shop-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-300 z-50">
+    <div id="student-shop-modal"
+        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-300 z-50">
         <div class="bg-gray-100 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
             <!-- Header Modal -->
             <div class="flex justify-between items-center p-4 border-b bg-white/90 backdrop-blur-sm rounded-t-lg">
@@ -321,225 +592,281 @@
                 </div>
             </div>
             <!-- Konten Modal (Item List) -->
-            <div id="student-shop-item-list" class="p-4 overflow-y-auto grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div id="student-shop-item-list"
+                class="p-4 overflow-y-auto grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 <!-- Item akan dimuat di sini oleh JavaScript -->
             </div>
         </div>
-        
+
     </div>
 
     <script type="module" src="script.js"></script>
     <footer class="text-center py-4 mt-8">
-    <p class="text-xs text-black-400">Dibuat oleh © <a style="text-decoration:none" href="https://sites.google.com/view/smk-myckb/halaman-muka" target="_blank"><font color="#0080FF" face="sans-serif">Mas Panji Purnomo</font></a> </p>
-</footer>
-<!-- Modal Ngobrol dengan Ivy -->
-<div id="ivy-chat-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-300 z-50">
-    <div class="bg-white/90 backdrop-blur-sm rounded-lg shadow-xl w-full max-w-md max-h-[80vh] flex flex-col">
-        <div class="p-4 border-b flex justify-between items-center">
-            <h3 class="text-lg font-semibold text-gray-800">Ngobrol dengan Ivy</h3>
-            <button id="close-ivy-chat-modal-button" class="text-gray-400 hover:text-gray-600">
-                <i data-lucide="x" class="w-6 h-6"></i>
-            </button>
-        </div>
-        <div id="Ivy-chat-box" class="flex-grow p-4 overflow-y-auto bg-gray-50">
-            <div class="p-3 rounded-lg bg-blue-100 text-sm w-fit max-w-xs">
-                Wih, Bray! Kumaha damang? Aya nu bisa dibantos? Tanya weh, tong isin! Urang di dieu siap ngajaga maneh di Aethelgard!🌿✨
-            </div>
-        </div>
-        <div class="p-3 border-t">
-            <form id="Ivy-chat-form" class="flex items-center gap-2">
-                <input type="text" id="Ivy-chat-input" class="w-full p-2 bg-gray-100 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ketik pesan untuk Ivy..." required autocomplete="off">
-                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold p-2 rounded-lg">
-                    <i data-lucide="send" class="w-5 h-5"></i>
+        <p class="text-xs text-black-400">Dibuat oleh © <a style="text-decoration:none"
+                href="https://sites.google.com/view/smk-myckb/halaman-muka" target="_blank">
+                <font color="#0080FF" face="sans-serif">Mas Panji Purnomo</font>
+            </a> </p>
+    </footer>
+    <!-- Modal Ngobrol dengan Ivy -->
+    <div id="ivy-chat-modal"
+        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-300 z-50">
+        <div class="bg-white/90 backdrop-blur-sm rounded-lg shadow-xl w-full max-w-md max-h-[80vh] flex flex-col">
+            <div class="p-4 border-b flex justify-between items-center">
+                <h3 class="text-lg font-semibold text-gray-800">Ngobrol dengan Ivy</h3>
+                <button id="close-ivy-chat-modal-button" class="text-gray-400 hover:text-gray-600">
+                    <i data-lucide="x" class="w-6 h-6"></i>
                 </button>
+            </div>
+            <div id="Ivy-chat-box" class="flex-grow p-4 overflow-y-auto bg-gray-50">
+                <div class="p-3 rounded-lg bg-blue-100 text-sm w-fit max-w-xs">
+                    Wih, Bray! Kumaha damang? Aya nu bisa dibantos? Tanya weh, tong isin! Urang di dieu siap ngajaga
+                    maneh di Aethelgard!🌿✨
+                </div>
+            </div>
+            <div class="p-3 border-t">
+                <form id="Ivy-chat-form" class="flex items-center gap-2">
+                    <input type="text" id="Ivy-chat-input"
+                        class="w-full p-2 bg-gray-100 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Ketik pesan untuk Ivy..." required autocomplete="off">
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold p-2 rounded-lg">
+                        <i data-lucide="send" class="w-5 h-5"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="create-bounty-modal"
+        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-300 z-50">
+        <div class="bg-white/90 backdrop-blur-sm rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+            <div class="p-6 border-b flex justify-between items-center">
+                <h3 class="text-xl font-semibold">Buat Misi Bounty Baru</h3>
+                <button id="close-create-bounty-modal-button"
+                    class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+            </div>
+            <form id="create-bounty-form" class="p-6 space-y-4 overflow-y-auto">
+                <div>
+                    <label for="bounty-title" class="block text-sm font-medium text-gray-700">Judul Misi</label>
+                    <input type="text" id="bounty-title" required
+                        class="mt-1 w-full p-2 border border-gray-300 rounded-md">
+                </div>
+                <div>
+                    <label for="bounty-description" class="block text-sm font-medium text-gray-700">Deskripsi
+                        Singkat</label>
+                    <textarea id="bounty-description" rows="3" required
+                        class="mt-1 w-full p-2 border border-gray-300 rounded-md"></textarea>
+                </div>
+                <div>
+                    <label for="bounty-image" class="block text-sm font-medium text-gray-700">Gambar Misi</label>
+                    <input type="file" id="bounty-image" accept="image/*"
+                        class="mt-1 w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                    <img id="bounty-image-preview" class="mt-2 h-24 w-24 object-cover rounded-md hidden border">
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="bounty-taker-limit" class="block text-sm font-medium text-gray-700">Batas Pengambil
+                            Misi</label>
+                        <input type="number" id="bounty-taker-limit" required
+                            class="mt-1 w-full p-2 border border-gray-300 rounded-md" value="1" min="1">
+                    </div>
+                    <div>
+                        <label for="bounty-reward-coin" class="block text-sm font-medium text-gray-700">Total Hadiah
+                            (Koin)</label>
+                        <input type="number" id="bounty-reward-coin" required
+                            class="mt-1 w-full p-2 border border-gray-300 rounded-md" value="10" min="10">
+                    </div>
+                </div>
+                <div class="pt-4 flex justify-end space-x-2">
+                    <button type="button" id="cancel-create-bounty-button"
+                        class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg">Batal</button>
+                    <button type="submit"
+                        class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg">Publikasikan
+                        Misi</button>
+                </div>
             </form>
         </div>
     </div>
-</div>
-
-    <div id="create-bounty-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-300 z-50">
-    <div class="bg-white/90 backdrop-blur-sm rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
-        <div class="p-6 border-b flex justify-between items-center">
-            <h3 class="text-xl font-semibold">Buat Misi Bounty Baru</h3>
-            <button id="close-create-bounty-modal-button" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
-        </div>
-        <form id="create-bounty-form" class="p-6 space-y-4 overflow-y-auto">
-            <div>
-                <label for="bounty-title" class="block text-sm font-medium text-gray-700">Judul Misi</label>
-                <input type="text" id="bounty-title" required class="mt-1 w-full p-2 border border-gray-300 rounded-md">
+    <!-- Modal Selesaikan Misi Bounty -->
+    <div id="complete-bounty-modal"
+        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 hidden opacity-0 transition-opacity duration-300">
+        <div class="bg-white/90 backdrop-blur-sm rounded-lg shadow-xl w-full max-w-md max-h-[90vh] flex flex-col">
+            <div class="p-6 border-b flex justify-between items-center">
+                <h3 class="text-xl font-bold text-gray-800">Kelola Misi: <span id="complete-bounty-title"></span></h3>
+                <button id="close-complete-bounty-modal-button" class="text-gray-400 hover:text-gray-600">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
             </div>
-            <div>
-                <label for="bounty-description" class="block text-sm font-medium text-gray-700">Deskripsi Singkat</label>
-                <textarea id="bounty-description" rows="3" required class="mt-1 w-full p-2 border border-gray-300 rounded-md"></textarea>
-            </div>
-             <div>
-                <label for="bounty-image" class="block text-sm font-medium text-gray-700">Gambar Misi</label>
-                <input type="file" id="bounty-image" accept="image/*" class="mt-1 w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
-                <img id="bounty-image-preview" class="mt-2 h-24 w-24 object-cover rounded-md hidden border">
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <label for="bounty-taker-limit" class="block text-sm font-medium text-gray-700">Batas Pengambil Misi</label>
-                    <input type="number" id="bounty-taker-limit" required class="mt-1 w-full p-2 border border-gray-300 rounded-md" value="1" min="1">
+            <div class="p-6 flex-grow overflow-y-auto">
+                <p class="text-sm text-gray-600 mb-2 font-semibold">Pilih pemenang dari daftar pengambil misi:</p>
+                <div id="bounty-takers-list" class="bg-gray-100 rounded-md p-3 space-y-2">
+                    <p class="text-xs text-gray-400">Memuat daftar...</p>
                 </div>
-                <div>
-                    <label for="bounty-reward-coin" class="block text-sm font-medium text-gray-700">Total Hadiah (Koin)</label>
-                    <input type="number" id="bounty-reward-coin" required class="mt-1 w-full p-2 border border-gray-300 rounded-md" value="10" min="10">
+                <p class="text-xs text-gray-500 mt-4">Pilih satu siswa untuk memberinya hadiah. Setelah itu, misi akan
+                    ditandai 'selesai' dan hilang dari papan bounty.</p>
+            </div>
+            <div class="p-4 bg-gray-50 rounded-b-lg flex justify-between items-center">
+                <button id="cancel-bounty-button"
+                    class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg">
+                    Batalkan Misi
+                </button>
+                <button id="confirm-complete-bounty-button"
+                    class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg" disabled>
+                    Konfirmasi & Beri Hadiah
+                </button>
+            </div>
+        </div>
+    </div>
+    <div id="target-student-modal"
+        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 hidden opacity-0 transition-opacity duration-300">
+        <div class="bg-white/90 backdrop-blur-sm rounded-lg shadow-xl w-full max-w-md max-h-[80vh] flex flex-col">
+            <div class="p-4 border-b flex justify-between items-center">
+                <h3 id="target-modal-title" class="text-lg font-semibold text-gray-800">Pilih Target</h3>
+                <button id="close-target-modal-button" class="text-gray-400 hover:text-gray-600">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            <div id="target-student-list" class="p-2 overflow-y-auto">
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Konfirmasi Umum (PENGGANTI POPUP) -->
+    <div id="confirmation-modal"
+        class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-300 z-50">
+        <div class="bg-white/90 backdrop-blur-sm rounded-lg shadow-xl w-full max-w-sm p-6 text-center">
+            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100 mb-4">
+                <i data-lucide="alert-triangle" class="h-6 w-6 text-yellow-600"></i>
+            </div>
+            <h3 class="text-lg font-medium leading-6 text-gray-900 mb-2">Konfirmasi Aksi</h3>
+            <p id="confirmation-message" class="text-sm text-gray-500 mb-6">Apakah Anda yakin ingin melanjutkan?</p>
+            <div class="flex justify-center gap-4">
+                <button id="confirm-cancel-button"
+                    class="px-6 py-2 bg-gray-200 text-gray-800 font-bold rounded-lg hover:bg-gray-300 transition-colors">Tidak,
+                    Batal</button>
+                <button id="confirm-ok-button"
+                    class="px-6 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors">Ya,
+                    Lanjutkan</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Solo AI Battle -->
+    <div id="solo-ai-battle-modal"
+        class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center p-2 sm:p-4 z-50 hidden opacity-0 transition-opacity duration-300">
+        <div
+            class="w-full max-w-3xl max-h-[95vh] flex flex-col bg-[#1f2937] text-gray-200 rounded-lg shadow-2xl border-2 border-gray-700">
+            <!-- Header: Player vs Monster -->
+            <div
+                class="p-3 sm:p-4 grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4 items-center border-b border-gray-600 flex-shrink-0">
+                <div id="solo-battle-player-info" class="text-center sm:text-left order-2 sm:order-1">
+                    <!-- Player info will be injected here -->
+                </div>
+                <div class="text-center order-1 sm:order-2">
+                    <h3 class="font-bold text-xl sm:text-2xl font-game text-yellow-400">BATTLE!</h3>
+                    <div id="solo-battle-timer" class="text-3xl sm:text-4xl font-bold text-blue-400">30</div>
+                </div>
+                <div id="solo-battle-monster-info" class="text-center sm:text-right order-3">
+                    <!-- Monster info will be injected here -->
                 </div>
             </div>
-            <div class="pt-4 flex justify-end space-x-2">
-                <button type="button" id="cancel-create-bounty-button" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg">Batal</button>
-                <button type="submit" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg">Publikasikan Misi</button>
-            </div>
-        </form>
-    </div>
-</div>
-<!-- Modal Selesaikan Misi Bounty -->
-<div id="complete-bounty-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 hidden opacity-0 transition-opacity duration-300">
-    <div class="bg-white/90 backdrop-blur-sm rounded-lg shadow-xl w-full max-w-md max-h-[90vh] flex flex-col">
-        <div class="p-6 border-b flex justify-between items-center">
-            <h3 class="text-xl font-bold text-gray-800">Kelola Misi: <span id="complete-bounty-title"></span></h3>
-            <button id="close-complete-bounty-modal-button" class="text-gray-400 hover:text-gray-600">
-                <i data-lucide="x" class="w-6 h-6"></i>
-            </button>
-        </div>
-        <div class="p-6 flex-grow overflow-y-auto">
-            <p class="text-sm text-gray-600 mb-2 font-semibold">Pilih pemenang dari daftar pengambil misi:</p>
-            <div id="bounty-takers-list" class="bg-gray-100 rounded-md p-3 space-y-2">
-                <p class="text-xs text-gray-400">Memuat daftar...</p>
-            </div>
-            <p class="text-xs text-gray-500 mt-4">Pilih satu siswa untuk memberinya hadiah. Setelah itu, misi akan ditandai 'selesai' dan hilang dari papan bounty.</p>
-        </div>
-        <div class="p-4 bg-gray-50 rounded-b-lg flex justify-between items-center">
-             <button id="cancel-bounty-button" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg">
-                Batalkan Misi
-            </button>
-            <button id="confirm-complete-bounty-button" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg" disabled>
-                Konfirmasi & Beri Hadiah
-            </button>
-        </div>
-    </div>
-</div>
-<div id="target-student-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 hidden opacity-0 transition-opacity duration-300">
-    <div class="bg-white/90 backdrop-blur-sm rounded-lg shadow-xl w-full max-w-md max-h-[80vh] flex flex-col">
-        <div class="p-4 border-b flex justify-between items-center">
-            <h3 id="target-modal-title" class="text-lg font-semibold text-gray-800">Pilih Target</h3>
-            <button id="close-target-modal-button" class="text-gray-400 hover:text-gray-600">
-                <i data-lucide="x" class="w-6 h-6"></i>
-            </button>
-        </div>
-        <div id="target-student-list" class="p-2 overflow-y-auto">
-            </div>
-    </div>
-</div>
 
-<!-- Modal Konfirmasi Umum (PENGGANTI POPUP) -->
-<div id="confirmation-modal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-300 z-50">
-    <div class="bg-white/90 backdrop-blur-sm rounded-lg shadow-xl w-full max-w-sm p-6 text-center">
-        <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100 mb-4">
-            <i data-lucide="alert-triangle" class="h-6 w-6 text-yellow-600"></i>
-        </div>
-        <h3 class="text-lg font-medium leading-6 text-gray-900 mb-2">Konfirmasi Aksi</h3>
-        <p id="confirmation-message" class="text-sm text-gray-500 mb-6">Apakah Anda yakin ingin melanjutkan?</p>
-        <div class="flex justify-center gap-4">
-            <button id="confirm-cancel-button" class="px-6 py-2 bg-gray-200 text-gray-800 font-bold rounded-lg hover:bg-gray-300 transition-colors">Tidak, Batal</button>
-            <button id="confirm-ok-button" class="px-6 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors">Ya, Lanjutkan</button>
-        </div>
-    </div>
-</div>
-  
-<!-- Modal Solo AI Battle -->
-<div id="solo-ai-battle-modal" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center p-2 sm:p-4 z-50 hidden opacity-0 transition-opacity duration-300">
-    <div class="w-full max-w-3xl max-h-[95vh] flex flex-col bg-[#1f2937] text-gray-200 rounded-lg shadow-2xl border-2 border-gray-700">
-        <!-- Header: Player vs Monster -->
-        <div class="p-3 sm:p-4 grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4 items-center border-b border-gray-600 flex-shrink-0">
-            <div id="solo-battle-player-info" class="text-center sm:text-left order-2 sm:order-1">
-                <!-- Player info will be injected here -->
+            <!-- Game Area (Scrollable) -->
+            <div class="flex-grow overflow-y-auto p-4 space-y-4">
+                <div id="solo-battle-question-container"
+                    class="bg-gray-800 p-4 rounded-lg text-center border-2 border-gray-600 min-h-[100px] flex items-center justify-center">
+                    <h2 id="solo-battle-question-text" class="text-lg md:text-xl">Pertanyaan/mantra dari Ivy akan muncul
+                        di sini...</h2>
+                </div>
+                <div id="solo-battle-options-container" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <!-- Options will be generated here -->
+                </div>
+                <!-- Battle Log -->
+                <div id="solo-battle-log-container"
+                    class="h-28 bg-gray-900 text-gray-300 font-mono text-xs p-2 rounded-md overflow-y-auto border border-gray-600">
+                    <p class="text-gray-400">> Pertarungan dimulai...</p>
+                </div>
             </div>
-            <div class="text-center order-1 sm:order-2">
-                <h3 class="font-bold text-xl sm:text-2xl font-game text-yellow-400">BATTLE!</h3>
-                <div id="solo-battle-timer" class="text-3xl sm:text-4xl font-bold text-blue-400">30</div>
-            </div>
-            <div id="solo-battle-monster-info" class="text-center sm:text-right order-3">
-                <!-- Monster info will be injected here -->
-            </div>
-        </div>
 
-        <!-- Game Area (Scrollable) -->
-        <div class="flex-grow overflow-y-auto p-4 space-y-4">
-            <div id="solo-battle-question-container" class="bg-gray-800 p-4 rounded-lg text-center border-2 border-gray-600 min-h-[100px] flex items-center justify-center">
-                <h2 id="solo-battle-question-text" class="text-lg md:text-xl">Pertanyaan/mantra dari Ivy akan muncul di sini...</h2>
+            <!-- Footer with a button to leave (forfeits the battle) -->
+            <div class="p-3 bg-gray-900 border-t border-gray-600 text-center flex-shrink-0">
+                <button id="forfeit-solo-battle-button"
+                    class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg">Kabur</button>
             </div>
-            <div id="solo-battle-options-container" class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <!-- Options will be generated here -->
-            </div>
-            <!-- Battle Log -->
-            <div id="solo-battle-log-container" class="h-28 bg-gray-900 text-gray-300 font-mono text-xs p-2 rounded-md overflow-y-auto border border-gray-600">
-                <p class="text-gray-400">> Pertarungan dimulai...</p>
-            </div>
-        </div>
-        
-        <!-- Footer with a button to leave (forfeits the battle) -->
-        <div class="p-3 bg-gray-900 border-t border-gray-600 text-center flex-shrink-0">
-             <button id="forfeit-solo-battle-button" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg">Kabur</button>
         </div>
     </div>
-</div>
 
-<!-- MANTRA BARU: Modal untuk Dungeon 2D -->
-<div id="dungeon-2d-modal" class="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center p-2 z-50 hidden opacity-0 transition-opacity duration-300">
-    <div class="w-full h-full max-w-7xl max-h-[95vh] bg-black rounded-lg shadow-2xl border-2 border-yellow-500 flex flex-col">
-        <div class="p-2 border-b border-gray-700 flex justify-between items-center flex-shrink-0">
-            <h3 class="text-lg font-game text-yellow-400 ml-4">DUNGEON MISI AI</h3>
-            <button id="close-dungeon-2d-modal" class="text-gray-400 hover:text-red-500 p-2 rounded-full">
-                <i data-lucide="x" class="w-6 h-6"></i>
-            </button>
+    <!-- MANTRA BARU: Modal untuk Dungeon 2D -->
+    <div id="dungeon-2d-modal"
+        class="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center p-2 z-50 hidden opacity-0 transition-opacity duration-300">
+        <div
+            class="w-full h-full max-w-7xl max-h-[95vh] bg-black rounded-lg shadow-2xl border-2 border-yellow-500 flex flex-col">
+            <div class="p-2 border-b border-gray-700 flex justify-between items-center flex-shrink-0">
+                <h3 class="text-lg font-game text-yellow-400 ml-4">DUNGEON MISI AI</h3>
+                <button id="close-dungeon-2d-modal" class="text-gray-400 hover:text-red-500 p-2 rounded-full">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            <iframe id="dungeon-2d-iframe" class="w-full h-full border-0" src=""></iframe>
         </div>
-        <iframe id="dungeon-2d-iframe" class="w-full h-full border-0" src=""></iframe>
     </div>
-</div>
-<!-- MANTRA BARU: Modal untuk Game Acak Kata -->
-<div id="acak-kata-modal" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center p-2 z-50 hidden opacity-0 transition-opacity duration-300">
-    <div class="w-full h-full max-w-2xl max-h-[95vh] bg-slate-800 rounded-lg shadow-2xl border-2 border-sky-500 flex flex-col">
-        <div class="p-2 border-b border-gray-700 flex justify-between items-center flex-shrink-0">
-            <h3 class="text-lg font-game text-sky-400 ml-4">ACAK KATA AI</h3>
-            <button id="close-acak-kata-modal" class="text-gray-400 hover:text-red-500 p-2 rounded-full"><i data-lucide="x" class="w-6 h-6"></i></button>
+    <!-- MANTRA BARU: Modal untuk Game Acak Kata -->
+    <div id="acak-kata-modal"
+        class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center p-2 z-50 hidden opacity-0 transition-opacity duration-300">
+        <div
+            class="w-full h-full max-w-2xl max-h-[95vh] bg-slate-800 rounded-lg shadow-2xl border-2 border-sky-500 flex flex-col">
+            <div class="p-2 border-b border-gray-700 flex justify-between items-center flex-shrink-0">
+                <h3 class="text-lg font-game text-sky-400 ml-4">ACAK KATA AI</h3>
+                <button id="close-acak-kata-modal" class="text-gray-400 hover:text-red-500 p-2 rounded-full"><i
+                        data-lucide="x" class="w-6 h-6"></i></button>
+            </div>
+            <iframe id="acak-kata-iframe" class="w-full h-full border-0" src=""></iframe>
         </div>
-        <iframe id="acak-kata-iframe" class="w-full h-full border-0" src=""></iframe>
     </div>
-</div>
 
-<!-- MANTRA BARU: Modal untuk Acak Kata Battle -->
-<div id="acak-kata-battle-modal" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center p-2 sm:p-4 z-50 hidden opacity-0 transition-opacity duration-300">
-    <div class="w-full max-w-3xl max-h-[95vh] flex flex-col bg-[#1f2937] text-gray-200 rounded-lg shadow-2xl border-2 border-cyan-500">
-        <!-- Header -->
-        <div class="p-3 sm:p-4 grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4 items-center border-b border-gray-600 flex-shrink-0">
-            <div id="acak-kata-battle-player-info" class="text-center sm:text-left order-2 sm:order-1"></div>
-            <div class="text-center order-1 sm:order-2">
-                <h3 class="font-bold text-xl sm:text-2xl font-game text-cyan-400">ACAK KATA BATTLE</h3>
-                <div id="acak-kata-battle-timer" class="text-3xl sm:text-4xl font-bold text-blue-400">60</div>
+    <!-- MANTRA BARU: Modal untuk Acak Kata Battle -->
+    <div id="acak-kata-battle-modal"
+        class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center p-2 sm:p-4 z-50 hidden opacity-0 transition-opacity duration-300">
+        <div
+            class="w-full max-w-3xl max-h-[95vh] flex flex-col bg-[#1f2937] text-gray-200 rounded-lg shadow-2xl border-2 border-cyan-500">
+            <!-- Header -->
+            <div
+                class="p-3 sm:p-4 grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4 items-center border-b border-gray-600 flex-shrink-0">
+                <div id="acak-kata-battle-player-info" class="text-center sm:text-left order-2 sm:order-1"></div>
+                <div class="text-center order-1 sm:order-2">
+                    <h3 class="font-bold text-xl sm:text-2xl font-game text-cyan-400">ACAK KATA BATTLE</h3>
+                    <div id="acak-kata-battle-timer" class="text-3xl sm:text-4xl font-bold text-blue-400">60</div>
+                </div>
+                <div id="acak-kata-battle-monster-info" class="text-center sm:text-right order-3"></div>
             </div>
-            <div id="acak-kata-battle-monster-info" class="text-center sm:text-right order-3"></div>
-        </div>
 
-        <!-- Game Area -->
-        <div class="flex-grow overflow-y-auto p-4 space-y-4">
-            <div id="acak-kata-battle-question-container" class="bg-gray-800 p-4 rounded-lg text-center border-2 border-gray-600 min-h-[100px] flex items-center justify-center">
-                <h2 id="acak-kata-battle-question-text" class="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 tracking-widest">MEMUAT...</h2>
+            <!-- Game Area -->
+            <div class="flex-grow overflow-y-auto p-4 space-y-4">
+                <div id="acak-kata-battle-question-container"
+                    class="bg-gray-800 p-4 rounded-lg text-center border-2 border-gray-600 min-h-[100px] flex items-center justify-center">
+                    <h2 id="acak-kata-battle-question-text"
+                        class="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 tracking-widest">
+                        MEMUAT...</h2>
+                </div>
+                <form id="acak-kata-battle-form" class="flex items-center gap-2">
+                    <input type="text" id="acak-kata-battle-answer-input"
+                        class="w-full p-3 bg-gray-900 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 text-center text-lg"
+                        placeholder="Ketik jawabanmu..." required autocomplete="off">
+                    <button type="submit" id="acak-kata-battle-submit-button"
+                        class="bg-cyan-600 hover:bg-cyan-700 text-white font-bold p-3 rounded-lg"><i data-lucide="send"
+                            class="w-6 h-6"></i></button>
+                </form>
+                <div id="acak-kata-battle-log-container"
+                    class="h-28 bg-gray-900 text-gray-300 font-mono text-xs p-2 rounded-md overflow-y-auto border border-gray-600">
+                    <p class="text-gray-400">> Pertarungan dimulai...</p>
+                </div>
             </div>
-            <form id="acak-kata-battle-form" class="flex items-center gap-2">
-                <input type="text" id="acak-kata-battle-answer-input" class="w-full p-3 bg-gray-900 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 text-center text-lg" placeholder="Ketik jawabanmu..." required autocomplete="off">
-                <button type="submit" id="acak-kata-battle-submit-button" class="bg-cyan-600 hover:bg-cyan-700 text-white font-bold p-3 rounded-lg"><i data-lucide="send" class="w-6 h-6"></i></button>
-            </form>
-            <div id="acak-kata-battle-log-container" class="h-28 bg-gray-900 text-gray-300 font-mono text-xs p-2 rounded-md overflow-y-auto border border-gray-600">
-                <p class="text-gray-400">> Pertarungan dimulai...</p>
+
+            <div class="p-3 bg-gray-900 border-t border-gray-600 text-center flex-shrink-0">
+                <button id="forfeit-acak-kata-battle-button"
+                    class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg">Kabur</button>
             </div>
-        </div>
-        
-        <div class="p-3 bg-gray-900 border-t border-gray-600 text-center flex-shrink-0">
-             <button id="forfeit-acak-kata-battle-button" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg">Kabur</button>
         </div>
     </div>
-</div>
 </body>
+
 </html>
