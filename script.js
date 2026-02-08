@@ -4191,7 +4191,7 @@ function setupAdminDashboard() {
                     }
 
                     const statusDot = `<div class="flex flex-col items-center mr-2 min-w-[30px]">
-                        <span title="${isOnline ? 'Online' : 'Offline'}" class="inline-block w-3 h-3 rounded-full ${isOnline ? 'bg-green-500' : 'bg-red-500'} border border-white shadow mb-1"></span>
+                        <span title="${isOnline ? 'Online' : 'Offline'}" class="inline-block w-3 h-3 rounded-full ${isOnline ? 'bg-green-500 animate-pulse' : 'bg-red-500'} border border-white shadow mb-1"></span>
                         ${timeDisplay}
                     </div>`;
 
