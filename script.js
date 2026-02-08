@@ -6891,8 +6891,15 @@ let currentChatState = {
     selectedRecipientId: null,
     selectedRecipientName: null,
     selectedRecipientLevel: null,
-    selectedRecipientIsAdmin: false // Flag baru untuk cek jika penerima adalah admin
+    selectedRecipientIsAdmin: false, // Flag baru untuk cek jika penerima adalah admin
+    adminListListeners: [] // Store unsubscribe functions
 };
+
+// --- HELPER: Canonical Chat ID ---
+// Memastikan ID chat selalu sama tidak peduli siapa pengirimnya (A_B vs B_A)
+function getCanonicalChatId(uid1, uid2) {
+    return uid1 < uid2 ? `${uid1}_${uid2}` : `${uid2}_${uid1}`;
+}
 
 // Inisialisasi Chat System
 function initializeChatSystem() {
@@ -7010,12 +7017,59 @@ function setupAdminChatUI() {
     });
 
     loadAdminStudentsList();
+    checkAdminGlobalUnreadStatus();
+}
+
+function checkAdminGlobalUnreadStatus() {
+    const adminId = currentChatState.currentUserId;
+    const badge = document.getElementById('admin-chat-badge');
+
+    // We need to scan all chats involving the admin (or all chats generally if admin sees all)
+    // Since chats are stored by canonical ID, we check 'chats' node.
+    // Optimally validation should occur on server-side or via specific index.
+    // For this client-side impl:
+    const chatsRef = ref(db, 'chats');
+
+    onValue(chatsRef, (snap) => {
+        if (!snap.exists()) {
+            if (badge) badge.classList.add('hidden');
+            return;
+        }
+
+        let hasAnyUnread = false;
+        const allChats = snap.val();
+
+        // Iterate all chats
+        for (const chatId in allChats) {
+            const messages = allChats[chatId];
+            // Check messages in this chat
+            const unread = Object.values(messages).some(msg => !msg.isFromAdmin && !msg.read);
+            if (unread) {
+                hasAnyUnread = true;
+                break; // Found one, show badge
+            }
+        }
+
+        if (badge) {
+            if (hasAnyUnread) {
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+    });
 }
 
 function loadAdminStudentsList() {
     const studentsRef = ref(db, 'students');
     const recipientsContainer = document.getElementById('admin-chat-recipients');
     if (!recipientsContainer) return;
+
+    // Bersihkan listener lama
+    if (currentChatState.adminListListeners) {
+        currentChatState.adminListListeners.forEach(unsub => unsub());
+        currentChatState.adminListListeners = [];
+    }
 
     get(studentsRef).then((snap) => {
         if (!snap.exists()) {
@@ -7028,20 +7082,90 @@ function loadAdminStudentsList() {
 
         Object.entries(students).forEach(([uid, data]) => {
             const item = document.createElement('button');
-            item.className = 'chat-recipient-item block w-full';
+            item.className = 'chat-recipient-item block w-full text-left p-2 hover:bg-gray-100 rounded mb-1 transition-colors border-l-4 border-transparent';
             if (currentChatState.selectedRecipientId === uid) {
-                item.classList.add('selected');
+                item.classList.add('bg-blue-100', 'border-blue-500');
             }
 
+            // Create status indicator ID
+            const statusId = `status-dot-${uid}`;
+            const unreadBadgeId = `unread-badge-${uid}`;
+
             item.innerHTML = `
-                <div class="flex justify-between items-center">
-                    <span class="font-semibold">${data.nama}</span>
-                    <span class="text-xs bg-gray-200 px-2 py-1 rounded">${data.kelas || '-'}</span>
+                <div class="flex justify-between items-center relative">
+                    <div class="flex items-center gap-2">
+                        <div class="relative">
+                             <div id="${statusId}" class="w-2.5 h-2.5 rounded-full bg-gray-300 ring-2 ring-white" title="Offline"></div>
+                        </div>
+                        <div>
+                            <span class="font-semibold text-gray-800 block">${data.nama}</span>
+                            <span class="text-xs text-gray-500">${data.kelas || '-'} • Lv ${data.level || 1}</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span id="${unreadBadgeId}" class="hidden bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-sm animate-pulse">New</span>
+                        ${currentChatState.selectedRecipientId === uid ? '<i data-lucide="chevron-right" class="w-4 h-4 text-blue-500"></i>' : ''}
+                    </div>
                 </div>
-                <p class="text-xs text-gray-600 mt-1">Level ${data.level || 1}</p>
             `;
 
+            // Presence Listener (Realtime)
+            const presenceRef = ref(db, `students/${uid}/presence`);
+            const unsubscribePresence = onValue(presenceRef, (pSnap) => {
+                const isOnline = pSnap.val();
+                const dot = document.getElementById(statusId);
+                if (dot) {
+                    dot.className = `w-2.5 h-2.5 rounded-full ring-2 ring-white transition-colors duration-300 ${isOnline ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]' : 'bg-gray-300'}`;
+                    dot.title = isOnline ? 'Online' : 'Offline';
+                }
+            });
+            currentChatState.adminListListeners.push(unsubscribePresence);
+
+            // Unread Messages Listener
+            // Check chats/{canonicalId} for any messages where sender != admin AND read == false
+            if (currentChatState.currentUserId) {
+                const chatId = getCanonicalChatId(currentChatState.currentUserId, uid);
+                const chatRef = ref(db, `chats/${chatId}`);
+                // Limit to last few messages to optimize, or query by 'read' if indexed. 
+                // For simplicity in small scale, read last 20
+                const unsubscribeChat = onValue(chatRef, (cSnap) => {
+                    const badge = document.getElementById(unreadBadgeId);
+                    if (!badge) return;
+
+                    if (!cSnap.exists()) {
+                        badge.classList.add('hidden');
+                        return;
+                    }
+
+                    const msgs = cSnap.val();
+                    const hasUnread = Object.values(msgs).some(m => !m.isFromAdmin && !m.read);
+
+                    if (hasUnread && currentChatState.selectedRecipientId !== uid) {
+                        badge.classList.remove('hidden');
+                    } else {
+                        badge.classList.add('hidden');
+                    }
+                });
+                currentChatState.adminListListeners.push(unsubscribeChat);
+            }
+
             item.addEventListener('click', () => {
+                // Update UI selection manually to avoid full re-render
+                document.querySelectorAll('.chat-recipient-item').forEach(el => {
+                    el.classList.remove('bg-blue-100', 'border-blue-500');
+                    el.classList.add('border-transparent');
+                    const icon = el.querySelector('[data-lucide="chevron-right"]');
+                    if (icon) icon.remove();
+                });
+                item.classList.remove('border-transparent');
+                item.classList.add('bg-blue-100', 'border-blue-500');
+
+                // Add chevron if missing (simplistic approach)
+                if (!item.querySelector('[data-lucide="chevron-right"]')) {
+                    item.querySelector('.flex.justify-between').insertAdjacentHTML('beforeend', '<i data-lucide="chevron-right" class="w-4 h-4 text-blue-500"></i>');
+                    createLucideIcons();
+                }
+
                 currentChatState.selectedRecipientId = uid;
                 currentChatState.selectedRecipientName = data.nama;
                 currentChatState.selectedRecipientLevel = data.level || 1;
@@ -7049,18 +7173,13 @@ function loadAdminStudentsList() {
                 // Show delete button
                 document.getElementById('admin-chat-delete')?.classList.remove('hidden');
 
-                // Update UI
-                document.querySelectorAll('.chat-recipient-item').forEach(el => {
-                    el.classList.remove('selected');
-                });
-                item.classList.add('selected');
-
                 // Load conversation
                 loadAdminChatHistory(uid);
             });
 
             recipientsContainer.appendChild(item);
         });
+        createLucideIcons();
     }).catch(err => console.error("Error loading students for chat:", err));
 }
 
@@ -7068,7 +7187,9 @@ function loadAdminChatHistory(recipientId) {
     const messagesContainer = document.getElementById('admin-chat-messages');
     if (!messagesContainer) return;
 
-    const chatRef = ref(db, `chats/${currentChatState.currentUserId}_${recipientId}`);
+    // Use canonical ID
+    const chatId = getCanonicalChatId(currentChatState.currentUserId, recipientId);
+    const chatRef = ref(db, `chats/${chatId}`);
 
     // Real-time listener
     onValue(chatRef, (snap) => {
@@ -7080,25 +7201,64 @@ function loadAdminChatHistory(recipientId) {
         }
 
         const messages = snap.val();
-        Object.entries(messages).forEach(([_, msg]) => {
+        // Convert to array and sort by timestamp
+        const sortedMessages = Object.entries(messages).sort((a, b) => a[1].timestamp - b[1].timestamp);
+
+        sortedMessages.forEach(([msgId, msg]) => {
             const isAdmin = msg.senderId === currentChatState.currentUserId;
             const messageEl = document.createElement('div');
-            messageEl.className = `chat-message ${isAdmin ? 'sent' : 'received'}`;
+            messageEl.className = `chat-message ${isAdmin ? 'sent' : 'received'} flex flex-col ${isAdmin ? 'items-end' : 'items-start'} mb-2`;
+
+            // Hapus pesan jika admin
+            const deleteBtn = `<button onclick="deleteChatMessage('${chatId}', '${msgId}')" class="text-xs text-gray-300 hover:text-red-500 ml-2" title="Hapus pesan"><i data-lucide="trash" class="w-3 h-3"></i></button>`;
+
             messageEl.innerHTML = `
-                <div class="chat-bubble ${isAdmin ? 'sent' : 'received'}">
+                <div class="chat-bubble ${isAdmin ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-800'} p-3 rounded-lg max-w-[80%] text-sm relative group">
                     ${msg.text}
-                    <div class="chat-message-time">${formatTime(msg.timestamp)}</div>
+                    <div class="flex justify-between items-center mt-1 gap-2">
+                        <span class="text-[10px] opacity-70 flex items-center gap-1">
+                            ${formatTime(msg.timestamp)}
+                            ${isAdmin ?
+                    (msg.read ? '<i data-lucide="check-check" class="w-3 h-3 text-green-300"></i>' : '<i data-lucide="check" class="w-3 h-3"></i>')
+                    : '<span class="text-[9px] ' + (msg.read ? 'text-green-600' : 'text-blue-500 font-bold') + '">' + (msg.read ? 'Dibaca' : 'Baru') + '</span>'}
+                        </span>
+                        ${isAdmin ? deleteBtn : ''}
+                    </div>
                 </div>
             `;
             messagesContainer.appendChild(messageEl);
         });
-
+        createLucideIcons();
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+        // --- MARK AS READ LOGIC (ADMIN SIDE) ---
+        // Mark Student Messages as Read when Admin opens chat
+        sortedMessages.forEach(([msgId, msg]) => {
+            if (!msg.isFromAdmin && !msg.read) {
+                // Update status 'read' di database utama
+                update(ref(db, `chats/${chatId}/${msgId}`), { read: true });
+
+                // Hapus warning/notif dari admin jika ada (misal di chatNotifications/admin)
+                // Note: Saat ini notifikasi admin tersimpan di client-side atau query real-time, 
+                // tapi best practice adalah update state chat itu sendiri.
+            }
+        });
     });
 }
 
+// Global function for deletion (Admin side)
+window.deleteChatMessage = async (chatId, msgId) => {
+    if (confirm("Hapus pesan ini?")) {
+        try {
+            await remove(ref(db, `chats/${chatId}/${msgId}`));
+            // Also try to remove from notifications if exists (optional/complex to track)
+        } catch (e) { console.error(e); }
+    }
+};
+
 function sendChatMessageFromAdmin(messageText, recipientId) {
-    const chatRef = ref(db, `chats/${currentChatState.currentUserId}_${recipientId}`);
+    const chatId = getCanonicalChatId(currentChatState.currentUserId, recipientId);
+    const chatRef = ref(db, `chats/${chatId}`);
     const messageKey = push(chatRef).key;
 
     const messageData = {
@@ -7111,10 +7271,9 @@ function sendChatMessageFromAdmin(messageText, recipientId) {
         isFromAdmin: true
     };
 
-    set(ref(db, `chats/${currentChatState.currentUserId}_${recipientId}/${messageKey}`), messageData)
+    set(ref(db, `chats/${chatId}/${messageKey}`), messageData)
         .then(() => {
-            showToast('Pesan terkirim!');
-            // Save complete message data to notification for student to read
+            // Save notification for student
             set(ref(db, `chatNotifications/${recipientId}/${messageKey}`), messageData);
         })
         .catch(err => {
@@ -7348,6 +7507,8 @@ function enableStudentChatFeatures(userId, studentLevel) {
     });
 }
 
+const NOTIFICATION_SOUND_URL = 'assets/sounds/notification.mp3'; // Adjust path if needed
+
 function loadStudentReceivedMessages(userId) {
     const messagesContainer = document.getElementById('student-chat-received-messages');
     const badge = document.getElementById('student-chat-badge');
@@ -7360,23 +7521,27 @@ function loadStudentReceivedMessages(userId) {
 
         if (!snap.exists()) {
             messagesContainer.innerHTML = '<div class="p-4 text-center text-gray-400"><p>Belum ada pesan dari guru atau teman lain.</p></div>';
+            if (badge) badge.classList.add('hidden');
             return;
         }
 
-        const chatPanel = document.getElementById('student-chat-panel');
-        if (badge && chatPanel && chatPanel.classList.contains('hidden')) {
-            badge.classList.remove('hidden');
-            audioPlayer.notification();
+        const notifications = snap.val();
+        const notificationKeys = Object.keys(notifications);
+
+        // Show badge if there are notifications
+        if (badge) {
+            if (notificationKeys.length > 0) {
+                badge.classList.remove('hidden');
+                // Optional: Play sound only if new (complex to track, for now just show visual)
+            } else {
+                badge.classList.add('hidden');
+            }
         }
 
-        const notifications = snap.val();
         const messages = [];
-
-        // Setiap notification sudah berisi full message data
         Object.entries(notifications).forEach(([key, notifData]) => {
-            // notifData bisa berisi pesan lengkap atau hanya timestamp
             if (notifData && typeof notifData === 'object' && notifData.text) {
-                messages.push(notifData);
+                messages.push({ ...notifData, key }); // Include key for deletion
             }
         });
 
@@ -7385,72 +7550,182 @@ function loadStudentReceivedMessages(userId) {
             return;
         }
 
+        // Sort by timestamp desc
+        messages.sort((a, b) => b.timestamp - a.timestamp);
+
         messages.forEach((msg) => {
             const messageEl = document.createElement('div');
-            messageEl.className = 'bg-blue-50 p-3 rounded-lg border-l-4 border-blue-500 mb-2';
-            messageEl.innerHTML = `
-                <p class="font-semibold text-sm text-blue-900">${msg.senderName || 'Admin'}</p>
-                <p class="text-gray-700 text-sm mt-1">${msg.text}</p>
-                <p class="text-xs text-gray-500 mt-1">${msg.timestamp ? formatTime(msg.timestamp) : 'Baru saja'}</p>
+            messageEl.className = 'bg-blue-50 p-3 rounded-lg border-l-4 border-blue-500 mb-2 cursor-pointer hover:bg-blue-100 transition-colors relative group';
+
+            // Delete button specific to notification item
+            const deleteBtn = `
+                <button class="absolute top-2 right-2 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity" 
+                        onclick="deleteNotification('${userId}', '${msg.key}', event)">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
             `;
+
+            messageEl.innerHTML = `
+                <div class="pr-6">
+                    <p class="font-semibold text-sm text-blue-900 flex items-center gap-2">
+                        ${msg.senderName || 'Admin'}
+                        ${msg.isFromAdmin ? '<span class="bg-purple-100 text-purple-800 text-[10px] px-1 rounded border border-purple-200">Staff</span>' : ''}
+                    </p>
+                    <p class="text-gray-700 text-sm mt-1 line-clamp-2">${msg.text}</p>
+                    <p class="text-xs text-gray-500 mt-1">${msg.timestamp ? formatTime(msg.timestamp) : 'Baru saja'}</p>
+                </div>
+                ${deleteBtn}
+            `;
+
+            // Click Handler: Open Chat & Mark Read
+            messageEl.addEventListener('click', () => {
+                // Determine sender details (Admin or Student)
+                // If message data lacks level/details, we default safely.
+                // Admin: Level 99, isAdmin=true
+                // Student: Level 1 (or fetch), isAdmin=false
+
+                const senderId = msg.senderId;
+                const senderName = msg.senderName || 'Pengirim';
+                const isAdmin = msg.isFromAdmin === true;
+                const senderLevel = isAdmin ? 99 : 1;
+
+                // Call the existing function to open chat UI
+                // Accessing function from enableStudentChatFeatures scope is tricky if not global.
+                // Making selectRecipient available or duplicating navigation logic.
+
+                // Since selectRecipient is inside enableStudentChatFeatures, we need to expose it or simulate structure.
+                // Best approach: Simulate tab switch and granular data loading.
+
+                // 1. Switch Tabs manually
+                document.getElementById('student-chat-tab-send')?.click();
+
+                // 2. Select Recipient Logic (Copied/Adapted)
+                const sendContent = document.getElementById('student-chat-send-content');
+                const conversationContent = document.getElementById('student-chat-conversation');
+                const inputArea = document.getElementById('student-chat-input-area');
+                const recipientNameInput = document.getElementById('student-chat-recipient-name');
+
+                if (sendContent && conversationContent && inputArea && recipientNameInput) {
+                    currentChatState.selectedRecipientId = senderId;
+                    currentChatState.selectedRecipientName = senderName;
+                    currentChatState.selectedRecipientLevel = senderLevel;
+                    currentChatState.selectedRecipientIsAdmin = isAdmin;
+
+                    recipientNameInput.value = `${senderName} ${isAdmin ? '(Staff)' : ''}`;
+
+                    sendContent.classList.add('hidden');
+                    conversationContent.classList.remove('hidden');
+                    inputArea.classList.remove('hidden');
+
+                    loadStudentChatHistory(userId, senderId);
+                }
+            });
+
             messagesContainer.appendChild(messageEl);
         });
+        createLucideIcons();
     });
 }
+
+// Helper to delete just the notification (Student side)
+window.deleteNotification = (userId, key, event) => {
+    event.stopPropagation(); // Prevent opening chat
+    if (confirm("Hapus notifikasi ini?")) {
+        remove(ref(db, `chatNotifications/${userId}/${key}`));
+    }
+};
 
 function loadStudentChatHistory(userId, friendId) {
     const messagesContainer = document.getElementById('student-chat-conversation');
     if (!messagesContainer) return;
 
-    // Find the correct chat reference (could be userId_friendId or friendId_userId)
-    const chatRef1 = ref(db, `chats/${userId}_${friendId}`);
-    const chatRef2 = ref(db, `chats/${friendId}_${userId}`);
+    // Use canonical ID - removes the need to check dual paths
+    const chatId = getCanonicalChatId(userId, friendId);
+    const chatRef = ref(db, `chats/${chatId}`);
 
-    // Try first path
-    get(chatRef1).then((snap) => {
-        if (snap.exists()) {
-            displayChatHistory(snap.val(), userId, messagesContainer);
-        } else {
-            // Try second path
-            get(chatRef2).then((snap2) => {
-                if (snap2.exists()) {
-                    displayChatHistory(snap2.val(), userId, messagesContainer);
-                }
-            });
+    onValue(chatRef, (snap) => {
+        if (!snap.exists()) {
+            messagesContainer.innerHTML = '<p class="text-sm text-gray-400 text-center py-4">Belum ada chat. Mulai!</p>';
+            return;
         }
+
+        const messages = snap.val();
+        displayChatHistory(messages, userId, messagesContainer, chatId);
+
+        // --- MARK AS READ LOGIC ---
+        // Mark Received Messages as Read
+        Object.entries(messages).forEach(([key, msg]) => {
+            if (msg.recipientId === userId && !msg.read) {
+                // Update status 'read' di database utama
+                update(ref(db, `chats/${chatId}/${key}`), { read: true });
+
+                // Hapus dari notifikasi karena sudah dibaca
+                remove(ref(db, `chatNotifications/${userId}/${key}`));
+            }
+        });
     });
 }
 
-function displayChatHistory(messages, userId, container) {
+function displayChatHistory(messages, userId, container, chatId) {
     container.innerHTML = '';
-    Object.entries(messages).forEach(([_, msg]) => {
+    const sortedMessages = Object.entries(messages).sort((a, b) => a[1].timestamp - b[1].timestamp);
+
+    sortedMessages.forEach(([msgId, msg]) => {
         const isSent = msg.senderId === userId;
         const messageEl = document.createElement('div');
-        messageEl.className = `chat-message ${isSent ? 'sent' : 'received'}`;
+        messageEl.className = `flex flex-col ${isSent ? 'items-end' : 'items-start'} mb-3 animate-fade-in-up`;
+
+        // Delete button for student (allows deleting their own messages OR clearing received ones from view if needed, but usually delete own)
+        // User requested: "student bisa hapus pesan" -> Let's allow deleting ANY message in THEIR view (conceptually), but physically deleting from DB 
+        // usually only allowed for sender. But user said "membersihkan pesan yang sudah dibaca".
+        // Let's allow deleting ANY message for now as requested.
+        const deleteButton = `
+            <button onclick="deleteStudentMessage('${chatId}', '${msgId}')" class="text-gray-400 hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity" title="Hapus Pesan">
+                <i data-lucide="trash-2" class="w-3 h-3"></i>
+            </button>
+        `;
+
         messageEl.innerHTML = `
-            <div class="chat-bubble ${isSent ? 'sent' : 'received'}">
-                ${msg.text}
-                <div class="chat-message-time">${formatTime(msg.timestamp)}</div>
+            <div class="group relative max-w-[85%]">
+                <div class="${isSent ? 'bg-blue-500 text-white rounded-br-none' : 'bg-white border border-gray-200 text-gray-800 rounded-bl-none'} p-3 rounded-2xl shadow-sm text-sm">
+                    ${msg.text}
+                </div>
+                <div class="flex items-center justify-between mt-1 px-1">
+                    <span class="text-[10px] text-gray-400 flex items-center gap-1">
+                        ${formatTime(msg.timestamp)}
+                        ${isSent ? (msg.read ? '<i data-lucide="check-check" class="w-3 h-3 text-blue-500"></i>' : '<i data-lucide="check" class="w-3 h-3"></i>') : ''}
+                    </span>
+                    ${deleteButton}
+                </div>
             </div>
         `;
         container.appendChild(messageEl);
     });
+    createLucideIcons();
     container.scrollTop = container.scrollHeight;
 }
 
-function sendChatMessageFromStudent(userId, messageText, friendId) {
-    // Tentukan path: Jika penerima adalah Admin, gunakan path ADMIN_STUDENT agar Admin bisa melihatnya di panel mereka.
-    let chatPath = `chats/${userId}_${friendId}`;
-    if (currentChatState.selectedRecipientIsAdmin) {
-        chatPath = `chats/${friendId}_${userId}`;
+// Global function for deletion (Student side)
+window.deleteStudentMessage = async (chatId, msgId) => {
+    if (confirm("Hapus pesan ini? (Akan terhapus untuk kedua pihak)")) {
+        try {
+            await remove(ref(db, `chats/${chatId}/${msgId}`));
+        } catch (e) {
+            console.error(e);
+            showToast("Gagal menghapus pesan", true);
+        }
     }
+};
 
-    const chatRef = ref(db, chatPath);
+function sendChatMessageFromStudent(userId, messageText, friendId) {
+    // Canonical ID
+    const chatId = getCanonicalChatId(userId, friendId);
+    const chatRef = ref(db, `chats/${chatId}`);
     const messageKey = push(chatRef).key;
 
     const messageData = {
         senderId: userId,
-        senderName: 'Student', // Will be updated with actual name
+        senderName: 'Student', // Will be updated
         recipientId: friendId,
         text: messageText,
         timestamp: Date.now(),
@@ -7465,10 +7740,9 @@ function sendChatMessageFromStudent(userId, messageText, friendId) {
             messageData.senderName = snap.val().nama || 'Student';
         }
 
-        set(ref(db, `${chatPath}/${messageKey}`), messageData)
+        set(ref(db, `chats/${chatId}/${messageKey}`), messageData)
             .then(() => {
-                showToast('Pesan terkirim!');
-                // Save complete message data to notification for recipient to read
+                // Save notification for recipient
                 set(ref(db, `chatNotifications/${friendId}/${messageKey}`), messageData);
             })
             .catch(err => {
@@ -7492,75 +7766,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 500);
 });// ...existing code...
 
-// Fungsi untuk menampilkan pesan yang diterima
-function displayReceivedMessages(messages) {
-    const container = document.getElementById('student-chat-received-messages');
-    container.innerHTML = '';
 
-    if (messages.length === 0) {
-        container.innerHTML = '<p class="text-sm text-gray-400 text-center py-4">Tidak ada pesan.</p>';
-        return;
-    }
-
-    messages.forEach(msg => {
-        const messageEl = document.createElement('div');
-        messageEl.className = 'p-3 bg-blue-50 rounded-lg border-l-4 border-blue-500 cursor-pointer hover:bg-blue-100';
-        messageEl.innerHTML = `
-            <p class="text-sm font-semibold text-gray-800">${msg.senderName}</p>
-            <p class="text-sm text-gray-600">${msg.message}</p>
-            <p class="text-xs text-gray-400 mt-1">${new Date(msg.timestamp).toLocaleString()}</p>
-        `;
-
-        // Tandai pesan sebagai sudah dibaca saat diklik
-        messageEl.addEventListener('click', () => {
-            markMessageAsRead(msg.id);
-            messageEl.classList.add('opacity-60');
-        });
-
-        container.appendChild(messageEl);
-    });
-
-    // Periksa apakah ada pesan yang belum dibaca
-    checkUnreadMessages();
-}
-
-// Fungsi untuk menandai pesan sebagai dibaca
-function markMessageAsRead(messageId) {
-    // Kirim ke server untuk menandai sebagai dibaca
-    fetch(`/api/messages/${messageId}/read`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' }
-    })
-        .then(res => res.json())
-        .then(() => {
-            // Update UI setelah berhasil
-            checkUnreadMessages();
-        })
-        .catch(err => console.error('Error marking message as read:', err));
-}
-
-// Fungsi untuk memeriksa apakah ada pesan yang belum dibaca
-function checkUnreadMessages() {
-    const chatBadge = document.getElementById('student-chat-badge');
-    const receivedMessagesContainer = document.getElementById('student-chat-received-messages');
-
-    // Cek apakah ada pesan yang belum dibaca (tidak memiliki class 'opacity-60')
-    const unreadMessages = receivedMessagesContainer.querySelectorAll('div:not(.opacity-60)');
-
-    if (unreadMessages.length > 0) {
-        chatBadge.classList.remove('hidden');
-    } else {
-        chatBadge.classList.add('hidden');
-    }
-}
-
-// Saat membuka tab Pesan Masuk, tandai semua sebagai dibaca
-document.getElementById('student-chat-tab-receive')?.addEventListener('click', () => {
-    const messages = document.querySelectorAll('#student-chat-received-messages > div');
-    messages.forEach(msg => {
-        msg.classList.add('opacity-60');
-    });
-    checkUnreadMessages();
-});
 
 // ...existing code...
