@@ -62,7 +62,7 @@ const SKILL_BOOK = {
     },
     Penyihir: {
         passive: [
-            { name: "Insting Tajam", desc: "Meningkatkan 5% damage fisik.", mpCost: 5 },
+            { name: "Insting Tajam", desc: "Meningkatkan 5% damage fisik.", mpCost: 5 }, { name: "Insting Tajam", desc: "Meningkatkan 5% damage fisik.", mpCost: 5 },
             { name: "Mata Elang", desc: "Peluang dapat koin ekstra setelah menang.", mpCost: 5 },
             { name: "Analisis Cepat", desc: "Peluang 10% melihat HP monster.", mpCost: 5 },
             { name: "Studi Efisien", desc: "Meningkatkan perolehan XP sebesar 8%.", mpCost: 5 },
@@ -231,7 +231,8 @@ function renderActiveSkill(studentData, uid) {
     }
 
     container.innerHTML = ''; // Bersihkan container
-    const maxSkillIndex = Math.min(level - 1, 4); // Skill max di level 5 (index 4)
+    // Skill baru terbuka setiap 2 level (Lv 1, 3, 5, 7, 9)
+    const maxSkillIndex = Math.min(Math.floor((level - 1) / 2), 4);
     let skillsFound = false;
 
     for (let i = 0; i <= maxSkillIndex; i++) {
