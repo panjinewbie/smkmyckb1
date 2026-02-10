@@ -7378,17 +7378,17 @@ function enableStudentChatFeatures(userId, studentLevel) {
     const clearBtn = document.getElementById('student-chat-clear-recipient');
     const recipientName = document.getElementById('student-chat-recipient-name');
 
-    const canChat = studentLevel >= 6;
+    const canChat = studentLevel >= 2;
 
     if (!canChat) {
         tabSend.disabled = true;
         tabSend.classList.add('opacity-50', 'cursor-not-allowed');
-        tabSend.title = `Hanya siswa level 6+ yang bisa chat dengan teman (Level kamu: ${studentLevel})`;
+        tabSend.title = `Hanya siswa level 2+ yang bisa chat dengan teman (Level kamu: ${studentLevel})`;
         sendContent.innerHTML = `
             <div class="p-4 text-center">
                 <p class="text-gray-600 font-semibold">Fitur Terkunci 🔒</p>
-                <p class="text-sm text-gray-500 mt-2">Kamu bisa membuka fitur ini saat mencapai Level 6!</p>
-                <p class="text-xs text-gray-400 mt-4">Level saat ini: ${studentLevel} / 6</p>
+                <p class="text-sm text-gray-500 mt-2">Kamu bisa membuka fitur ini saat mencapai Level 2!</p>
+                <p class="text-xs text-gray-400 mt-4">Level saat ini: ${studentLevel} / 2</p>
             </div>
         `;
         return;
