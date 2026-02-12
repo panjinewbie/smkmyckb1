@@ -53,7 +53,7 @@ const SKILL_BOOK = {
             { name: "Kulit Keras", desc: "Pengurangan damage fisik jadi 12%.", mpCost: 10 }
         ],
         active: [
-            { name: "Tanggung Jawab Ksatria", desc: "Minta admin agar hukuman teman ditimpakan padamu.", mpCost: 15 },
+            { name: "Tanggung Jawab Ksatria", desc: "Minta admin agar hukuman teman ditimpakan padamu atau minta petunjuk untuk tugas.", mpCost: 15 },
             { name: "Permohonan Maaf", desc: "Minta admin batalkan -5 HP 'Izin' teman.", mpCost: 20 },
             { name: "Perisai Pelindung Diri", desc: "Aktifkan buff +20% Defense untuk diri sendiri (24 jam).", mpCost: 25 },
             { name: "Negosiasi Hukuman", desc: "Minta admin ubah 'Alfa' jadi 'Izin' untuk teman.", mpCost: 35 },
@@ -85,7 +85,7 @@ const SKILL_BOOK = {
             { name: "Hati yang Murni", desc: "10% penyembuhan diri juga diterima teman.", mpCost: 10 }
         ],
         active: [
-            { name: "Ikatan Hati", desc: "Minta izin agar tim boleh saling bantu.", mpCost: 15 },
+            { name: "Ikatan Hati", desc: "Minta izin agar tim boleh saling bantu atau minta petunjuk untuk tugas.", mpCost: 15 },
             { name: "Permohonan Keringanan", desc: "Minta admin batalkan -2 HP 'Sakit' teman.", mpCost: 20 },
             { name: "Aura Penyembuh Diri", desc: "Aktifkan buff Regen HP untuk diri sendiri (24 jam).", mpCost: 25 },
             { name: "Penawar Guild", desc: "Minta admin untuk menghilangkan 1 kutukan dari teman satu Guild.", mpCost: 35 },
