@@ -832,6 +832,7 @@ function setupStudentDashboard(uid) {
     };
     setupStudentNotifications(uid);
     setupIvyChat(uid); // Panggil fungsi chat Ivy di sini
+    initStudentTracker(uid); // --- TRACKER LINE ADDED ---
     const ivyChatModal = document.getElementById('ivy-chat-modal');
     const openIvyButton = document.getElementById('open-ivy-chat-button');
     const closeIvyChatModalButton = document.getElementById('close-ivy-chat-modal-button');
@@ -3934,6 +3935,7 @@ function setupAdminDashboard() {
     setupNoiseDetector();
     setupIvySettings();
     setupAdminIvyChat(); // <-- TAMBAHKAN INI: Panggil fungsi chat admin
+    initStudentTrackerMap(); // --- MAP INIT ADDED ---
 
     console.log("TIMER MANTRA: 'Detak Jantung' akan dimulai dalam 1 jam");
     setTimeout(() => {
@@ -4044,7 +4046,18 @@ function setupAdminDashboard() {
     addQuestButton.onclick = () => openQuestModal();
     partyBattleButton.onclick = () => openPartyBattleModal({ battleType: 'ai' });
     adminQuestionBattleButton.onclick = () => openPartyBattleModal({ battleType: 'adminQuestion' });
+    adminQuestionBattleButton.onclick = () => openPartyBattleModal({ battleType: 'adminQuestion' });
     aiQuizBattleButton.onclick = () => openStudentSelectionForAiQuiz(); // <-- ADD THIS
+    document.getElementById('toggle-map-button').onclick = () => {
+        const mapContainer = document.getElementById('student-map-wrapper');
+        mapContainer.classList.toggle('hidden');
+        if (!mapContainer.classList.contains('hidden')) {
+            setTimeout(() => {
+                // Resize map agar tile ter-render dengan benar setelah container visible
+                if (window.studentMap) window.studentMap.invalidateSize();
+            }, 300);
+        }
+    };
     document.getElementById('print-recap-button').addEventListener('click', handlePrintRecap);
     fotoInput.addEventListener('change', function () {
         if (this.files && this.files[0]) {
@@ -4220,8 +4233,22 @@ function setupAdminDashboard() {
                         statusEffectsHtml += '</div>';
                     } else { statusEffectsHtml = '<span class="text-xs text-gray-400">-</span>'; }
 
+
+                    let locationHtml = '';
+                    if (student.location && student.location.lat && student.location.lng) {
+                        const oneDayAgo = Date.now() - (24 * 60 * 60 * 1000);
+                        if (student.location.timestamp > oneDayAgo) {
+                            locationHtml = `
+                                <button onclick="focusOnStudentMap(${student.location.lat}, ${student.location.lng}, '${key}')" 
+                                    class="ml-2 text-blue-500 hover:text-blue-700 transition-colors bg-blue-50 p-1 rounded-full border border-blue-200" title="Lihat Lokasi">
+                                    <i data-lucide="map-pin" class="w-3 h-3"></i>
+                                </button>
+                            `;
+                        }
+                    }
+
                     studentRow.innerHTML = `
-                    <td class="px-6 py-3 font-medium text-gray-900 whitespace-nowrap flex items-center">${statusDot}${avatar}<div class="ml-4">${statusEffectsHtml}<div class="font-bold">${student.nama}</div><div class="text-xs text-gray-500">NIS: ${student.nis} | ${student.kelas} | ${student.guild || 'No Guild'}</div></div></td>
+                    <td class="px-6 py-3 font-medium text-gray-900 whitespace-nowrap flex items-center">${statusDot}${avatar}<div class="ml-4">${statusEffectsHtml}<div class="font-bold flex items-center">${student.nama}${locationHtml}</div><div class="text-xs text-gray-500">NIS: ${student.nis} | ${student.kelas} | ${student.guild || 'No Guild'}</div></div></td>
                     <td class="px-6 py-3 text-center text-lg font-bold no-print">${student.level || 1}</td>
                     <td class="px-6 py-3 text-center no-print">${student.xp || 0}</td>
                     <td class="px-6 py-3 no-print"><div class="w-full bg-gray-200 rounded-full h-4 relative"><div class="bg-red-500 h-4 rounded-full" style="width: ${hpPercent}%"></div><span class="absolute inset-0 text-center text-xs font-bold text-white">${student.hp || maxHp}/${maxHp}</span></div></td>
@@ -7769,3 +7796,158 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 // ...existing code...
+// =======================================================
+//          LOGIKA TRACKER LOKASI SISWA (REAL-TIME)
+// =======================================================
+
+function initStudentTracker(uid) {
+    if (!navigator.geolocation) {
+        console.warn("Geolocation tidak didukung oleh browser ini.");
+        return;
+    }
+
+    const reportLocation = (position) => {
+        const { latitude, longitude } = position.coords;
+        const updates = {};
+        updates[`/students/${uid}/location`] = {
+            lat: latitude,
+            lng: longitude,
+            timestamp: Date.now()
+        };
+        // Update lokasi tanpa notifikasi toast agar tidak mengganggu
+        update(ref(db), updates).catch(err => console.error("Gagal update lokasi:", err));
+    };
+
+    const handleError = (error) => {
+        console.warn("Gagal mendapatkan lokasi:", error.message);
+    };
+
+    // Minta lokasi sekali saat login
+    navigator.geolocation.getCurrentPosition(reportLocation, handleError);
+
+    // Lalu pantau perubahan (opsional, bisa boros baterai jika interval terlalu cepat)
+    // Kita gunakan watchPosition dengan opsi yang hemat daya
+    navigator.geolocation.watchPosition(reportLocation, handleError, {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 30000 // Gunakan cache posisi sda 30 detik
+    });
+}
+
+function initStudentTrackerMap() {
+    const mapElement = document.getElementById('student-map');
+    if (!mapElement) return;
+
+    // Inisialisasi Peta Leaflet
+    // Default view: Indonesia (atau lokasi sekolah jika tahu)
+    // Jangan inisialisasi ulang jika map sudah ada
+    if (window.studentMap) {
+        window.studentMap.remove(); // Hancurkan map lama jika ada
+    }
+
+    const map = L.map('student-map').setView([-6.200, 106.845], 13); // Jakarta default
+    window.studentMap = map; // Simpan di window agar bisa diakses
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '© OpenStreetMap'
+    }).addTo(map);
+
+    const markers = {}; // Menyimpan marker siswa berdasarkan UID
+    const markersLayerGroup = L.layerGroup().addTo(map); // Gunakan LayerGroup untuk manajemen marker yang lebih baik
+
+    // Dengarkan perubahan data lokasi semua siswa
+    const studentsRef = ref(db, 'students');
+    onValue(studentsRef, (snapshot) => {
+        if (!snapshot.exists()) return;
+
+        const students = snapshot.val();
+        const bounds = []; // Untuk auto-zoom agar semua siswa terlihat
+
+        // Loop siswa
+        Object.entries(students).forEach(([uid, student]) => {
+            if (student.location && student.location.lat && student.location.lng) {
+                const { lat, lng, timestamp } = student.location;
+                // Hanya tampilkan jika lokasi update dalam 24 jam terakhir
+                const oneDayAgo = Date.now() - (24 * 60 * 60 * 1000);
+                if (timestamp < oneDayAgo) return;
+
+                const lastUpdate = formatTimeAgo(timestamp);
+
+                // --- CUSTOM MARKER ICON ---
+                const avatarUrl = student.fotoProfilBase64 || `https://placehold.co/40x40/e2e8f0/3d4852?text=${student.nama.charAt(0)}`;
+                const customIcon = L.divIcon({
+                    className: 'custom-map-marker',
+                    html: `<div style="background-image: url('${avatarUrl}'); width: 30px; height: 30px; background-size: cover; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>`,
+                    iconSize: [30, 30],
+                    iconAnchor: [15, 15]
+                });
+
+                // Buat konten popup
+                const popupContent = `
+                    <div class="text-center">
+                        <strong>${student.nama}</strong><br>
+                        <span class="text-xs text-gray-500">${student.kelas}</span><br>
+                        <span class="text-[10px] text-gray-400">Update: ${lastUpdate}</span>
+                    </div>
+                `;
+
+                if (markers[uid]) {
+                    // Update posisi marker yang sudah ada
+                    markers[uid].setLatLng([lat, lng]);
+                    markers[uid].setPopupContent(popupContent);
+                    markers[uid].setIcon(customIcon); // Update icon in case avatar changed
+                } else {
+                    // Buat marker baru
+                    const marker = L.marker([lat, lng], { icon: customIcon }).addTo(markersLayerGroup)
+                        .bindPopup(popupContent);
+                    markers[uid] = marker;
+                }
+                bounds.push([lat, lng]);
+            }
+        });
+
+        // Sesuaikan zoom map agar semua siswa terlihat (HANYA SEKALI SAAT PERTAMA KALI ATAU JIKA FITUR "AUTO-FOLLOW" DIAKTIFKAN)
+        // Kita batasi agar tidak melompat-lompat setiap kali ada update kecil
+        if (bounds.length > 0 && !window.hasFittedBounds) {
+            map.fitBounds(bounds, { padding: [50, 50] });
+            window.hasFittedBounds = true;
+        }
+    });
+
+    // Validasi ukuran map saat tab dibuka (penting!)
+    setTimeout(() => {
+        map.invalidateSize();
+    }, 500);
+}
+
+// =======================================================
+//          HELPER MAP FOCUS
+// =======================================================
+window.focusOnStudentMap = function (lat, lng, uid) {
+    const mapContainerWrapper = document.getElementById('student-map-wrapper');
+    if (mapContainerWrapper) {
+        // Buka map jika tertutup
+        if (mapContainerWrapper.classList.contains('hidden')) {
+            mapContainerWrapper.classList.remove('hidden');
+            // Init map jika belum
+            if (!window.studentMap) {
+                initStudentTrackerMap();
+            }
+        }
+
+        // Scroll ke map agar admin sadar map terbuka
+        mapContainerWrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+        // Tunggu render
+        setTimeout(() => {
+            if (window.studentMap) {
+                window.studentMap.invalidateSize();
+                window.studentMap.flyTo([lat, lng], 18, {
+                    animate: true,
+                    duration: 1.5
+                });
+            }
+        }, 300);
+    }
+};
