@@ -6,6 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
     <title>DREAMY - Dasbor Admin</title>
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
     <style>
         /* Anda bisa menata ukuran pemindai di sini */
         #qr-reader-wrapper {
@@ -286,6 +289,9 @@
     <script type="module" src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js"></script>
     <script type="module" src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <link rel="stylesheet" href="style.css">
     <link rel="icon" href="asset/gambar/logomymadival.png">
 </head>
@@ -454,6 +460,10 @@
                             <p class="text-sm text-gray-500 mt-1">Data dari Firebase.</p>
                         </div>
                         <div class="flex gap-2">
+                            <button id="toggle-map-button"
+                                class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg flex items-center">
+                                <i data-lucide="map" class="w-4 h-4 mr-2"></i>Peta Lokasi
+                            </button>
                             <button id="print-student-button"
                                 class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg flex items-center">
                                 <i data-lucide="printer" class="w-4 h-4 mr-2"></i>Cetak Siswa
@@ -483,6 +493,14 @@
                             </select>
                         </div>
                     </div>
+
+                    <!-- Map Container -->
+                    <div id="student-map-wrapper" class="hidden p-4 border-b transition-all duration-300">
+                        <div id="student-map" class="w-full h-96 rounded-lg shadow-md z-0"></div>
+                        <p class="text-xs text-gray-500 mt-2 text-center">Menampilkan lokasi terakhir siswa yang aktif.
+                        </p>
+                    </div>
+
                     <div class="overflow-x-auto">
                         <table class="w-full text-sm text-left text-gray-500">
                             <thead class="text-xs text-gray-700 uppercase bg-gray-50">
