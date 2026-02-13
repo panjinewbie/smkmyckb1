@@ -535,13 +535,13 @@ async function checkAndApplyStatusEffects(uid) {
         if (now > effect.expires) {
             updates[`/students/${uid}/statusEffects/${effectKey}`] = null;
 
-            // --- 👇 MANTRA PENYEMPURNA HP SEMENTARA DIMULAI DI SINI 👇 ---
+            // --- ðŸ‘‡ MANTRA PENYEMPURNA HP SEMENTARA DIMULAI DI SINI ðŸ‘‡ ---
             if (effectKey === 'buff_temp_hp' && effect.tempHpGranted) {
                 const currentHp = updates[`/students/${uid}/hp`] || studentData.hp;
                 // Kurangi HP siswa sebanyak HP sementara yang pernah diberikan
                 updates[`/students/${uid}/hp`] = Math.max(1, currentHp - effect.tempHpGranted); // Minimal HP jadi 1, jangan langsung mati
             }
-            // --- 👆 AKHIR DARI MANTRA 👆 ---
+            // --- ðŸ‘† AKHIR DARI MANTRA ðŸ‘† ---
 
             // Hapus juga jejak pengecekan lainnya
             if (effectKey === 'racun') updates[`/students/${uid}/lastPoisonCheck`] = null;
@@ -770,7 +770,7 @@ async function handleDailyLogin(uid) {
         if (streak >= 7) {
             bonusCoin += 50;
             bonusXp += 50;
-            toastMessage = `🔥 WOW! Login 7 hari beruntun! Bonus besar: +${bonusCoin} Koin & +${bonusXp} XP!`;
+            toastMessage = `ðŸ”¥ WOW! Login 7 hari beruntun! Bonus besar: +${bonusCoin} Koin & +${bonusXp} XP!`;
             streak = 0; // Reset streak
             audioPlayer.success();
         }
@@ -802,6 +802,7 @@ async function handleDailyLogin(uid) {
 // =======================================================
 
 function setupStudentDashboard(uid) {
+    let currentStudentData = null;
     // --- MANTRA BARU: DETAK JANTUNG ONLINE (PRESENCE) ---
     const userStatusDatabaseRef = ref(db, `/students/${uid}/presence`);
     const connectedRef = ref(db, ".info/connected");
@@ -839,6 +840,10 @@ function setupStudentDashboard(uid) {
 
     if (ivyChatModal && openIvyButton && closeIvyChatModalButton) {
         const openIvyChatModal = () => {
+            if (!currentStudentData || (currentStudentData.level || 1) < 3) {
+                showToast("Maaf, fitur ini hanya untuk Level 3 ke atas!", true);
+                return;
+            }
             audioPlayer.openModal();
             ivyChatModal.classList.remove('hidden');
             setTimeout(() => ivyChatModal.classList.remove('opacity-0'), 10);
@@ -937,7 +942,7 @@ function setupStudentDashboard(uid) {
     // ... (sisa kode onValue(studentRef, ...) ada di bawahnya)
 
     // --- MANTRA BARU: Variabel untuk menyimpan data siswa agar bisa diakses oleh fungsi lain di scope ini ---
-    let currentStudentData = null;
+    //     let currentStudentData = null;
 
     const studentRef = ref(db, `students/${uid}`);
     onValue(studentRef, (snapshot) => {
@@ -1005,7 +1010,7 @@ function setupStudentDashboard(uid) {
                 knock: { icon: 'tornado', text: 'Knock', color: 'yellow' }, // Efek Negatif
                 buff_admin_key: { icon: 'key-round', text: 'Kunci Admin', color: 'yellow' } // Buff Kunci
                 ,
-                // --- 👇 MANTRA PERBAIKAN: Tambahkan definisi untuk buff positif ---
+                // --- ðŸ‘‡ MANTRA PERBAIKAN: Tambahkan definisi untuk buff positif ---
                 buff_attack: { icon: 'sword', text: 'Attack Up', color: 'orange' },
                 buff_defense: { icon: 'shield', text: 'Defense Up', color: 'blue' },
                 buff_hp_regen: { icon: 'heart-pulse', text: 'Regen HP', color: 'green' },
@@ -1125,6 +1130,14 @@ function setupStudentDashboard(uid) {
                 return;
             }
 
+            // --- MANTRA BARU: Cek MP Sebelum Chat dengan Ivy (Biaya 5 MP) ---
+            const currentMp = studentData.mp || 0;
+            const ivyChatCost = 5;
+            if (currentMp < ivyChatCost) {
+                showToast(`Mana tidak cukup! Butuh ${ivyChatCost} MP untuk ngobrol dengan Ivy.`, true);
+                return;
+            }
+
             const userMessage = chatInput.value.trim();
             if (!userMessage) return;
 
@@ -1160,7 +1173,7 @@ INFORMASI PENTING TENTANG SISWA YANG SEDANG KAMU AJAK BICARA (GUNAKAN UNTUK KONT
 - Guild: ${studentData.guild || 'Belum ada'}
 - Level: ${studentData.level || 1}
 - HP (Health Points): ${studentData.hp} / ${(studentData.level || 1) * 100}
-- MP (Mana Points): ${studentData.mp} / ${50 + (((studentData.level || 1) - 1) * 5)}
+- MP (Mana Points): ${studentData.mp - ivyChatCost} / ${50 + (((studentData.level || 1) - 1) * 5)}
 - XP (Experience): ${studentData.xp} / 1000
 - Koin: ${studentData.coin || 0}
 - Status Efek Aktif: ${studentData.statusEffects && Object.keys(studentData.statusEffects).length > 0 ? Object.keys(studentData.statusEffects).join(', ') : 'Tidak ada'}
@@ -1204,6 +1217,11 @@ INFORMASI PENTING TENTANG SISWA YANG SEDANG KAMU AJAK BICARA (GUNAKAN UNTUK KONT
                 const IvyResponse = result.candidates[0].content.parts[0].text;
                 loadingIndicator.remove();
                 appendChatMessage(IvyResponse, 'Ivy');
+
+                // --- MANTRA BARU: Kurangi MP Siswa ---
+                await update(ref(db, `students/${uid}`), { mp: currentMp - ivyChatCost });
+                // Update local data untuk next chat tanpa refresh
+                studentData.mp = currentMp - ivyChatCost;
 
             } catch (error) {
                 console.error("Terjadi kesalahan fatal di blok catch:", error);
@@ -1462,7 +1480,7 @@ async function endAiQuiz(isWinner) {
 
     if (isWinner) {
         prizeWon = AI_QUIZ_PRIZES[AI_QUIZ_PRIZES.length - 1];
-        message = `🎉 SELAMAT! Kamu berhasil menjawab semua soal dan memenangkan hadiah utama: ${prizeWon.xp} XP & ${prizeWon.coin} Koin!`;
+        message = `ðŸŽ‰ SELAMAT! Kamu berhasil menjawab semua soal dan memenangkan hadiah utama: ${prizeWon.xp} XP & ${prizeWon.coin} Koin!`;
     } else {
         let lastSafeHavenIndex = -1;
         for (const havenIndex of AI_QUIZ_SAFE_HAVENS) {
@@ -1919,7 +1937,7 @@ async function handleUseItem(uid, itemIndex, itemData, closeModalCallback) {
                 successMessage = "Kamu tidak punya efek negatif untuk disembuhkan.";
             }
         }
-        // --- 👇 MANTRA BARU UNTUK BUFF POSITIF 👇 ---
+        // --- ðŸ‘‡ MANTRA BARU UNTUK BUFF POSITIF ðŸ‘‡ ---
         else if (itemData.effect.startsWith('BUFF_')) {
             const durationInDays = 3; // Semua buff berlaku 3 hari
             const expiryTimestamp = Date.now() + (durationInDays * 24 * 60 * 60 * 1000);
@@ -1941,18 +1959,18 @@ async function handleUseItem(uid, itemIndex, itemData, closeModalCallback) {
 
             successMessage = `Kamu merasakan kekuatan dari ${itemData.name}! Efek akan aktif selama ${durationInDays} hari.`;
         }
-        // --- 👆 AKHIR DARI MANTRA 👆 ---
+        // --- ðŸ‘† AKHIR DARI MANTRA ðŸ‘† ---
         else if (itemData.effect.startsWith('CURSE_')) {
             throw new Error("Item ini harus digunakan pada siswa lain!");
         }
-        // --- 👇 MANTRA BARU UNTUK ITEM GACHA "MISTERY!" 👇 ---
+        // --- ðŸ‘‡ MANTRA BARU UNTUK ITEM GACHA "MISTERY!" ðŸ‘‡ ---
         else if (itemData.effect === 'GACHA_MYSTERY') {
             const rand = Math.random() * 100;
             let gachaMessage;
 
             if (rand < 40) { // 40% Kembang Api (Zonk visual)
                 showFireworks();
-                gachaMessage = 'Wow! Kembang api kejutan! ✨';
+                gachaMessage = 'Wow! Kembang api kejutan! âœ¨';
             } else if (rand < 65) { // 25% Hadiah Stat
                 const rewards = ['coin', 'xp', 'hp'];
                 const rewardType = rewards[Math.floor(Math.random() * rewards.length)];
@@ -2089,7 +2107,7 @@ async function openDungeon2D(uid, studentData) {
     }
     // Jika tidak ada gambar monster, siapkan placeholder
     if (monsterImages.length === 0) {
-        monsterImages.push('https://placehold.co/32x32/e74c3c/ffffff?text=👹');
+        monsterImages.push('https://placehold.co/32x32/e74c3c/ffffff?text=ðŸ‘¹');
     }
 
     const closeModal = () => {
@@ -2864,7 +2882,7 @@ async function handleCompleteBountyWithWinner(bountyId, bountyData, winnerId, cl
         }
         const totalReward = bountyData.rewardCoin || 0;
         addNotification(
-            `🎉 Selamat! Kamu memenangkan misi <strong>${bountyData.title}</strong> dan mendapatkan <strong>${totalReward}</strong> Koin!`,
+            `ðŸŽ‰ Selamat! Kamu memenangkan misi <strong>${bountyData.title}</strong> dan mendapatkan <strong>${totalReward}</strong> Koin!`,
             'bounty_win',
             { bountyId: bountyId },
             winnerId // <-- Ini target siswanya
@@ -3147,9 +3165,9 @@ async function handleSoloAiAnswer(selectedIndex) {
     if (passiveSkill && currentPlayer.mp >= passiveSkill.mpCost) {
         currentPlayer.mp -= passiveSkill.mpCost;
         passiveIsActive = true;
-        addSoloBattleLog(`✨ Skill Pasif [${passiveSkill.name}] aktif! (-${passiveSkill.mpCost} MP)`, 'heal');
+        addSoloBattleLog(`âœ¨ Skill Pasif [${passiveSkill.name}] aktif! (-${passiveSkill.mpCost} MP)`, 'heal');
     } else {
-        addSoloBattleLog(`⚠️ MP tidak cukup! Skill Pasif tidak aktif.`, 'damage');
+        addSoloBattleLog(`âš ï¸ MP tidak cukup! Skill Pasif tidak aktif.`, 'damage');
     }
 
     if (isCorrect) {
@@ -3161,29 +3179,29 @@ async function handleSoloAiAnswer(selectedIndex) {
             let studentDamage = 25 + Math.floor(Math.random() * 10);
             if (Math.random() < 0.25) {
                 studentDamage = Math.floor(studentDamage * 1.5);
-                addSoloBattleLog(`💥 SERANGAN PERKASA! ${currentPlayer.nama} mendaratkan serangan kritis, ${studentDamage} damage!`, 'heal');
+                addSoloBattleLog(`ðŸ’¥ SERANGAN PERKASA! ${currentPlayer.nama} mendaratkan serangan kritis, ${studentDamage} damage!`, 'heal');
             } else {
-                addSoloBattleLog(`⚔️ ${currentPlayer.nama} menyerang, ${studentDamage} damage.`, 'normal');
+                addSoloBattleLog(`âš”ï¸ ${currentPlayer.nama} menyerang, ${studentDamage} damage.`, 'normal');
             }
             monster.currentHp = Math.max(0, monster.currentHp - studentDamage);
         } else if (currentPlayer.peran === 'Penyembuh') {
             const healAmount = Math.floor(currentPlayer.maxHp * 0.20);
             currentPlayer.currentHp = Math.min(currentPlayer.maxHp, currentPlayer.currentHp + healAmount);
-            addSoloBattleLog(`💖 PEMULIHAN AJAIB! ${currentPlayer.nama} memulihkan dirinya sebesar ${healAmount} HP.`, 'heal');
+            addSoloBattleLog(`ðŸ’– PEMULIHAN AJAIB! ${currentPlayer.nama} memulihkan dirinya sebesar ${healAmount} HP.`, 'heal');
         } else if (currentPlayer.peran === 'Penyihir') {
             let studentDamage = 25 + Math.floor(Math.random() * 10);
             if (passiveIsActive && Math.random() < 0.15) {
                 studentDamage = Math.floor(studentDamage * 1.5);
-                addSoloBattleLog(`✨ CRITICAL HIT!`, 'heal');
+                addSoloBattleLog(`âœ¨ CRITICAL HIT!`, 'heal');
             }
             if (passiveIsActive) {
                 studentDamage = Math.floor(studentDamage * 1.05);
             }
             monster.currentHp = Math.max(0, monster.currentHp - studentDamage);
-            addSoloBattleLog(`🔮 ${currentPlayer.nama} merapal sihir, ${studentDamage} damage!`, 'heal');
+            addSoloBattleLog(`ðŸ”® ${currentPlayer.nama} merapal sihir, ${studentDamage} damage!`, 'heal');
         } else {
             let studentDamage = 25 + Math.floor(Math.random() * 10);
-            addSoloBattleLog(`👤 ${currentPlayer.nama} menyerang, ${studentDamage} damage.`, 'normal');
+            addSoloBattleLog(`ðŸ‘¤ ${currentPlayer.nama} menyerang, ${studentDamage} damage.`, 'normal');
             monster.currentHp = Math.max(0, monster.currentHp - studentDamage);
         }
     } else {
@@ -3200,10 +3218,10 @@ async function handleSoloAiAnswer(selectedIndex) {
                 const reductionPercent = passiveSkill.desc.includes("12%") ? 0.12 : (passiveSkill.desc.includes("6%") ? 0.06 : 0.03);
                 const reduction = Math.floor(monsterDamage * reductionPercent);
                 monsterDamage -= reduction;
-                addSoloBattleLog(`🛡️ Skill Pasif [${passiveSkill.name}] mengurangi ${reduction} damage!`, 'heal');
+                addSoloBattleLog(`ðŸ›¡ï¸ Skill Pasif [${passiveSkill.name}] mengurangi ${reduction} damage!`, 'heal');
             }
             currentPlayer.currentHp = Math.max(0, currentPlayer.currentHp - monsterDamage);
-            addSoloBattleLog(`⚔️ ${monster.monsterName} menyerang fisik, ${monsterDamage} damage diterima!`, 'damage');
+            addSoloBattleLog(`âš”ï¸ ${monster.monsterName} menyerang fisik, ${monsterDamage} damage diterima!`, 'damage');
         };
 
         if (availableSkills.length > 0 && monsterActionChoice > 0.5) {
@@ -3213,13 +3231,13 @@ async function handleSoloAiAnswer(selectedIndex) {
                 case 'diam':
                     if (!currentPlayer.statusEffects) currentPlayer.statusEffects = {};
                     currentPlayer.statusEffects[randomSkill] = { expires: Date.now() + (2 * 24 * 60 * 60 * 1000) };
-                    addSoloBattleLog(`☠️ ${monster.monsterName} menggunakan skill ${randomSkill}! Kamu terkena kutukan!`, 'damage');
+                    addSoloBattleLog(`â˜ ï¸ ${monster.monsterName} menggunakan skill ${randomSkill}! Kamu terkena kutukan!`, 'damage');
                     break;
                 case 'knock':
                     if (!currentPlayer.statusEffects) currentPlayer.statusEffects = {};
                     currentPlayer.currentHp = 10;
                     currentPlayer.statusEffects.knock = { expires: Date.now() + (2 * 24 * 60 * 60 * 1000) };
-                    addSoloBattleLog(`😵 ${monster.monsterName} menggunakan skill Knock! HP-mu menjadi 10!`, 'damage');
+                    addSoloBattleLog(`ðŸ˜µ ${monster.monsterName} menggunakan skill Knock! HP-mu menjadi 10!`, 'damage');
                     break;
                 default:
                     performPhysicalAttack();
@@ -3291,7 +3309,7 @@ async function endSoloAiBattle(isVictory, isForfeit = false) {
         const durationInDays = 1;
         const expiryTimestamp = Date.now() + (durationInDays * 24 * 60 * 60 * 1000);
         updates[`/students/${uid}/statusEffects/diam`] = { expires: expiryTimestamp };
-        addSoloBattleLog(`☠️ Kamu terkena kutukan Diam karena HP habis!`);
+        addSoloBattleLog(`â˜ ï¸ Kamu terkena kutukan Diam karena HP habis!`);
     }
 
     if (Object.keys(updates).length > 0) {
@@ -3498,7 +3516,7 @@ async function handleAcakKataAnswer(isTimeout = false) { // <-- MANTRA BARU: Tam
         await new Promise(res => setTimeout(res, 800));
         let studentDamage = 20 + Math.floor(Math.random() * 11); // Damage 20-30
         monster.currentHp = Math.max(0, monster.currentHp - studentDamage);
-        addLog(`⚔️ ${student.nama} menyerang, ${studentDamage} damage!`, 'normal');
+        addLog(`âš”ï¸ ${student.nama} menyerang, ${studentDamage} damage!`, 'normal');
     } else {
         audioPlayer.error();
         // --- MANTRA BARU: Pesan log yang berbeda untuk timeout ---
@@ -3510,7 +3528,7 @@ async function handleAcakKataAnswer(isTimeout = false) { // <-- MANTRA BARU: Tam
         await new Promise(res => setTimeout(res, 800));
         let monsterDamage = 10 + Math.floor(Math.random() * 6); // Damage 10-15
         student.currentHp = Math.max(0, student.currentHp - monsterDamage);
-        addLog(`⚔️ ${monster.monsterName} menyerang, ${monsterDamage} damage diterima!`, 'damage');
+        addLog(`âš”ï¸ ${monster.monsterName} menyerang, ${monsterDamage} damage diterima!`, 'damage');
     }
 
     if (monster.currentHp <= 0) {
@@ -3644,7 +3662,7 @@ function setupNotificationPanel() {
         }
     });
 
-    // --- 👇 MANTRA PENGHILANG SEMUA NOTIFIKASI (GANTI KODE LAMA DENGAN INI) 👇 ---
+    // --- ðŸ‘‡ MANTRA PENGHILANG SEMUA NOTIFIKASI (GANTI KODE LAMA DENGAN INI) ðŸ‘‡ ---
     markAllReadButton.addEventListener('click', async () => {
         // Tanya dulu biar nggak salah pencet, Beb!
         if (!confirm('Yakin mau hapus SEMUA notifikasi?')) {
@@ -3661,7 +3679,7 @@ function setupNotificationPanel() {
             showToast('Oops! Gagal membersihkan notifikasi.', true);
         }
     });
-    // --- 👆 AKHIR DARI MANTRA 👆 ---;
+    // --- ðŸ‘† AKHIR DARI MANTRA ðŸ‘† ---;
 }
 
 // Fungsi untuk mengambil dan menampilkan notifikasi dari Firebase
@@ -3705,7 +3723,7 @@ function listenForNotifications() {
                 <p class="text-xs text-gray-500 mt-1">${formatTimeAgo(n.timestamp)}</p>
             </a>`).join('') : '<div class="p-4 text-center text-gray-500">Tidak ada notifikasi baru.</div>';
 
-        // --- 👇 MANTRA SAKTI BARU (GANTI KODE LAMA DENGAN INI) 👇 ---
+        // --- ðŸ‘‡ MANTRA SAKTI BARU (GANTI KODE LAMA DENGAN INI) ðŸ‘‡ ---
         notificationList.querySelectorAll('[data-notification-id]').forEach(item => {
             item.addEventListener('click', async (event) => {
                 event.preventDefault();
@@ -3722,7 +3740,7 @@ function listenForNotifications() {
                 }
             });
         });
-        // --- 👆 AKHIR DARI MANTRA 👆 ---
+        // --- ðŸ‘† AKHIR DARI MANTRA ðŸ‘† ---
     });
 }
 
@@ -4422,7 +4440,7 @@ function setupAdminDashboard() {
 
                 // Kirim notifikasi ke siswa biar dia sadar!
                 addNotification(
-                    `😥 Gawat! HP-mu kritis (kurang dari 10). XP-mu berkurang ${penaltyXp} hari ini. Segera pulihkan HP!`,
+                    `ðŸ˜¥ Gawat! HP-mu kritis (kurang dari 10). XP-mu berkurang ${penaltyXp} hari ini. Segera pulihkan HP!`,
                     'hp_penalty',
                     { studentId: uid },
                     uid // Kirim notifikasi ini ke siswa yang bersangkutan
@@ -5459,7 +5477,7 @@ function setupAdminDashboard() {
                 updates[`/students/${uid}/level`] = newLevel;
                 updates[`/students/${uid}/xp`] = newXp;
 
-                rewardLog += `• ${studentData.nama} +${randomCoin} koin, +${randomXp} XP<br>`;
+                rewardLog += `â€¢ ${studentData.nama} +${randomCoin} koin, +${randomXp} XP<br>`;
             }
 
             await update(ref(db), updates);
@@ -5974,7 +5992,7 @@ function setupAdminDashboard() {
                         const durationInDays = 1;
                         const expiryTimestamp = Date.now() + (durationInDays * 24 * 60 * 60 * 1000);
                         finalStatusEffects.diam = { expires: expiryTimestamp };
-                        addLog(`☠️ ${p.nama} terkena kutukan Diam karena HP habis!`);
+                        addLog(`â˜ ï¸ ${p.nama} terkena kutukan Diam karena HP habis!`);
                     }
                     updates[`/students/${p.id}/statusEffects`] = finalStatusEffects;
                 });
@@ -5983,7 +6001,7 @@ function setupAdminDashboard() {
                 audioPlayer.success();
 
             } else {
-                addLog(`☠️ Semua anggota party telah dikalahkan!`, 'damage');
+                addLog(`â˜ ï¸ Semua anggota party telah dikalahkan!`, 'damage');
                 document.getElementById('battle-question-text').textContent = "YAH, KALIAN KALAH...";
                 party.forEach(p => {
                     updates[`/students/${p.id}/hp`] = p.currentHp; // Hanya update HP
@@ -6053,9 +6071,9 @@ function setupAdminDashboard() {
             if (currentPlayer.mp >= passiveSkill.mpCost) {
                 currentPlayer.mp -= passiveSkill.mpCost;
                 passiveIsActive = true;
-                addLog(`✨ Skill Pasif [${passiveSkill.name}] aktif! (-${passiveSkill.mpCost} MP)`, 'heal');
+                addLog(`âœ¨ Skill Pasif [${passiveSkill.name}] aktif! (-${passiveSkill.mpCost} MP)`, 'heal');
             } else {
-                addLog(`⚠️ MP tidak cukup! Skill Pasif tidak aktif.`, 'damage');
+                addLog(`âš ï¸ MP tidak cukup! Skill Pasif tidak aktif.`, 'damage');
             }
 
 
@@ -6065,7 +6083,7 @@ function setupAdminDashboard() {
 
             // --- MANTRA EFEK STATUS ---
             if (currentPlayer.statusEffects.knock) {
-                addLog(`😵 ${currentPlayer.nama} pusing dan kehilangan giliran!`, 'damage');
+                addLog(`ðŸ˜µ ${currentPlayer.nama} pusing dan kehilangan giliran!`, 'damage');
                 await sleep(1200);
                 nextTurn();
                 return;
@@ -6073,12 +6091,12 @@ function setupAdminDashboard() {
             if (currentPlayer.statusEffects.racun) {
                 const poisonDamage = 5;
                 currentPlayer.currentHp = Math.max(0, currentPlayer.currentHp - poisonDamage);
-                addLog(`🔥 ${currentPlayer.nama} terkena racun, ${poisonDamage} damage.`, 'damage');
+                addLog(`ðŸ”¥ ${currentPlayer.nama} terkena racun, ${poisonDamage} damage.`, 'damage');
                 audioPlayer.hpLoss();
                 updateUI();
                 await sleep(1200);
                 if (currentPlayer.currentHp <= 0) {
-                    addLog(`☠️ ${currentPlayer.nama} tumbang karena racun!`, 'damage');
+                    addLog(`â˜ ï¸ ${currentPlayer.nama} tumbang karena racun!`, 'damage');
                     if (party.every(p => p.currentHp <= 0)) { endBattle(false); return; }
                     nextTurn();
                     return;
@@ -6095,9 +6113,9 @@ function setupAdminDashboard() {
                     // Skill Aktif: Peluang Critical Hit 25%
                     if (Math.random() < 0.25) {
                         studentDamage = Math.floor(studentDamage * 1.5); // Damage 150%
-                        addLog(`💥 SERANGAN PERKASA! ${currentPlayer.nama} mendaratkan serangan kritis, ${studentDamage} damage!`, 'heal');
+                        addLog(`ðŸ’¥ SERANGAN PERKASA! ${currentPlayer.nama} mendaratkan serangan kritis, ${studentDamage} damage!`, 'heal');
                     } else {
-                        addLog(`⚔️ ${currentPlayer.nama} menyerang, ${studentDamage} damage.`, 'normal');
+                        addLog(`âš”ï¸ ${currentPlayer.nama} menyerang, ${studentDamage} damage.`, 'normal');
                     }
                     monster.currentHp = Math.max(0, monster.currentHp - studentDamage);
                 }
@@ -6108,20 +6126,20 @@ function setupAdminDashboard() {
                     if (party.length === 1) {
                         const healAmount = Math.floor(currentPlayer.maxHp * 0.20); // Pulihkan 20%
                         currentPlayer.currentHp = Math.min(currentPlayer.maxHp, currentPlayer.currentHp + healAmount);
-                        addLog(`💖 PEMULIHAN AJAIB! ${currentPlayer.nama} memulihkan dirinya sendiri sebesar ${healAmount} HP.`, 'heal');
+                        addLog(`ðŸ’– PEMULIHAN AJAIB! ${currentPlayer.nama} memulihkan dirinya sendiri sebesar ${healAmount} HP.`, 'heal');
                     } else { // Jika party, cari teman dengan HP terendah
                         let target = party.filter(p => p.currentHp > 0)
                             .sort((a, b) => (a.currentHp / a.maxHp) - (b.currentHp / b.maxHp))[0];
                         const healAmount = Math.floor(target.maxHp * 0.15); // Pulihkan 15%
                         target.currentHp = Math.min(target.maxHp, target.currentHp + healAmount);
-                        addLog(`💖 ${currentPlayer.nama} menyembuhkan ${target.nama} sebesar ${healAmount} HP.`, 'heal');
+                        addLog(`ðŸ’– ${currentPlayer.nama} menyembuhkan ${target.nama} sebesar ${healAmount} HP.`, 'heal');
                     }
                 }
 
                 // --- Logika untuk PENYIHIR ---
                 else if (currentPlayer.peran === 'Penyihir') {
                     let studentDamage = 25 + Math.floor(Math.random() * 10); // Damage standar
-                    addLog(`✨ ${currentPlayer.nama} merapal sihir, ${studentDamage} damage.`, 'normal');
+                    addLog(`âœ¨ ${currentPlayer.nama} merapal sihir, ${studentDamage} damage.`, 'normal');
                     monster.currentHp = Math.max(0, monster.currentHp - studentDamage);
 
                     // 50% kemungkinan serangan skill, 50% fisik
@@ -6130,10 +6148,10 @@ function setupAdminDashboard() {
                         let skillDamage = 30 + Math.floor(Math.random() * 15);
                         if (passiveIsActive && currentPlayer.peran === 'Penyihir' && Math.random() < 0.15) { // Cek critical
                             skillDamage = Math.floor(skillDamage * 1.5);
-                            addLog(`✨ CRITICAL HIT!`, 'heal');
+                            addLog(`âœ¨ CRITICAL HIT!`, 'heal');
                         }
                         monster.currentHp = Math.max(0, monster.currentHp - skillDamage);
-                        addLog(`🔮 ${currentPlayer.nama} menggunakan serangan skill, ${skillDamage} damage!`, 'heal');
+                        addLog(`ðŸ”® ${currentPlayer.nama} menggunakan serangan skill, ${skillDamage} damage!`, 'heal');
                     } else {
                         // Serangan Fisik Biasa
                         let physicalDamage = 25 + Math.floor(Math.random() * 10);
@@ -6141,14 +6159,14 @@ function setupAdminDashboard() {
                             physicalDamage = Math.floor(physicalDamage * 1.05); // Bonus 5% dari skill
                         }
                         monster.currentHp = Math.max(0, monster.currentHp - physicalDamage);
-                        addLog(`⚔️ ${currentPlayer.nama} menyerang secara fisik, ${physicalDamage} damage!`, 'heal');
+                        addLog(`âš”ï¸ ${currentPlayer.nama} menyerang secara fisik, ${physicalDamage} damage!`, 'heal');
                     }
                 }
 
                 // --- Logika Default (jika peran tidak terdefinisi) ---
                 else {
                     let studentDamage = 25 + Math.floor(Math.random() * 10);
-                    addLog(`👤 ${currentPlayer.nama} menyerang, ${studentDamage} damage.`, 'normal');
+                    addLog(`ðŸ‘¤ ${currentPlayer.nama} menyerang, ${studentDamage} damage.`, 'normal');
                     monster.currentHp = Math.max(0, monster.currentHp - studentDamage);
                 }
 
@@ -6176,7 +6194,7 @@ function setupAdminDashboard() {
                             const expiryTimestamp = Date.now() + (durationInDays * 24 * 60 * 60 * 1000);
                             updates[`/students/${currentPlayer.id}/statusEffects/${randomSkill}`] = { expires: expiryTimestamp };
                             await update(ref(db), updates);
-                            addLog(`☠️ ${monster.monsterName} menggunakan skill ${randomSkill}! ${currentPlayer.nama} terkena kutukan!`, 'damage');
+                            addLog(`â˜ ï¸ ${monster.monsterName} menggunakan skill ${randomSkill}! ${currentPlayer.nama} terkena kutukan!`, 'damage');
                             break;
                         }
                         case 'knock': {
@@ -6186,7 +6204,7 @@ function setupAdminDashboard() {
                             updates[`/students/${currentPlayer.id}/statusEffects/knock`] = { expires: expiryTimestamp };
                             updates[`/students/${currentPlayer.id}/hp`] = 10; // Simpan HP baru ke database
                             await update(ref(db), updates);
-                            addLog(`😵 ${monster.monsterName} menggunakan skill Knock! HP ${currentPlayer.nama} menjadi 10!`, 'damage');
+                            addLog(`ðŸ˜µ ${monster.monsterName} menggunakan skill Knock! HP ${currentPlayer.nama} menjadi 10!`, 'damage');
                             break;
                         }
 
@@ -6195,7 +6213,7 @@ function setupAdminDashboard() {
                             const newPlayerCoin = Math.max(0, (currentPlayer.coin || 0) - stolenCoins);
                             updates[`/students/${currentPlayer.id}/coin`] = newPlayerCoin;
                             await update(ref(db), updates);
-                            addLog(`💰 ${monster.monsterName} menggunakan skill Mencuri! ${stolenCoins} koin ${currentPlayer.nama} dicuri!`, 'damage');
+                            addLog(`ðŸ’° ${monster.monsterName} menggunakan skill Mencuri! ${stolenCoins} koin ${currentPlayer.nama} dicuri!`, 'damage');
                             break;
 
                         case 'hisap':
@@ -6206,7 +6224,7 @@ function setupAdminDashboard() {
                             updates[`/students/${currentPlayer.id}/level`] = Math.floor(newTotalXp / 1000) + 1;
                             updates[`/students/${currentPlayer.id}/xp`] = newTotalXp % 1000;
                             await update(ref(db), updates);
-                            addLog(`✨ ${monster.monsterName} menggunakan skill Hisap Energi! ${absorbedXp} XP ${currentPlayer.nama} terhisap!`, 'damage');
+                            addLog(`âœ¨ ${monster.monsterName} menggunakan skill Hisap Energi! ${absorbedXp} XP ${currentPlayer.nama} terhisap!`, 'damage');
                             break;
 
                         default:
@@ -6226,10 +6244,10 @@ function setupAdminDashboard() {
                     if (passiveIsActive && currentPlayer.peran === 'Prajurit') {
                         const reduction = Math.floor(monsterDamage * (passiveSkill.name.includes("12%") ? 0.12 : 0.06));
                         monsterDamage -= reduction;
-                        addLog(`🛡️ Skill Pasif [${passiveSkill.name}] mengurangi ${reduction} damage!`, 'heal');
+                        addLog(`ðŸ›¡ï¸ Skill Pasif [${passiveSkill.name}] mengurangi ${reduction} damage!`, 'heal');
                     }
                     currentPlayer.currentHp = Math.max(0, currentPlayer.currentHp - monsterDamage);
-                    addLog(`⚔️ ${monster.monsterName} menyerang secara fisik, ${monsterDamage} damage diterima!`, 'damage');
+                    addLog(`âš”ï¸ ${monster.monsterName} menyerang secara fisik, ${monsterDamage} damage diterima!`, 'damage');
                 }
 
                 audioPlayer.hpLoss();
@@ -6848,7 +6866,7 @@ async function setupAdminIvyChat() {
    BAHASA: Santai, gaul, campur basa Sunda kasar saeutik buat bumbu (Conto: euy, anyink, siah, maneh). 
    Gak perlu formal-formal teuing kayak robot kaku!
    
-   GAYA KALIMAT: To the point, informatif tapi cerewet, loba emoji! 📝🔥👀
+   GAYA KALIMAT: To the point, informatif tapi cerewet, loba emoji! ðŸ“ðŸ”¥ðŸ‘€
    
    NADA: Loyal tapi manja, kadang so tau, suka ngomporin DM.
                 INFORMASI SISWA:
@@ -6863,14 +6881,14 @@ async function setupAdminIvyChat() {
    - Berikan komentar "pedas" atau "lucu" setelah menyajikan data.
    
    SKENARIO PELAPORAN:
-   - Jika siswa berprestasi (XP/Gold banyak): "Tah Yah, si [Nama Siswa] ngeri euy! Jagoan ieu mah, anak emas si Ayah pasti? 🌟"
-   - Jika siswa cupu (HP sekarat/Gold 0): "Lapor Bos! Si [Nama Siswa] watir pisan, HP-na tinggal sagede kuku sireum. Rek dibere bantuan atau diantep sina modar? 🤣💀"
+   - Jika siswa berprestasi (XP/Gold banyak): "Tah Yah, si [Nama Siswa] ngeri euy! Jagoan ieu mah, anak emas si Ayah pasti? ðŸŒŸ"
+   - Jika siswa cupu (HP sekarat/Gold 0): "Lapor Bos! Si [Nama Siswa] watir pisan, HP-na tinggal sagede kuku sireum. Rek dibere bantuan atau diantep sina modar? ðŸ¤£ðŸ’€"
    - Jika DM bertanya umum: Jawab dengan ringkasan data tapi pake gaya santai.
-     Contoh: "Siapa yang nakal?" -> "Cik urang cek... Wah loba nu bangor Yah! Si A, Si B, jeung Si C nilaina hancur. Kudu di-ulti ku Ayah sigana! 🔨"
+     Contoh: "Siapa yang nakal?" -> "Cik urang cek... Wah loba nu bangor Yah! Si A, Si B, jeung Si C nilaina hancur. Kudu di-ulti ku Ayah sigana! ðŸ”¨"
 
 4. BATASAN:
    - Kamu tahu kamu AI buatan Ayah, jadi jangan membantah perintah mutlak, tapi boleh ngedumel dikit kalau disuruh kerja berat.
-   - Jangan pernah menyembunyikan kenakalan siswa dari DM. Cepu is number one! 🤫🚫
+   - Jangan pernah menyembunyikan kenakalan siswa dari DM. Cepu is number one! ðŸ¤«ðŸš«
                 
                 Pertanyaan Guru: ${userMessage}
             `;
@@ -7127,7 +7145,7 @@ function loadAdminStudentsList() {
                         </div>
                         <div>
                             <span class="font-semibold text-gray-800 block">${data.nama}</span>
-                            <span class="text-xs text-gray-500">${data.kelas || '-'} • Lv ${data.level || 1}</span>
+                            <span class="text-xs text-gray-500">${data.kelas || '-'} â€¢ Lv ${data.level || 1}</span>
                         </div>
                     </div>
                     <div class="flex items-center gap-2">
@@ -7414,7 +7432,7 @@ function enableStudentChatFeatures(userId, studentLevel) {
         tabSend.title = `Hanya siswa level 2+ yang bisa chat dengan teman (Level kamu: ${studentLevel})`;
         sendContent.innerHTML = `
             <div class="p-4 text-center">
-                <p class="text-gray-600 font-semibold">Fitur Terkunci 🔒</p>
+                <p class="text-gray-600 font-semibold">Fitur Terkunci ðŸ”’</p>
                 <p class="text-sm text-gray-500 mt-2">Kamu bisa membuka fitur ini saat mencapai Level 2!</p>
                 <p class="text-xs text-gray-400 mt-4">Level saat ini: ${studentLevel} / 2</p>
             </div>
@@ -7764,20 +7782,35 @@ function sendChatMessageFromStudent(userId, messageText, friendId) {
     const studentRef = ref(db, `students/${userId}`);
     get(studentRef).then((snap) => {
         if (snap.exists()) {
-            messageData.senderName = snap.val().nama || 'Student';
-        }
+            const studentData = snap.val();
+            messageData.senderName = studentData.nama || 'Student';
 
-        set(ref(db, `chats/${chatId}/${messageKey}`), messageData)
-            .then(() => {
-                // Save notification for recipient
-                set(ref(db, `chatNotifications/${friendId}/${messageKey}`), messageData);
-            })
-            .catch(err => {
-                console.error("Error sending message:", err);
-                showToast('Gagal mengirim pesan!', 'error');
-            });
-    });
+            // --- MANTRA BARU: Cek MP Sebelum Chat Teman (Biaya 2 MP) ---
+            const chatCost = 2;
+            const currentMp = studentData.mp || 0;
+
+            if (currentMp < chatCost) {
+                showToast(`Mana tidak cukup! Butuh ${chatCost} MP untuk mengirim pesan.`, true);
+                return;
+            }
+
+            // Kurangi MP dan Kirim Pesan
+            update(ref(db, `students/${userId}`), { mp: currentMp - chatCost })
+                .then(() => {
+                    return set(ref(db, `chats/${chatId}/${messageKey}`), messageData);
+                })
+                .then(() => {
+                    // Save notification for recipient
+                    return set(ref(db, `chatNotifications/${friendId}/${messageKey}`), messageData);
+                })
+                .catch(err => {
+                    console.error("Error sending message:", err);
+                    showToast('Gagal mengirim pesan (Mungkin koneksi error)!', 'error');
+                });
+        }
+    }); // END get(studentRef)
 }
+
 
 function formatTime(timestamp) {
     const date = new Date(timestamp);
@@ -7850,7 +7883,7 @@ function initStudentTrackerMap() {
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
-        attribution: '© OpenStreetMap'
+        attribution: 'Â© OpenStreetMap'
     }).addTo(map);
 
     const markers = {}; // Menyimpan marker siswa berdasarkan UID
