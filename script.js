@@ -4203,7 +4203,7 @@ function setupAdminDashboard() {
             const paginatedStudents = filteredStudents.slice(startIndex, endIndex);
 
             studentTableBody.innerHTML = '';
-            let totalStudents = 0, totalLevel = 0, totalCoins = 0;
+            let totalStudents = 0, totalLevel = 0, totalOnlineStudents = 0;
 
             if (paginatedStudents.length === 0) {
                 studentTableBody.innerHTML = '<tr><td colspan="7" class="text-center p-8 text-gray-400">Tidak ada siswa yang cocok.</td></tr>';
@@ -4286,12 +4286,12 @@ function setupAdminDashboard() {
             filteredStudents.forEach(([_, student]) => {
                 totalStudents++;
                 totalLevel += (student.level || 1);
-                totalCoins += (student.coin || 0);
+                if (student.presence === true) totalOnlineStudents++;
             });
 
             document.getElementById('total-students').textContent = totalStudents;
             document.getElementById('average-level').textContent = totalStudents > 0 ? (totalLevel / totalStudents).toFixed(1) : '0';
-            document.getElementById('total-coins').textContent = totalCoins;
+            document.getElementById('total-online-students').textContent = totalOnlineStudents;
             createLucideIcons();
             renderPaginationControls(filteredStudents.length); // Render kontrol berdasarkan jumlah total item yang terfilter
         };
