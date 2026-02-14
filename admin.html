@@ -944,44 +944,7 @@
             </div>
 
             <div id="shop-page" class="hidden space-y-6">
-                <!-- Bagian Analisis Penjualan -->
-                <div class="bg-white/90 backdrop-blur-sm rounded-lg shadow-md mb-6">
-                    <div class="p-6 border-b">
-                        <h2 class="text-xl font-semibold">Analisis Penjualan</h2>
-                        <p class="text-sm text-gray-500 mt-1">Grafik item yang paling sering dibeli oleh siswa.</p>
-                    </div>
-                    <div class="p-6">
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 text-center">
-                            <div class="bg-gray-100 p-4 rounded-lg">
-                                <p class="text-sm text-gray-600">Total Item Terjual</p>
-                                <p id="total-items-sold" class="text-2xl font-bold">0</p>
-                            </div>
-                            <div class="bg-gray-100 p-4 rounded-lg">
-                                <p class="text-sm text-gray-600">Total Pendapatan</p>
-                                <p id="total-revenue" class="text-2xl font-bold">0 <span
-                                        class="text-base font-normal">Koin</span></p>
-                            </div>
-                            <div class="bg-gray-100 p-4 rounded-lg">
-                                <p class="text-sm text-gray-600">Item Terlaris</p>
-                                <p id="best-selling-item" class="text-lg font-bold">-</p>
-                            </div>
-                        </div>
-                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            <div class="relative">
-                                <h4 class="text-sm font-medium text-gray-700 mb-2">Grafik Penjualan per Item</h4>
-                                <div class="h-80">
-                                    <canvas id="items-sales-chart"></canvas>
-                                </div>
-                            </div>
-                            <div class="relative">
-                                <h4 class="text-sm font-medium text-gray-700 mb-2">Tren Penjualan Harian</h4>
-                                <div class="h-80">
-                                    <canvas id="daily-sales-chart"></canvas>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+
 
                 <!-- Bagian Manajemen Toko -->
                 <div class="bg-white/90 backdrop-blur-sm rounded-lg shadow-md">
@@ -1000,6 +963,77 @@
                         <div class="loading-container col-span-full">
                             <div class="loader"></div>
                             <p class="loading-text">Memuat item toko...</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- Bagian Analisis Penjualan -->
+                <div class="bg-white/90 backdrop-blur-sm rounded-lg shadow-md mb-6">
+                    <div class="p-6 border-b flex justify-between items-center">
+                        <div>
+                            <h2 class="text-xl font-semibold">Analisis Penjualan</h2>
+                            <p class="text-sm text-gray-500 mt-1">Grafik item yang paling sering dibeli oleh siswa.</p>
+                        </div>
+                        <button id="reset-sales-analytics-button"
+                            class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg flex items-center shadow-sm transition-colors text-sm">
+                            <i data-lucide="trash-2" class="w-4 h-4 mr-2"></i>Reset Data
+                        </button>
+                    </div>
+                    <div class="p-6">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 text-center">
+                            <div class="bg-gray-100 p-4 rounded-lg">
+                                <p class="text-sm text-gray-600">Total Item Terjual</p>
+                                <p id="total-items-sold" class="text-2xl font-bold">0</p>
+                            </div>
+                            <div class="bg-gray-100 p-4 rounded-lg">
+                                <p class="text-sm text-gray-600">Total Pendapatan</p>
+                                <p id="total-revenue" class="text-2xl font-bold">0 <span
+                                        class="text-base font-normal">Koin</span></p>
+                            </div>
+                            <div class="bg-gray-100 p-4 rounded-lg">
+                                <p class="text-sm text-gray-600">Item Terlaris</p>
+                                <p id="best-selling-item" class="text-lg font-bold">-</p>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                            <div class="relative">
+                                <h4 class="text-sm font-medium text-gray-700 mb-2">Grafik Penjualan per Item</h4>
+                                <div class="h-80">
+                                    <canvas id="items-sales-chart"></canvas>
+                                </div>
+                            </div>
+                            <div class="relative">
+                                <h4 class="text-sm font-medium text-gray-700 mb-2">Tren Penjualan Harian</h4>
+                                <div class="h-80">
+                                    <canvas id="daily-sales-chart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- TABEL SISWA PENGLARIS (TOP SPENDERS) -->
+                        <div>
+                            <h4 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                                <i data-lucide="crown" class="w-5 h-5 mr-2 text-yellow-500"></i>Siswa Ter-Penglaris (Top
+                                Spenders)
+                            </h4>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-sm text-left text-gray-500">
+                                    <thead class="text-xs text-gray-700 uppercase bg-gray-50 border-b">
+                                        <tr>
+                                            <th scope="col" class="px-6 py-3 w-16 text-center">#</th>
+                                            <th scope="col" class="px-6 py-3">Nama Siswa</th>
+                                            <th scope="col" class="px-6 py-3 text-center">Item Dibeli</th>
+                                            <th scope="col" class="px-6 py-3 text-right">Total Belanja</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="top-spenders-table-body">
+                                        <tr class="bg-white border-b hover:bg-gray-50">
+                                            <td colspan="4" class="px-6 py-4 text-center text-gray-400">
+                                                Belum ada data transaksi.
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </div>
