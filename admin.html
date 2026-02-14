@@ -390,10 +390,12 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://unpkg.com/html5-qrcode/html5-qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
-    <!-- Firebase SDK -->
-    <script type="module" src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js"></script>
-    <script type="module" src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js"></script>
-    <script type="module" src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js"></script>
+    <!-- SheetJS Library for Excel Export -->
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <!-- Firebase SDK (Compat version for global access) -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
@@ -588,10 +590,11 @@
                                 class="flex-1 md:flex-none bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center text-sm md:text-base">
                                 <i data-lucide="map" class="w-4 h-4 mr-2"></i>Peta
                             </button>
-                            <button id="print-student-button"
+                            <button id="export-excel-button"
                                 class="flex-1 md:flex-none bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center text-sm md:text-base">
                                 <i data-lucide="printer" class="w-4 h-4 mr-2"></i>Cetak
                             </button>
+
                             <button id="add-student-button"
                                 class="flex-1 md:flex-none bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center text-sm md:text-base">
                                 <i data-lucide="user-plus" class="w-4 h-4 mr-2"></i>Tambah
@@ -1936,6 +1939,7 @@
 
     <script type="module" src="script.js"></script>
     <script src="print-functionality.js"></script>
+    <script src="excel-export.js"></script>
 </body>
 
 </html>
