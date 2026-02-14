@@ -3,58 +3,11 @@
 // ========================================
 
 /**
- * Opens the print settings modal and populates class checkboxes
+ * Opens the print settings modal
  */
 function openPrintSettingsModal() {
     const modal = document.getElementById('print-settings-modal');
-    const classCheckboxesContainer = document.getElementById('print-class-checkboxes');
-
-    if (!modal || !classCheckboxesContainer) return;
-
-    // Get all unique classes from student table
-    const studentRows = document.querySelectorAll('#student-table-body tr');
-    const uniqueClasses = new Set();
-
-    studentRows.forEach(row => {
-        // Try to find class from data attribute first
-        let kelasCell = row.querySelector('[data-kelas]');
-        let kelas = kelasCell ? kelasCell.getAttribute('data-kelas') : null;
-
-        // If no data attribute, try to extract from the student info cell
-        if (!kelas) {
-            const studentInfoCell = row.querySelector('td:first-child');
-            if (studentInfoCell) {
-                // Look for text that matches class patterns (X RPL, XI RPL, XII RPL, X DPB, XI DPB, XII DPB)
-                const text = studentInfoCell.textContent;
-                const classMatch = text.match(/(X{1,2}I{0,2})\s+(RPL|DPB)/);
-                if (classMatch) {
-                    kelas = classMatch[0];
-                }
-            }
-        }
-
-        if (kelas) {
-            uniqueClasses.add(kelas);
-            // Store class on the row for later filtering
-            row.setAttribute('data-student-kelas', kelas);
-        }
-    });
-
-    // Generate class checkboxes
-    if (uniqueClasses.size > 0) {
-        classCheckboxesContainer.innerHTML = '';
-        Array.from(uniqueClasses).sort().forEach(kelas => {
-            const label = document.createElement('label');
-            label.className = 'flex items-center space-x-2 cursor-pointer';
-            label.innerHTML = `
-                <input type="checkbox" class="print-class-checkbox rounded" value="${kelas}" checked>
-                <span class="text-sm">${kelas}</span>
-            `;
-            classCheckboxesContainer.appendChild(label);
-        });
-    } else {
-        classCheckboxesContainer.innerHTML = '<p class="text-sm text-gray-400 col-span-full">Tidak ada data siswa</p>';
-    }
+    if (!modal) return;
 
     // Show modal with animation
     modal.classList.remove('hidden');
@@ -82,11 +35,16 @@ function closePrintSettingsModal() {
  * Handles the custom print functionality with selected filters
  */
 function handleCustomPrint() {
-    // Get selected classes
-    const classCheckboxes = document.querySelectorAll('.print-class-checkbox:checked');
-    const selectedClasses = Array.from(classCheckboxes).map(cb => cb.value);
+    // Get selected class from the active filter dropdown (not from modal checkboxes)
+    const filterKelasDropdown = document.getElementById('dashboard-filter-kelas');
+    const selectedKelas = filterKelasDropdown ? filterKelasDropdown.value : 'semua';
 
-    // Get selected columns
+    // Convert to array format (empty array means all classes)
+    const selectedClasses = (selectedKelas === 'semua' || !selectedKelas) ? [] : [selectedKelas];
+
+    console.log('Print - Active class filter:', selectedKelas);
+
+    // Get selected columns from modal
     const columnCheckboxes = document.querySelectorAll('.print-column-checkbox:checked');
     const selectedColumns = Array.from(columnCheckboxes).map(cb => cb.value);
 
