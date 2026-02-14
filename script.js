@@ -7062,7 +7062,9 @@ function initializeChatSystem() {
         // Setup UI buttons & listeners berdasarkan role
         if (isAdmin) {
             setupAdminChatUI();
-            listenForAdminChatNotifications(user.uid);
+            // REMOVED: listenForAdminChatNotifications — was conflicting with checkAdminGlobalUnreadStatus
+            // Badge is now controlled ONLY by checkAdminGlobalUnreadStatus()
+            console.log('[CHAT-DEBUG] Admin chat system initialized. Badge controlled by checkAdminGlobalUnreadStatus only.');
         } else {
             setupStudentChatUI(user.uid);
         }
@@ -7087,8 +7089,9 @@ function setupAdminChatUI() {
             chatPanel.classList.remove('hidden');
             chatPanel.classList.add('chat-panel-animation');
 
-            const badge = document.getElementById('admin-chat-badge');
-            if (badge) badge.classList.add('hidden');
+            // Badge is now managed by checkAdminGlobalUnreadStatus()
+            // No manual hide needed — it will update via DB listener after mark-as-read
+            console.log('[CHAT-DEBUG] Chat panel OPENED');
 
             loadAdminStudentsList();
 
@@ -7170,36 +7173,53 @@ function checkAdminGlobalUnreadStatus() {
     const adminId = currentChatState.currentUserId;
     const badge = document.getElementById('admin-chat-badge');
 
-    // We need to scan all chats involving the admin (or all chats generally if admin sees all)
-    // Since chats are stored by canonical ID, we check 'chats' node.
-    // Optimally validation should occur on server-side or via specific index.
-    // For this client-side impl:
+    // Single source of truth for admin chat badge.
+    // Scans all chats for unread student messages.
     const chatsRef = ref(db, 'chats');
 
     onValue(chatsRef, (snap) => {
+        console.log('[CHAT-DEBUG] checkAdminGlobalUnreadStatus triggered');
+
         if (!snap.exists()) {
+            console.log('[CHAT-DEBUG] No chats exist, hiding badge');
             if (badge) badge.classList.add('hidden');
             return;
         }
 
+        const chatPanel = document.getElementById('admin-chat-panel');
+        const isPanelOpen = chatPanel && !chatPanel.classList.contains('hidden');
+
         let hasAnyUnread = false;
         const allChats = snap.val();
+        let debugUnreadChats = [];
 
-        // Iterate all chats
         for (const chatId in allChats) {
+            // Skip the actively viewed chat — those messages are being marked as read
+            if (isPanelOpen && currentChatState.selectedRecipientId && adminId) {
+                const activeChatId = getCanonicalChatId(adminId, currentChatState.selectedRecipientId);
+                if (chatId === activeChatId) {
+                    console.log(`[CHAT-DEBUG] Skipping active chat: ${chatId}`);
+                    continue;
+                }
+            }
+
             const messages = allChats[chatId];
-            // Check messages in this chat
-            const unread = Object.values(messages).some(msg => !msg.isFromAdmin && !msg.read);
+            const unread = Object.values(messages).some(msg =>
+                msg && typeof msg === 'object' && !msg.isFromAdmin && !msg.read
+            );
             if (unread) {
                 hasAnyUnread = true;
-                break; // Found one, show badge
+                debugUnreadChats.push(chatId);
+                // Don't break — collect all for logging
             }
         }
 
         if (badge) {
             if (hasAnyUnread) {
+                console.log(`[CHAT-DEBUG] Badge SHOWN — unread in chats: ${debugUnreadChats.join(', ')}`);
                 badge.classList.remove('hidden');
             } else {
+                console.log('[CHAT-DEBUG] Badge HIDDEN — no unread messages found');
                 badge.classList.add('hidden');
             }
         }
@@ -7381,8 +7401,11 @@ function loadAdminChatHistory(recipientId) {
         // Mark Student Messages as Read when Admin opens chat
         sortedMessages.forEach(([msgId, msg]) => {
             if (!msg.isFromAdmin && !msg.read) {
+                console.log(`[CHAT-DEBUG] Marking as read: ${msgId} in chat: ${chatId}`);
                 // Update status 'read' di database utama
-                update(ref(db, `chats/${chatId}/${msgId}`), { read: true });
+                update(ref(db, `chats/${chatId}/${msgId}`), { read: true })
+                    .then(() => console.log(`[CHAT-DEBUG] ✅ read=true set for: ${msgId}`))
+                    .catch(err => console.warn(`[CHAT-DEBUG] ❌ Failed to set read for: ${msgId}`, err));
 
                 // Hapus dari chatNotifications agar badge hilang
                 remove(ref(db, `chatNotifications/${currentChatState.currentUserId}/${msgId}`));
@@ -7427,18 +7450,14 @@ function sendChatMessageFromAdmin(messageText, recipientId) {
         });
 }
 
+// DEPRECATED: listenForAdminChatNotifications
+// This function was removed because it conflicted with checkAdminGlobalUnreadStatus().
+// It was showing the badge whenever chatNotifications/{adminId} had ANY data,
+// without checking if those notifications were actually unread.
+// Badge is now controlled exclusively by checkAdminGlobalUnreadStatus().
 function listenForAdminChatNotifications(userId) {
-    const badge = document.getElementById('admin-chat-badge');
-    if (!badge) return;
-
-    const chatNotificationsRef = ref(db, `chatNotifications/${userId}`);
-    onValue(chatNotificationsRef, (snap) => {
-        const chatPanel = document.getElementById('admin-chat-panel');
-        if (snap.exists() && chatPanel && chatPanel.classList.contains('hidden')) {
-            badge.classList.remove('hidden');
-            audioPlayer.notification();
-        }
-    });
+    console.log('[CHAT-DEBUG] listenForAdminChatNotifications is DEPRECATED and no longer controls the badge.');
+    // No-op: badge logic moved to checkAdminGlobalUnreadStatus()
 }
 
 // ========== STUDENT CHAT FUNCTIONS ==========
