@@ -3776,9 +3776,10 @@ function showFireworks() {
     }, 3000);
 }
 // =======================================================
-//          ANALISIS PENJUALAN (GRAFIK)
+//          ANALISIS PENJUALAN (GRAFIK & DATA)
 // =======================================================
-let salesChartInstance = null; // Untuk memegang instance chart agar bisa dihancurkan
+let salesChartInstance = null; // Untuk memegang instance chart item
+let dailySalesChartInstance = null; // Untuk memegang instance chart harian
 
 async function setupSalesAnalytics() {
     const transactionsRef = ref(db, 'transactions');
@@ -3787,159 +3788,258 @@ async function setupSalesAnalytics() {
     const totalItemsSoldEl = document.getElementById('total-items-sold');
     const totalRevenueEl = document.getElementById('total-revenue');
     const bestSellingItemEl = document.getElementById('best-selling-item');
+    const topSpendersTableBody = document.getElementById('top-spenders-table-body');
+    const resetButton = document.getElementById('reset-sales-analytics-button');
+
     const itemsSalesCtx = document.getElementById('items-sales-chart')?.getContext('2d');
     const dailySalesCtx = document.getElementById('daily-sales-chart')?.getContext('2d');
 
     // Pastikan semua elemen ada sebelum melanjutkan
-    if (!totalItemsSoldEl || !totalRevenueEl || !bestSellingItemEl || !itemsSalesCtx || !dailySalesCtx) {
+    if (!totalItemsSoldEl || !totalRevenueEl || !bestSellingItemEl || !itemsSalesCtx || !dailySalesCtx || !topSpendersTableBody) {
         console.error("Elemen untuk analisis penjualan tidak ditemukan!");
         return;
     }
 
-    // Handle jika tidak ada transaksi
-    if (!snapshot.exists()) {
-        const noDataMessage = "Belum ada data penjualan untuk ditampilkan.";
+    // Fungsi untuk mereset tampilan jika tidak ada data
+    const resetView = () => {
+        const noDataMessage = "Belum ada data penjualan.";
+
+        // Bersihkan Canvas
         [itemsSalesCtx, dailySalesCtx].forEach(ctx => {
             ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-            ctx.font = "16px sans-serif";
-            ctx.fillStyle = "#888";
+            ctx.font = "14px Inter, sans-serif";
+            ctx.fillStyle = "#9ca3af";
             ctx.textAlign = "center";
             ctx.fillText(noDataMessage, ctx.canvas.width / 2, ctx.canvas.height / 2);
         });
 
+        if (salesChartInstance) {
+            salesChartInstance.destroy();
+            salesChartInstance = null;
+        }
+        if (dailySalesChartInstance) {
+            dailySalesChartInstance.destroy();
+            dailySalesChartInstance = null;
+        }
+
         totalItemsSoldEl.textContent = '0';
         totalRevenueEl.innerHTML = '0 <span class="text-base font-normal">Koin</span>';
         bestSellingItemEl.textContent = '-';
-        if (salesChartInstance) salesChartInstance.destroy();
+        topSpendersTableBody.innerHTML = `
+            <tr class="bg-white border-b">
+                <td colspan="4" class="px-6 py-4 text-center text-gray-400">
+                    Belum ada data transaksi.
+                </td>
+            </tr>`;
+    };
+
+    // Event Listener untuk Tombol Reset (Pastikan hanya satu listener)
+    if (resetButton) {
+        // Clone node untuk menghapus listener lama dengan bersih
+        const newResetButton = resetButton.cloneNode(true);
+        resetButton.parentNode.replaceChild(newResetButton, resetButton);
+
+        newResetButton.addEventListener('click', async () => {
+            if (confirm("⚠️ PERINGATAN: Apakah Anda yakin ingin menghapus semua riwayat transaksi?\n\nData penjualan akan di-reset menjadi 0. Data koin dan inventaris siswa TIDAK akan terhapus.")) {
+                if (confirm("Yakin sekali lagi? Data yang dihapus tidak bisa dikembalikan.")) {
+                    try {
+                        await remove(ref(db, 'transactions'));
+                        showToast("Data penjualan berhasil di-reset!", false); // false = success (hijau)
+                        setupSalesAnalytics(); // Refresh halaman
+                    } catch (error) {
+                        console.error("Gagal reset data:", error);
+                        showToast("Gagal mereset data: " + error.message, true);
+                    }
+                }
+            }
+        });
+    }
+
+    // Handle jika tidak ada transaksi
+    if (!snapshot.exists()) {
+        resetView();
         return;
     }
 
     const transactions = snapshot.val();
     const salesCount = {};
     const dailySales = {};
+    const studentSpending = {}; // { studentId: { name, itemsBought, totalSpent } }
+
     let totalRevenue = 0;
     let totalItemsSold = 0;
 
-    // Proses transaksi untuk kedua grafik
+    // Proses transaksi
     for (const key in transactions) {
         const tx = transactions[key];
-        // Data untuk grafik item
-        salesCount[tx.itemName] = (salesCount[tx.itemName] || 0) + 1;
+
+        // 1. Data Global
         totalRevenue += tx.price;
         totalItemsSold++;
 
-        // Data untuk grafik tren harian
-        const date = new Date(tx.timestamp || 0).toLocaleDateString('id-ID');
-        if (!dailySales[date]) {
-            dailySales[date] = {
-                count: 0,
+        // 2. Data Grafik Item
+        salesCount[tx.itemName] = (salesCount[tx.itemName] || 0) + 1;
+
+        // 3. Data Grafik Harian
+        const date = new Date(tx.timestamp || 0).toLocaleDateString('id-ID', { day: 'numeric', month: 'numeric' }); // Format: 14/2
+        // Gunakan timestamp asli untuk sorting nanti
+        const dateKey = new Date(tx.timestamp || 0).setHours(0, 0, 0, 0);
+
+        if (!dailySales[dateKey]) {
+            dailySales[dateKey] = {
+                label: date,
                 revenue: 0
             };
         }
-        dailySales[date].count++;
-        dailySales[date].revenue += tx.price;
+        dailySales[dateKey].revenue += tx.price;
+
+        // 4. Data Top Spenders (Siswa)
+        if (tx.studentId) {
+            if (!studentSpending[tx.studentId]) {
+                studentSpending[tx.studentId] = {
+                    name: tx.studentName || 'Siswa Tanpa Nama',
+                    itemsBought: 0,
+                    totalSpent: 0
+                };
+            }
+            studentSpending[tx.studentId].itemsBought++;
+            studentSpending[tx.studentId].totalSpent += tx.price;
+        }
     }
 
-    // Persiapkan data untuk grafik item terlaris
+    // --- RENDER KARTU UTAMA ---
+    totalItemsSoldEl.textContent = totalItemsSold;
+    totalRevenueEl.innerHTML = `${totalRevenue} <span class="text-base font-normal">Koin</span>`;
+
+    // --- RENDER GRAFIK ITEM TERLARIS ---
     const sortedItems = Object.entries(salesCount).sort(([, a], [, b]) => b - a);
     const itemLabels = sortedItems.map(([name]) => name);
     const itemData = sortedItems.map(([, count]) => count);
-    const bestSellingItem = sortedItems.length > 0 ? sortedItems[0][0] : '-';
+    bestSellingItemEl.textContent = sortedItems.length > 0 ? sortedItems[0][0] : '-';
 
-    // Persiapkan data untuk grafik tren harian
-    const sortedDates = Object.entries(dailySales)
-        .sort(([a], [b]) => new Date(a) - new Date(b))
-        .slice(-7); // Ambil 7 hari terakhir saja
+    if (salesChartInstance) salesChartInstance.destroy();
 
-    const dailyLabels = sortedDates.map(([date]) => {
-        const [day, month] = date.split('/');
-        return `${day}/${month}`;
-    });
-    const dailyData = sortedDates.map(([, data]) => data.revenue);
-
-    // Update kartu statistik
-    totalItemsSoldEl.textContent = totalItemsSold;
-    totalRevenueEl.innerHTML = `${totalRevenue} <span class="text-base font-normal">Koin</span>`;
-    bestSellingItemEl.textContent = bestSellingItem;
-
-    // Hancurkan chart lama jika ada
-    if (salesChartInstance) {
-        salesChartInstance.destroy();
-    }
-
-    // Buat chart item terlaris
-    new Chart(itemsSalesCtx, {
+    salesChartInstance = new Chart(itemsSalesCtx, {
         type: 'bar',
         data: {
             labels: itemLabels,
             datasets: [{
                 label: 'Jumlah Terjual',
                 data: itemData,
-                backgroundColor: 'rgba(59, 130, 246, 0.5)',
+                backgroundColor: 'rgba(59, 130, 246, 0.6)',
                 borderColor: 'rgba(59, 130, 246, 1)',
-                borderWidth: 1
+                borderWidth: 1,
+                borderRadius: 4
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        stepSize: 1
-                    }
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: 'rgba(17, 24, 39, 0.9)',
+                    padding: 10,
+                    cornerRadius: 8
                 }
             },
-            plugins: {
-                legend: {
-                    display: false
-                },
-                title: {
-                    display: true,
-                    text: 'Item Terlaris'
-                }
+            scales: {
+                y: { beginAtZero: true, grid: { color: '#f3f4f6' } },
+                x: { grid: { display: false } }
             }
         }
     });
 
-    // Buat chart tren harian
-    new Chart(dailySalesCtx, {
+    // --- RENDER GRAFIK TREN HARIAN ---
+    const sortedDailyKeys = Object.keys(dailySales).sort();
+    // Ambil 7 hari terakhir
+    const last7DaysKeys = sortedDailyKeys.slice(-7);
+
+    const dailyLabels = last7DaysKeys.map(key => dailySales[key].label);
+    const dailyData = last7DaysKeys.map(key => dailySales[key].revenue);
+
+    if (dailySalesChartInstance) dailySalesChartInstance.destroy();
+
+    dailySalesChartInstance = new Chart(dailySalesCtx, {
         type: 'line',
         data: {
             labels: dailyLabels,
             datasets: [{
-                label: 'Pendapatan (Koin)',
+                label: 'Pendapatan',
                 data: dailyData,
-                borderColor: 'rgba(34, 197, 94, 1)',
-                backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                borderColor: 'rgba(16, 185, 129, 1)',
+                backgroundColor: 'rgba(16, 185, 129, 0.1)', // Gradient fade would be nice but simple is safer
                 borderWidth: 2,
+                pointBackgroundColor: 'white',
+                pointBorderColor: 'rgba(16, 185, 129, 1)',
+                pointRadius: 4,
                 fill: true,
-                tension: 0.4
+                tension: 0.3
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function (context) {
+                            return `Rp ${context.parsed.y} Koin`;
+                        }
+                    },
+                    backgroundColor: 'rgba(17, 24, 39, 0.9)',
+                    padding: 10,
+                }
+            },
             scales: {
                 y: {
                     beginAtZero: true,
-                    ticks: {
-                        callback: value => `${value} Koin`
-                    }
-                }
-            },
-            plugins: {
-                legend: {
-                    display: false
+                    grid: { color: '#f3f4f6' },
+                    ticks: { callback: value => `${value}` }
                 },
-                title: {
-                    display: true,
-                    text: 'Tren Pendapatan 7 Hari Terakhir'
-                }
+                x: { grid: { display: false } }
             }
         }
     });
+
+    // --- RENDER TOP SPENDERS (PENGLARIS) ---
+    const sortedSpenders = Object.values(studentSpending)
+        .sort((a, b) => b.totalSpent - a.totalSpent)
+        .slice(0, 10); // Ambil Top 10
+
+    topSpendersTableBody.innerHTML = '';
+
+    if (sortedSpenders.length === 0) {
+        topSpendersTableBody.innerHTML = `
+            <tr class="bg-white border-b">
+                <td colspan="4" class="px-6 py-4 text-center text-gray-400">Belum ada data.</td>
+            </tr>`;
+    } else {
+        sortedSpenders.forEach((student, index) => {
+            let rankIcon = '';
+            if (index === 0) rankIcon = '🥇';
+            else if (index === 1) rankIcon = '🥈';
+            else if (index === 2) rankIcon = '🥉';
+            else rankIcon = `#${index + 1}`;
+
+            const row = document.createElement('tr');
+            row.className = 'bg-white border-b hover:bg-gray-50 transition-colors';
+            row.innerHTML = `
+                <td class="px-6 py-4 text-center font-bold text-gray-700">${rankIcon}</td>
+                <td class="px-6 py-4 font-medium text-gray-900">${student.name}</td>
+                <td class="px-6 py-4 text-center">
+                    <span class="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+                        ${student.itemsBought} Item
+                    </span>
+                </td>
+                <td class="px-6 py-4 text-right font-bold text-green-600">
+                    ${student.totalSpent} <span class="text-xs font-normal text-gray-500">Koin</span>
+                </td>
+            `;
+            topSpendersTableBody.appendChild(row);
+        });
+    }
 }
 
 // =======================================================
