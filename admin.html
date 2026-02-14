@@ -227,51 +227,157 @@
         }
 
         @media print {
+
+            /* Page setup */
+            @page {
+                size: A4 landscape;
+                margin: 1cm;
+            }
+
+            /* Reset body */
+            body {
+                margin: 0;
+                padding: 0;
+                background: white;
+                color: black;
+            }
+
+            /* Hide everything first */
             body * {
                 visibility: hidden;
             }
 
+            /* Show only what we need */
+            #print-header,
+            #print-header *,
             #admin-dashboard-main,
             #admin-dashboard-main * {
                 visibility: visible;
             }
 
-            #admin-dashboard-main {
-                position: absolute;
-                left: 0;
-                top: 0;
+            /* Print header - static at top (not fixed to avoid overlap) */
+            #print-header {
+                display: block !important;
+                position: static !important;
                 width: 100%;
+                background: white;
+                padding: 15px 0 10px 0;
+                margin-bottom: 10px;
+                border-bottom: 2px solid #333;
+                page-break-after: avoid;
             }
 
-            /* Sembunyikan elemen yang tidak perlu saat mencetak */
+            /* Main content - no absolute positioning */
+            #admin-dashboard-main {
+                position: static !important;
+                width: 100%;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+
+            /* Hide unwanted elements */
             header,
             nav,
+            button,
+            .no-print,
             #print-student-button,
             #add-student-button,
+            #toggle-map-button,
             #dashboard-filter-kelas,
             #dashboard-filter-guild,
             #pagination-controls,
+            #student-map-wrapper,
             .loading-container,
-            button,
-            .no-print {
+            #total-students,
+            #average-level,
+            #total-online-students,
+            #admin-dashboard-main>div:first-child,
+            .bg-white\/90>div:first-child {
                 display: none !important;
+                visibility: hidden !important;
             }
 
-            /* Pastikan tabel terlihat jelas */
+            /* Hide rows/columns based on selection */
+            .print-hide-row {
+                display: none !important;
+                visibility: hidden !important;
+            }
+
+            .print-hide-column {
+                display: none !important;
+                visibility: hidden !important;
+            }
+
+            /* Table styling - responsive and clean */
             table {
-                width: 100%;
-                border-collapse: collapse;
+                width: 100% !important;
+                border-collapse: collapse !important;
+                table-layout: auto !important;
+                font-size: 9pt !important;
+                margin: 0 !important;
+            }
+
+            thead {
+                display: table-header-group !important;
+            }
+
+            tbody {
+                display: table-row-group !important;
+            }
+
+            tr {
+                page-break-inside: avoid !important;
+                page-break-after: auto !important;
             }
 
             th,
             td {
-                border: 1px solid #000;
-                padding: 8px;
-                color: black;
+                border: 1px solid #333 !important;
+                padding: 6px 8px !important;
+                text-align: left !important;
+                vertical-align: top !important;
+                word-wrap: break-word !important;
+                overflow-wrap: break-word !important;
+                max-width: none !important;
             }
 
-            .print-only {
+            th {
+                background-color: #e5e7eb !important;
+                font-weight: bold !important;
+                font-size: 9pt !important;
+                color: #000 !important;
+            }
+
+            td {
+                font-size: 8pt !important;
+                color: #000 !important;
+                line-height: 1.3 !important;
+            }
+
+            /* Ensure visible columns are shown properly */
+            th:not(.print-hide-column),
+            td:not(.print-hide-column) {
                 display: table-cell !important;
+                visibility: visible !important;
+            }
+
+            /* Specific column widths for better layout */
+            th:first-child,
+            td:first-child {
+                min-width: 120px !important;
+                max-width: 200px !important;
+            }
+
+            /* Remove any flex/grid layouts from table container */
+            .overflow-x-auto {
+                overflow: visible !important;
+            }
+
+            /* Ensure card container doesn't interfere */
+            .bg-white\/90 {
+                background: transparent !important;
+                box-shadow: none !important;
+                border: none !important;
             }
         }
     </style>
@@ -297,6 +403,23 @@
 </head>
 
 <body class="min-h-screen admin-bg">
+
+    <!-- Print Header (visible only during print) -->
+    <div id="print-header" class="print-only" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <img src="asset/gambar/logomymadival.png" alt="Logo" style="height: 60px; width: auto;">
+                <div>
+                    <h1 style="margin: 0; font-size: 20pt; font-weight: bold; color: #1f2937;">DREAMY</h1>
+                    <p style="margin: 5px 0 0 0; font-size: 12pt; color: #4b5563;">Laporan Data Siswa</p>
+                </div>
+            </div>
+            <div style="text-align: right;">
+                <p style="margin: 0; font-size: 10pt; color: #6b7280;" id="print-date-display">Tanggal Cetak: -</p>
+            </div>
+        </div>
+        <hr style="border: 0; border-top: 1px solid #d1d5db; margin-bottom: 15px;">
+    </div>
 
     <div id="admin-dashboard-page" class="min-h-screen">
         <header class="bg-white/90 backdrop-blur-sm/80 backdrop-blur-sm shadow-md sticky top-0 z-30">
@@ -511,7 +634,7 @@
                                     <th scope="col" class="px-6 py-3 text-center no-print">XP</th>
                                     <th scope="col" class="px-6 py-3 text-center no-print">HP</th>
                                     <th scope="col" class="px-6 py-3 text-center no-print">Koin</th>
-                                    <th scope="col" class="px-6 py-3 text-center print-only">Catatan</th>
+                                    <th scope="col" class="px-6 py-3 text-center no-print">Catatan</th>
                                     <th scope="col" class="px-6 py-3 text-center no-print">Aksi</th>
                                 </tr>
                             </thead>
@@ -1668,6 +1791,87 @@
         </div>
     </div>
     <!-- MODAL BARU: Chatbot Admin Ivy -->
+    <!-- Print Settings Modal -->
+    <div id="print-settings-modal"
+        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden modal-overlay opacity-0">
+        <div
+            class="bg-white/90 backdrop-blur-sm rounded-lg shadow-xl w-full max-w-2xl m-4 modal-content transform scale-95 max-h-[90vh] flex flex-col">
+            <div class="p-6 border-b flex justify-between items-center">
+                <h3 class="text-xl font-semibold">⚙️ Pengaturan Cetak</h3>
+                <button id="close-print-settings-modal-button"
+                    class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+            </div>
+            <div class="p-6 space-y-6 overflow-y-auto">
+                <!-- Section 1: Pilih Kelas -->
+                <div>
+                    <h4 class="font-semibold text-lg mb-3">📚 Pilih Kelas</h4>
+                    <p class="text-sm text-gray-600 mb-3">Pilih kelas mana saja yang ingin dicetak:</p>
+                    <div id="print-class-checkboxes" class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        <!-- Checkboxes will be generated dynamically by JavaScript -->
+                        <p class="text-sm text-gray-400 col-span-full">Memuat kelas...</p>
+                    </div>
+                    <div class="mt-2">
+                        <label class="flex items-center space-x-2 text-sm text-blue-600 cursor-pointer">
+                            <input type="checkbox" id="select-all-classes" class="rounded" checked>
+                            <span class="font-medium">Pilih Semua Kelas</span>
+                        </label>
+                    </div>
+                </div>
+
+                <hr>
+
+                <!-- Section 2: Pilih Kolom -->
+                <div>
+                    <h4 class="font-semibold text-lg mb-3">📊 Pilih Kolom</h4>
+                    <p class="text-sm text-gray-600 mb-3">Pilih kolom mana saja yang ingin ditampilkan:</p>
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" class="print-column-checkbox rounded" value="level" checked>
+                            <span class="text-sm">Level</span>
+                        </label>
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" class="print-column-checkbox rounded" value="xp" checked>
+                            <span class="text-sm">XP</span>
+                        </label>
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" class="print-column-checkbox rounded" value="hp" checked>
+                            <span class="text-sm">HP</span>
+                        </label>
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" class="print-column-checkbox rounded" value="koin" checked>
+                            <span class="text-sm">Koin</span>
+                        </label>
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" class="print-column-checkbox rounded" value="catatan" checked>
+                            <span class="text-sm">Catatan</span>
+                        </label>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-3">
+                        <i data-lucide="info" class="w-3 h-3 inline"></i>
+                        Kolom "Siswa" selalu ditampilkan. Kolom "Aksi" selalu disembunyikan saat cetak.
+                    </p>
+                    <div class="mt-2">
+                        <label class="flex items-center space-x-2 text-sm text-blue-600 cursor-pointer">
+                            <input type="checkbox" id="select-all-columns" class="rounded" checked>
+                            <span class="font-medium">Pilih Semua Kolom</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="p-6 bg-gray-50 rounded-b-lg flex justify-end space-x-3">
+                <button id="print-settings-cancel-btn"
+                    class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-lg">
+                    Batal
+                </button>
+                <button id="print-settings-print-btn"
+                    class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg flex items-center">
+                    <i data-lucide="printer" class="w-4 h-4 mr-2"></i>
+                    Cetak Sekarang
+                </button>
+            </div>
+        </div>
+    </div>
+
     <div id="admin-ivy-chat-modal"
         class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-300 z-50">
         <div class="bg-white/90 backdrop-blur-sm rounded-lg shadow-xl w-full max-w-md max-h-[80vh] flex flex-col">
@@ -1702,16 +1906,36 @@
             </div>
         </div>
     </div>
+
+    <!-- Print Header (Hidden by default, shown only during print) -->
+    <div id="print-header" class="hidden print-only">
+        <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-4">
+                <img src="asset/gambar/logomymadival.png" alt="Logo" class="h-16 w-auto">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-800">DREAMY</h1>
+                    <p class="text-sm text-gray-600">Laporan Data Siswa</p>
+                </div>
+            </div>
+            <div class="text-right">
+                <p id="print-date-display" class="text-sm text-gray-600">Tanggal Cetak: -</p>
+            </div>
+        </div>
+        <hr class="border-gray-300 mb-4">
+    </div>
+
+    <!-- Print Footer (Hidden by default, shown only during print) -->
+    <div id="print-footer" class="hidden print-only">
+        <div class="text-center text-xs text-gray-600">
+            <p>&copy; 2026 DREAMY - Developed by <a href="https://github.com/panjinewbie"
+                    class="text-blue-600">@panjinewbie</a></p>
+            <p class="mt-1">Halaman <span class="page-number"></span></p>
+        </div>
+    </div>
+
+
     <script type="module" src="script.js"></script>
-    <script>
-        // Script untuk menangani tombol Cetak Siswa
-        document.addEventListener('DOMContentLoaded', () => {
-            const printBtn = document.getElementById('print-student-button');
-            if (printBtn) {
-                printBtn.addEventListener('click', () => window.print());
-            }
-        });
-    </script>
+    <script src="print-functionality.js"></script>
 </body>
 
 </html>
