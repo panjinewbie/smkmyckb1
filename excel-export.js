@@ -23,15 +23,20 @@ async function handleExcelExport() {
     }
     console.log('✓ XLSX library loaded');
 
-    // Get selected classes
-    const classCheckboxes = document.querySelectorAll('.print-class-checkbox:checked');
-    const selectedClasses = Array.from(classCheckboxes).map(cb => cb.value);
+    // Get selected class from the active filter dropdown (not from modal checkboxes)
+    const filterKelasDropdown = document.getElementById('dashboard-filter-kelas');
+    const selectedKelas = filterKelasDropdown ? filterKelasDropdown.value : 'semua';
 
-    // Get selected columns
+    // Convert to array format (empty array means all classes)
+    const selectedClasses = (selectedKelas === 'semua' || !selectedKelas) ? [] : [selectedKelas];
+
+    console.log('Active class filter:', selectedKelas);
+    console.log('Selected classes for export:', selectedClasses);
+
+    // Get selected columns from modal
     const columnCheckboxes = document.querySelectorAll('.print-column-checkbox:checked');
     const selectedColumns = Array.from(columnCheckboxes).map(cb => cb.value);
 
-    console.log('Excel Export - Selected classes:', selectedClasses);
     console.log('Excel Export - Selected columns:', selectedColumns);
 
     // Show loading indicator
