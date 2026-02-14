@@ -1805,28 +1805,11 @@
                     class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
             </div>
             <div class="p-6 space-y-6 overflow-y-auto">
-                <!-- Section 1: Pilih Kelas -->
-                <div>
-                    <h4 class="font-semibold text-lg mb-3">📚 Pilih Kelas</h4>
-                    <p class="text-sm text-gray-600 mb-3">Pilih kelas mana saja yang ingin dicetak:</p>
-                    <div id="print-class-checkboxes" class="grid grid-cols-2 md:grid-cols-3 gap-3">
-                        <!-- Checkboxes will be generated dynamically by JavaScript -->
-                        <p class="text-sm text-gray-400 col-span-full">Memuat kelas...</p>
-                    </div>
-                    <div class="mt-2">
-                        <label class="flex items-center space-x-2 text-sm text-blue-600 cursor-pointer">
-                            <input type="checkbox" id="select-all-classes" class="rounded" checked>
-                            <span class="font-medium">Pilih Semua Kelas</span>
-                        </label>
-                    </div>
-                </div>
-
-                <hr>
-
-                <!-- Section 2: Pilih Kolom -->
+                <!-- Section: Pilih Kolom -->
                 <div>
                     <h4 class="font-semibold text-lg mb-3">📊 Pilih Kolom</h4>
-                    <p class="text-sm text-gray-600 mb-3">Pilih kolom mana saja yang ingin ditampilkan:</p>
+                    <p class="text-sm text-gray-600 mb-3">Pilih kolom mana saja yang ingin ditampilkan. Data akan
+                        diambil dari filter kelas yang aktif.</p>
                     <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
                         <label class="flex items-center space-x-2 cursor-pointer">
                             <input type="checkbox" class="print-column-checkbox rounded" value="level" checked>
