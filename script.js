@@ -1088,6 +1088,81 @@ function setupStudentDashboard(uid) {
 
                 await update(ref(db, `/bounties/${bountyId}/takers`), { [uid]: true });
                 showToast('Berhasil mengambil misi!');
+
+                // --- MANTRA BARU: Notifikasi Admin saat Misi Diambil (Opsional) ---
+                try {
+                    const studentName = currentStudentData.nama || "Siswa";
+                    const bountyTitle = bountyData.title || "Misi";
+
+                    // Log Aktivitas ke Siswa
+                    push(ref(db, `students/${uid}/activityLogs`), {
+                        action: "START_MISSION",
+                        details: `Memulai misi ${bountyTitle}`,
+                        timestamp: Date.now()
+                    });
+
+                    // Update Status
+                    update(ref(db, `students/${uid}`), {
+                        lastActivity: `Mulai Misi: ${bountyTitle}`
+                    });
+                } catch (err) {
+                    // Ignore sync errors
+                    console.warn("Error blok notifikasi ambil misi:", err);
+                }
+
+                // --- MANTRA BARU: Buka Modal Game (Bukan Redirect) ---
+                if (bountyData.bountyType === 'game' && bountyData.quizUrl) {
+                    // Simpan data ke session storage (backup)
+                    const sessionData = {
+                        uid: uid,
+                        apiKey: currentStudentData.apiKey || ''
+                    };
+                    sessionStorage.setItem('detektifBugData', JSON.stringify(sessionData));
+                    sessionStorage.setItem('dungeonData', JSON.stringify({
+                        avatar: currentStudentData.fotoProfilBase64,
+                        hp: currentStudentData.hp,
+                        maxHp: (currentStudentData.level || 1) * 100,
+                        coin: currentStudentData.coin || 0
+                    }));
+
+                    const modal = document.getElementById('dungeon-2d-modal');
+                    const iframe = document.getElementById('dungeon-2d-iframe');
+
+                    if (modal && iframe) {
+                        iframe.src = `asset/quiz/${bountyData.quizUrl}?uid=${uid}`;
+                        modal.classList.remove('hidden');
+                        setTimeout(() => modal.classList.remove('opacity-0'), 10);
+
+                        // --- PENTING: Attach Listener Pesan ---
+                        window.removeEventListener('message', handleDungeonMessage); // Hindari duplikasi
+                        window.addEventListener('message', handleDungeonMessage);
+
+                        // Update judul modal (opsional)
+                        const titleEl = modal.querySelector('h3');
+                        if (titleEl) titleEl.textContent = bountyData.title || "Game Quiz";
+
+                        // --- MANTRA BARU: Handler Tutup Modal ---
+                        const closeButton = document.getElementById('close-dungeon-2d-modal');
+                        if (closeButton) {
+                            closeButton.onclick = () => {
+                                if (confirm("Yakin ingin keluar dari game?")) {
+                                    iframe.src = "about:blank";
+                                    modal.classList.add('opacity-0');
+                                    setTimeout(() => modal.classList.add('hidden'), 300);
+                                    // Reset title jika perlu
+                                    if (titleEl) titleEl.textContent = "DUNGEON MISI AI";
+
+                                    // Hapus listener saat tutup
+                                    window.removeEventListener('message', handleDungeonMessage);
+                                }
+                            };
+                        }
+                    } else {
+                        // Fallback jika modal error
+                        window.location.href = `asset/quiz/${bountyData.quizUrl}?uid=${uid}`;
+                    }
+                }
+
             } catch (error) {
                 showToast(error.message, true);
                 takeButton.disabled = false;
@@ -2182,6 +2257,78 @@ async function handleDungeonMessage(event) {
         await update(ref(db), updates);
         showToast("Waktu habis! Kamu terkena kutukan Racun!", true);
         audioPlayer.error();
+        return;
+    }
+
+    // --- MANTRA BARU: Menangani Hasil Detektif Bug (Admin Notification) ---
+    if (event.data.type === 'detektifResult') {
+        const { uid, score } = event.data;
+        if (!uid) return;
+
+        try {
+            // Ambil data siswa untuk nama
+            const studentRef = ref(db, `students/${uid}`);
+            const studentSnap = await get(studentRef);
+
+            if (studentSnap.exists()) {
+                const studentData = studentSnap.val();
+                const studentName = studentData.nama;
+
+                // Hitung hadiah
+                const xpReward = score;
+                const coinReward = Math.floor(score / 2);
+
+                const xpPerLevel = 1000;
+                const currentTotalXp = ((studentData.level || 1) - 1) * xpPerLevel + (studentData.xp || 0);
+                const newTotalXp = currentTotalXp + xpReward;
+
+                const updates = {};
+                updates.coin = (studentData.coin || 0) + coinReward;
+                updates.level = Math.floor(newTotalXp / xpPerLevel) + 1;
+                updates.xp = newTotalXp % xpPerLevel;
+
+                await update(studentRef, updates);
+                showToast(`Detektif Bug Selesai! Skor: ${score}. +${coinReward} Koin, +${xpReward} XP!`);
+                audioPlayer.success();
+
+                // --- LOGIC NOTIFIKASI TERPISAH (Biar error tidak membatalkan hadiah) ---
+                try {
+                    try {
+                        // Log Aktivitas ke Node Siswa Sendiri (Seharusnya Diizinkan)
+                        await push(ref(db, `students/${uid}/activityLogs`), {
+                            action: "COMPLETE_GAME",
+                            details: `Selesai Detektif Bug (Skor: ${score})`,
+                            timestamp: Date.now()
+                        });
+
+                        // Update Status Terakhir untuk Admin
+                        await update(ref(db, `students/${uid}`), {
+                            lastActivity: `Selesai Quiz (Skor: ${score})`
+                        });
+
+                    } catch (notifError) {
+                        console.warn("Gagal log aktivitas:", notifError);
+                    }
+                } catch (notifError) {
+                    console.warn("Gagal mengirim notifikasi/log (kemungkinan izin ditolak):", notifError);
+                }
+
+                // --- TUTUP MODAL SETELAH SELESAI ---
+                const modal = document.getElementById('dungeon-2d-modal');
+                const iframe = document.getElementById('dungeon-2d-iframe');
+                if (modal && iframe) {
+                    setTimeout(() => {
+                        iframe.src = "about:blank";
+                        modal.classList.add('opacity-0');
+                        setTimeout(() => modal.classList.add('hidden'), 300);
+                    }, 2000); // Beri jeda 2 detik biar baca toast dulu
+                }
+
+            }
+        } catch (error) {
+            console.error("Error processing Detektif Bug result:", error);
+            showToast("Gagal memproses hadiah kuis.", true);
+        }
         return;
     }
 
@@ -4742,10 +4889,35 @@ function setupAdminDashboard() {
         };
     }
     // --- AKHIR MANTRA ---
+    const adminBountyType = document.getElementById('admin-bounty-type');
+    const adminBountyPortalFields = document.getElementById('admin-bounty-portal-fields');
+    const adminBountyGameFields = document.getElementById('admin-bounty-game-fields'); // BARU
+
+    // --- MANTRA BARU: Handler untuk Tipe Misi Admin ---
+    if (adminBountyType) {
+        adminBountyType.onchange = function () {
+            const type = this.value;
+            // Reset visibility
+            adminBountyPortalFields.classList.add('hidden');
+            if (adminBountyGameFields) adminBountyGameFields.classList.add('hidden');
+
+            if (type === 'portal') {
+                adminBountyPortalFields.classList.remove('hidden');
+            } else if (type === 'game') {
+                if (adminBountyGameFields) adminBountyGameFields.classList.remove('hidden');
+            }
+        };
+    }
+
     if (addAdminBountyButton && adminBountyModal && adminBountyForm && adminBountyListContainer) {
         const openAdminBountyModal = () => {
             audioPlayer.openModal();
             adminBountyForm.reset();
+            // Reset manual untuk select type agar field tambahan tersembunyi
+            if (adminBountyType) {
+                adminBountyType.value = 'standard';
+                adminBountyType.dispatchEvent(new Event('change'));
+            }
             adminBountyModal.classList.remove('hidden', 'opacity-0');
             adminBountyModal.querySelector('.transform').classList.remove('scale-95');
             adminBountyImagePreview.classList.add('hidden');
@@ -4770,6 +4942,20 @@ function setupAdminDashboard() {
             submitButton.textContent = 'Menyimpan...';
 
             try {
+                const type = adminBountyType ? adminBountyType.value : 'standard';
+                let portalData = null;
+                let quizUrl = null; // BARU
+
+                if (type === 'portal') {
+                    portalData = {
+                        mapId: document.getElementById('admin-bounty-map-id').value,
+                        startX: parseInt(document.getElementById('admin-bounty-start-x').value),
+                        startY: parseInt(document.getElementById('admin-bounty-start-y').value)
+                    };
+                } else if (type === 'game') { // BARU
+                    quizUrl = document.getElementById('admin-bounty-game-id').value;
+                }
+
                 const bountyData = {
                     creatorId: 'admin',
                     creatorName: 'Guru/Admin',
@@ -4782,6 +4968,9 @@ function setupAdminDashboard() {
                     rewardCoin: parseInt(document.getElementById('admin-bounty-reward-coin').value),
                     status: 'open',
                     isAdminBounty: true,
+                    bountyType: type, // Simpan tipe misi
+                    portalData: portalData,
+                    quizUrl: quizUrl, // Simpan URL quiz
                     createdAt: new Date().toISOString(),
                     takers: {},
                 };
