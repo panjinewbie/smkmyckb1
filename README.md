@@ -1,6 +1,5 @@
 # 🏰 DREAMY: Chronicles of Mardi Yuana (v2.0)
 > *Dunia RPG Edukasi Anak Mardi Yuana - Di mana Koding Bertemu Sihir!*
-### 🔐 Gerbang Dimensi (Halaman Login)
 ![Halaman Login](asset/gambar/GLOGIN.png)
 
 ## 📜 Prolog: Apa itu DREAMY?
