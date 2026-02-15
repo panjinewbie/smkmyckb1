@@ -7952,9 +7952,19 @@ document.addEventListener('DOMContentLoaded', () => {
 //          LOGIKA TRACKER LOKASI SISWA (REAL-TIME)
 // =======================================================
 
-function initStudentTracker(uid) {
+async function initStudentTracker(uid) {
     if (!navigator.geolocation) {
         console.warn("Geolocation tidak didukung oleh browser ini.");
+        // Kirim notifikasi ke admin bahwa browser tidak mendukung geolocation
+        const studentSnap = await get(ref(db, `students/${uid}`));
+        if (studentSnap.exists()) {
+            const studentName = studentSnap.val().nama;
+            addNotification(
+                `Siswa <strong>${studentName}</strong> tidak dapat melacak lokasi karena browser tidak mendukung geolocation.`,
+                'location_error',
+                { studentId: uid, errorType: 'not_supported' }
+            );
+        }
         return;
     }
 
@@ -7970,8 +7980,40 @@ function initStudentTracker(uid) {
         update(ref(db), updates).catch(err => console.error("Gagal update lokasi:", err));
     };
 
-    const handleError = (error) => {
+    const handleError = async (error) => {
         console.warn("Gagal mendapatkan lokasi:", error.message);
+
+        // Kirim notifikasi ke admin tentang kegagalan tracking lokasi
+        const studentSnap = await get(ref(db, `students/${uid}`));
+        if (studentSnap.exists()) {
+            const studentName = studentSnap.val().nama;
+            let errorMessage = '';
+            let errorType = '';
+
+            switch (error.code) {
+                case error.PERMISSION_DENIED:
+                    errorMessage = `Siswa <strong>${studentName}</strong> menolak memberikan izin akses lokasi.`;
+                    errorType = 'permission_denied';
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    errorMessage = `Gagal melacak lokasi siswa <strong>${studentName}</strong> karena informasi lokasi tidak tersedia.`;
+                    errorType = 'position_unavailable';
+                    break;
+                case error.TIMEOUT:
+                    errorMessage = `Gagal melacak lokasi siswa <strong>${studentName}</strong> karena waktu permintaan habis.`;
+                    errorType = 'timeout';
+                    break;
+                default:
+                    errorMessage = `Gagal melacak lokasi siswa <strong>${studentName}</strong> karena kesalahan tidak diketahui.`;
+                    errorType = 'unknown_error';
+            }
+
+            addNotification(
+                errorMessage,
+                'location_error',
+                { studentId: uid, errorType: errorType, errorCode: error.code }
+            );
+        }
     };
 
     // Minta lokasi sekali saat login
