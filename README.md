@@ -1,5 +1,7 @@
 # 🏰 DREAMY: Chronicles of Mardi Yuana (v2.0)
 > *Dunia RPG Edukasi Anak Mardi Yuana - Di mana Koding Bertemu Sihir!*
+### 🔐 Gerbang Dimensi (Halaman Login)
+![Halaman Login](asset/gambar/GLOGIN.jpg)
 
 ## 📜 Prolog: Apa itu DREAMY?
 Selamat datang di **DREAMY**, sebuah ekosistem pembelajaran gamifikasi revolusioner yang mengubah ruang kelas SMK Mardi Yuana Cikembar menjadi dunia fantasi "Aethelgard". Di sini, tugas bukan lagi beban, melainkan *Quest*. Ujian bukan lagi momok, melainkan *Boss Battle*.
