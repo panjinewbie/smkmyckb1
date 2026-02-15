@@ -79,7 +79,6 @@ Panel khusus di mana DM bisa merapal mantra instan:
 
 ## 🔜 Vision: The Future of DREAMY
 Rencana pengembangan selanjutnya oleh Mas Panji:
-* **Integrasi Google Classroom:** Menarik data nilai tugas secara otomatis dan mengonversinya menjadi XP.
 * **Halaman Guru (The Mentor's Hall):** Memberikan akses kepada guru mata pelajaran lain untuk menjadi "Quest Giver".
 
 ---
