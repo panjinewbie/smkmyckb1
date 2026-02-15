@@ -82,5 +82,4 @@ Rencana pengembangan selanjutnya oleh Mas Panji:
 * **Halaman Guru (The Mentor's Hall):** Memberikan akses kepada guru mata pelajaran lain untuk menjadi "Quest Giver".
 
 ---
-
-> *"Coding is not just about typing; it's about casting spells to create a new world."* - Mas Panji Purnomo
+> *"Coding is not just about typing; it's about casting spells to create a new world."* - **[Mas Panji Purnomo](https://www.smkmyckb.site/)**
