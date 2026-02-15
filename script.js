@@ -8070,6 +8070,82 @@ window.deleteStudentMessage = async (chatId, msgId) => {
     }
 };
 
+// --- MANTRA BARU: AI Profanity Detection ---
+async function checkProfanityWithAI(messageText, userId, studentName) {
+    try {
+        // Ambil API key dari config
+        const configSnap = await get(ref(db, 'config/ivySettings'));
+        if (!configSnap.exists() || !configSnap.val().apiKey) {
+            console.warn('API Key tidak tersedia untuk profanity check');
+            return;
+        }
+
+        const apiKey = configSnap.val().apiKey;
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+
+        const prompt = `Analisis pesan berikut dan tentukan apakah mengandung kata kasar, hinaan, atau konten tidak pantas dalam bahasa Indonesia atau bahasa lainnya. Berikan respons dalam format JSON.
+
+Pesan: "${messageText}"
+
+Respons harus dalam format:
+{
+  "isOffensive": true/false,
+  "reason": "penjelasan singkat jika offensive"
+}`;
+
+        const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: "OBJECT",
+                        properties: {
+                            isOffensive: { type: "BOOLEAN" },
+                            reason: { type: "STRING" }
+                        },
+                        required: ["isOffensive", "reason"]
+                    }
+                }
+            })
+        });
+
+        if (!response.ok) {
+            console.error('AI profanity check failed:', response.status);
+            return;
+        }
+
+        const result = await response.json();
+        const analysis = JSON.parse(result.candidates[0].content.parts[0].text);
+
+        if (analysis.isOffensive) {
+            // Terapkan kutukan knock (HP jadi 10, efek 2 hari)
+            const knockExpiry = Date.now() + (2 * 24 * 60 * 60 * 1000);
+            const curseUpdates = {};
+            curseUpdates[`/students/${userId}/statusEffects/knock`] = { expires: knockExpiry };
+            curseUpdates[`/students/${userId}/hp`] = 10;
+
+            // Simpan log profanity di student node (untuk menghindari permission error)
+            curseUpdates[`/students/${userId}/profanityLog/${Date.now()}`] = {
+                message: messageText,
+                reason: analysis.reason,
+                timestamp: Date.now()
+            };
+
+            await update(ref(db), curseUpdates);
+
+            showToast('⚠️ Kata kasar terdeteksi! Kamu terkena kutukan Knock!', true);
+            audioPlayer.error();
+
+            console.log(`Profanity detected from ${studentName}: ${analysis.reason}`);
+        }
+    } catch (error) {
+        console.error('Error in AI profanity check:', error);
+    }
+}
+
 function sendChatMessageFromStudent(userId, messageText, friendId) {
     // Canonical ID
     const chatId = getCanonicalChatId(userId, friendId);
@@ -8101,6 +8177,10 @@ function sendChatMessageFromStudent(userId, messageText, friendId) {
                 showToast(`Mana tidak cukup! Butuh ${chatCost} MP untuk mengirim pesan.`, true);
                 return;
             }
+
+            // --- MANTRA BARU: Deteksi Kata Kasar dengan AI ---
+            // Gunakan AI untuk deteksi kata kasar yang lebih canggih
+            checkProfanityWithAI(messageText, userId, studentData.nama);
 
             // Kurangi MP dan Kirim Pesan
             update(ref(db, `students/${userId}`), { mp: currentMp - chatCost })
