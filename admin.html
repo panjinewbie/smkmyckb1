@@ -852,6 +852,7 @@
                                 class="mt-1 w-full p-2 border border-gray-300 rounded-md bg-white/90 backdrop-blur-sm">
                                 <option value="standard">📜 Standar (Teks/Gambar)</option>
                                 <option value="portal">s️ Portal (Dungeon RPG 2D)</option>
+                                <option value="game">🎮 Game / Quiz</option>
                             </select>
                         </div>
 
@@ -882,6 +883,23 @@
                                     <input type="number" id="admin-bounty-start-y"
                                         class="mt-1 w-full p-2 border border-gray-300 rounded-md" value="100">
                                 </div>
+                            </div>
+                        </div>
+
+                        <!-- BARU: Field Khusus Game/Quiz (Hidden by default) -->
+                        <div id="admin-bounty-game-fields"
+                            class="hidden space-y-4 border-l-4 border-orange-500 pl-4 bg-orange-50 p-2 rounded-r-md">
+                            <h4 class="font-semibold text-orange-700">Konfigurasi Game / Quiz</h4>
+                            <div>
+                                <label for="admin-bounty-game-id" class="block text-sm font-medium text-gray-700">Pilih
+                                    Game</label>
+                                <select id="admin-bounty-game-id"
+                                    class="mt-1 w-full p-2 border border-gray-300 rounded-md">
+                                    <option value="acakkata.html">🔤 Acak Kata</option>
+                                    <option value="algoritma.html">🧩 Algoritma</option>
+                                    <option value="dektektifbug.html">🐛 Detektif Bug</option>
+                                    <option value="dugeon2d.html">⚔️ Dungeon 2D</option>
+                                </select>
                             </div>
                         </div>
 
