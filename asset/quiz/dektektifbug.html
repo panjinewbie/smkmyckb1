@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detektif Bug: Code Crime Scene</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Coding -->
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Share+Tech+Mono&display=swap"
+        rel="stylesheet">
+    <!-- Icon -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        body {
+            font-family: 'Share Tech Mono', monospace;
+            background-color: #0f172a;
+            /* Slate 900 */
+            color: #e2e8f0;
+            overflow: hidden;
+            /* Mencegah scrollbar ganda di iframe */
+        }
+
+        .code-font {
+            font-family: 'Fira Code', monospace;
+        }
+
+        /* Scanline Effect ala Cyberpunk */
+        .scanlines {
+            background: linear-gradient(to bottom,
+                    rgba(255, 255, 255, 0),
+                    rgba(255, 255, 255, 0) 50%,
+                    rgba(0, 0, 0, 0.2) 50%,
+                    rgba(0, 0, 0, 0.2));
+            background-size: 100% 4px;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        /* Animasi Kemenangan */
+        @keyframes stamp {
+            0% {
+                opacity: 0;
+                transform: scale(2) rotate(-15deg);
+            }
+
+            50% {
+                opacity: 1;
+                transform: scale(0.8) rotate(-15deg);
+            }
+
+            100% {
+                opacity: 1;
+                transform: scale(1) rotate(-15deg);
+            }
+        }
+
+        .stamp-solved {
+            animation: stamp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            border: 4px solid #4ade80;
+            color: #4ade80;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            transform: rotate(-15deg);
+            background: rgba(0, 0, 0, 0.8);
+            box-shadow: 0 0 15px #4ade80;
+        }
+
+        /* Hover Line Effect */
+        .code-line:hover {
+            background-color: rgba(56, 189, 248, 0.1);
+            /* Sky tint */
+            cursor: crosshair;
+        }
+
+        /* Loading animation */
+        .loader {
+            width: 48px;
+            height: 48px;
+            border: 3px solid #FFF;
+            border-radius: 50%;
+            display: inline-block;
+            position: relative;
+            box-sizing: border-box;
+            animation: rotation 1s linear infinite;
+        }
+
+        .loader::after {
+            content: '';
+            box-sizing: border-box;
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 3px solid transparent;
+            border-bottom-color: #ef4444;
+            animation: rotation 0.5s linear infinite reverse;
+        }
+
+        @keyframes rotation {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body class="flex flex-col h-screen w-full relative">
+
+    <div class="scanlines"></div>
+
+    <!-- HEADER: Status Bar -->
+    <header class="bg-slate-800 border-b border-slate-700 p-3 flex justify-between items-center z-20 shadow-lg">
+        <div class="flex items-center gap-3">
+            <div class="bg-red-600 text-white px-2 py-1 rounded text-sm font-bold animate-pulse">REC ●</div>
+            <h1 class="text-xl font-bold text-sky-400"><i class="fas fa-user-secret mr-2"></i>DETEKTIF BUG</h1>
+        </div>
+
+        <div class="flex gap-4 text-sm md:text-base">
+            <div class="flex items-center gap-2">
+                <i class="fas fa-heart text-red-500"></i>
+                <span id="lives-display" class="font-bold">3</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <i class="fas fa-star text-yellow-400"></i>
+                <span id="score-display" class="font-bold">0</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN GAME AREA -->
+    <main class="flex-1 flex flex-col md:flex-row overflow-hidden relative z-20">
+
+        <!-- Case Info & Instructions -->
+        <aside class="bg-slate-900 w-full md:w-1/4 p-4 border-r border-slate-700 flex flex-col gap-4 overflow-y-auto">
+            <div class="bg-slate-800 p-4 rounded border border-slate-700 shadow-inner">
+                <h3 class="text-sky-400 font-bold mb-2 uppercase text-sm tracking-wider">FILE KASUS #<span
+                        id="case-number">001</span></h3>
+                <p class="text-xs text-slate-400 mb-2">BAHASA: <span id="lang-badge"
+                        class="bg-slate-700 text-white px-1 rounded font-bold">JS</span></p>
+                <p class="text-sm text-slate-300 leading-relaxed">
+                    <i class="fas fa-info-circle mr-1 text-sky-500"></i>
+                    <span id="instruction-text">Detektif, ada laporan bug di kode ini. Temukan baris yang menyebabkan
+                        error (syntax error atau logic error) dan klik baris tersebut untuk mengamankan bukti.</span>
+                </p>
+            </div>
+
+            <!-- Feedback Panel -->
+            <div id="feedback-panel" class="flex-1 hidden flex-col justify-end">
+                <div class="bg-slate-800 p-4 rounded border-l-4 border-yellow-500 shadow-lg">
+                    <h4 class="font-bold text-yellow-400 mb-1"><i class="fas fa-lightbulb mr-1"></i> ANALISIS FORENSIK
+                    </h4>
+                    <p id="explanation-text" class="text-sm text-slate-300">Penjelasan error akan muncul di sini.</p>
+                </div>
+                <button id="next-btn"
+                    class="mt-4 bg-sky-600 hover:bg-sky-500 text-white font-bold py-3 px-4 rounded shadow-lg transition-all active:scale-95 w-full uppercase tracking-wider">
+                    KASUS BERIKUTNYA <i class="fas fa-arrow-right ml-2"></i>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Code Editor Area -->
+        <section class="flex-1 bg-[#1e1e1e] overflow-auto relative flex flex-col">
+            <!-- File Tab -->
+            <div class="bg-[#2d2d2d] text-slate-400 px-4 py-1 text-xs flex items-center gap-2 border-b border-black">
+                <i class="fas fa-file-code text-yellow-600"></i>
+                <span id="filename-display">suspect_code.js</span>
+            </div>
+
+            <!-- Editor Content -->
+            <div id="code-container" class="p-4 code-font text-sm md:text-base leading-7 min-h-full">
+                <!-- Lines will be injected here -->
+                <div class="flex items-center justify-center h-full">
+                    <span class="loader"></span>
+                    <span class="ml-3 text-slate-400">Memuat data kriminal...</span>
+                </div>
+            </div>
+
+            <!-- Overlay for Results -->
+            <div id="result-overlay"
+                class="absolute inset-0 bg-black/50 hidden items-center justify-center pointer-events-none z-30">
+                <div id="stamp-mark" class="text-4xl md:text-6xl font-black text-center opacity-0 transform scale-150">
+                    <!-- Text injected by JS -->
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Game Over Modal -->
+    <div id="game-over-modal"
+        class="fixed inset-0 bg-black/90 z-50 hidden flex-col items-center justify-center text-center p-6">
+        <h2 class="text-5xl font-bold text-red-500 mb-4 tracking-widest uppercase">TERPECAT!</h2>
+        <p class="text-xl text-slate-300 mb-6">Detektif, kemampuan debugging Anda perlu diasah lagi.</p>
+        <div class="bg-slate-800 p-6 rounded-lg border border-slate-600 mb-8">
+            <p class="text-slate-400 text-sm uppercase">Skor Akhir</p>
+            <p id="final-score" class="text-4xl font-bold text-sky-400">0</p>
+        </div>
+        <div class="flex gap-4">
+            <button onclick="location.reload()"
+                class="bg-slate-700 hover:bg-slate-600 text-white px-6 py-3 rounded font-bold transition-colors">
+                <i class="fas fa-redo mr-2"></i> COBA LAGI
+            </button>
+            <button id="close-game-btn"
+                class="bg-red-600 hover:bg-red-500 text-white px-6 py-3 rounded font-bold transition-colors">
+                <i class="fas fa-times mr-2"></i> KELUAR
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // --- KONFIGURASI AWAL ---
+        let apiKey = '';
+        let studentUid = 'guest'; // Default dummy user
+        let currentCaseIndex = 0;
+        let score = 0;
+        let lives = 3;
+        let isProcessing = false;
+        let currentCaseData = null;
+        const MAX_CASES = 10; // Batas kasus per sesi
+
+        // --- DATA DUMMY (Penyelamat saat Offline/Tanpa Login) ---
+        // Mencakup HTML, CSS, dan JS dasar
+        const DUMMY_CASES = [
+            {
+                lang: "html",
+                filename: "index.html",
+                code: [
+                    "<!DOCTYPE html>",
+                    "<html>",
+                    "<head>",
+                    "  <title>Website Saya<\/title>",
+                    "<\/head>",
+                    "<body>",
+                    "  <h1>Selamat Datang<\/h1>",
+                    "  <p>Ini paragraf pertama<\/p>",
+                    "  <img src='foto.jpg' alt='Foto profil'>",
+                    "  <a href='about.html'>Tentang Saya<\/p>",
+                    "<\/body>",
+                    "<\/html>"
+                ],
+                errorLine: 9, // index mulai dari 0
+                explanation: "Tag pembuka adalah &lt;a&gt;, tapi ditutup dengan &lt;/p&gt;. Seharusnya &lt;/a&gt;."
+            },
+            {
+                lang: "javascript",
+                filename: "script.js",
+                code: [
+                    "function hitungLuas(panjang, lebar) {",
+                    "  let luas = panjang * lebar;",
+                    "  return luas;",
+                    "}",
+                    "",
+                    "let p = 10;",
+                    "let l = 5;",
+                    "let hasil = hitungLuas(p, l);",
+                    "conso le.log('Luas adalah: ' + hasil);",
+                    "alert('Selesai');"
+                ],
+                errorLine: 8,
+                explanation: "Terdapat spasi pada 'conso le'. Perintah yang benar adalah console.log()."
+            },
+            {
+                lang: "css",
+                filename: "style.css",
+                code: [
+                    "body {",
+                    "  background-color: #f0f0f0;",
+                    "  font-family: Arial, sans-serif;",
+                    "}",
+                    "",
+                    ".container {",
+                    "  width: 80%;",
+                    "  margin: 0 auto;",
+                    "  padding: 20px",
+                    "  border-radius 8px;",
+                    "  background: white;",
+                    "}"
+                ],
+                errorLine: 9,
+                explanation: "Properti CSS 'border-radius' kehilangan tanda titik dua (:) sebelum nilainya."
+            },
+            {
+                lang: "javascript",
+                filename: "logic.js",
+                code: [
+                    "let umur = 17;",
+                    "",
+                    "if (umur >= 17) {",
+                    "  console.log('Boleh buat KTP');",
+                    "} else (",
+                    "  console.log('Belum cukup umur');",
+                    "}"
+                ],
+                errorLine: 4,
+                explanation: "Setelah 'else' tidak boleh ada tanda kurung biasa '('. Harusnya langsung kurung kurawal '{' atau 'if'."
+            },
+            {
+                lang: "html",
+                filename: "form.html",
+                code: [
+                    "<form action='/submit'>",
+                    "  <label for='nama'>Nama:</label>",
+                    "  <input type='text' id='nama' name='nama'>",
+                    "  ",
+                    "  <label for='email'>Email:</label>",
+                    "  <inpu type='email' id='email'>",
+                    "  ",
+                    "  <button type='submit'>Kirim</button>",
+                    "</form>"
+                ],
+                errorLine: 5,
+                explanation: "Penulisan tag '<inpu>' salah. Seharusnya ditulis '<input>'."
+            }
+        ];
+
+        // --- REFERENSI DOM ---
+        const codeContainer = document.getElementById('code-container');
+        const feedbackPanel = document.getElementById('feedback-panel');
+        const nextBtn = document.getElementById('next-btn');
+        const explanationText = document.getElementById('explanation-text');
+        const livesDisplay = document.getElementById('lives-display');
+        const scoreDisplay = document.getElementById('score-display');
+        const caseNumberDisplay = document.getElementById('case-number');
+        const langBadge = document.getElementById('lang-badge');
+        const filenameDisplay = document.getElementById('filename-display');
+        const resultOverlay = document.getElementById('result-overlay');
+        const stampMark = document.getElementById('stamp-mark');
+        const gameOverModal = document.getElementById('game-over-modal');
+
+        // --- INIT GAME ---
+        window.onload = () => {
+            // Cek SessionStorage dari Parent (Login)
+            const storedData = sessionStorage.getItem('detektifBugData');
+            const urlParams = new URLSearchParams(window.location.search);
+            const urlUid = urlParams.get('uid');
+
+            if (storedData) {
+                const data = JSON.parse(storedData);
+                studentUid = data.uid || urlUid || 'guest';
+                apiKey = data.apiKey || '';
+            } else if (urlUid) {
+                studentUid = urlUid;
+                console.log("UID from URL:", studentUid);
+            } else {
+                console.log("Mode Offline/Dummy Active");
+            }
+
+            // Mulai Game
+            nextCase();
+        };
+
+        // --- CORE LOGIC ---
+
+        async function nextCase() {
+            // Reset UI
+            isProcessing = false;
+            feedbackPanel.classList.add('hidden');
+            resultOverlay.classList.add('hidden');
+            stampMark.className = ''; // Reset animasi
+            currentCaseIndex++;
+            caseNumberDisplay.textContent = currentCaseIndex.toString().padStart(3, '0');
+
+            // Tampilkan Loading
+            codeContainer.innerHTML = `
+                <div class="flex flex-col items-center justify-center h-full text-slate-500">
+                    <span class="loader mb-4"></span>
+                    <p>Mencari berkas perkara...</p>
+                </div>
+            `;
+
+            try {
+                // Pilih Sumber Soal: API atau Dummy
+                if (apiKey && apiKey !== '') {
+                    currentCaseData = await fetchCaseFromAI();
+                } else {
+                    // Simulasi loading biar kerasa "mikir"
+                    await new Promise(r => setTimeout(r, 800));
+                    // Ambil random dari dummy
+                    currentCaseData = DUMMY_CASES[Math.floor(Math.random() * DUMMY_CASES.length)];
+                }
+
+                renderCode(currentCaseData);
+
+            } catch (error) {
+                console.error("Error fetching case:", error);
+                // Fallback ke dummy jika API error
+                currentCaseData = DUMMY_CASES[0];
+                renderCode(currentCaseData);
+            }
+        }
+
+        async function fetchCaseFromAI() {
+            const langs = ['html', 'css', 'javascript'];
+            const selectedLang = langs[Math.floor(Math.random() * langs.length)];
+
+            const prompt = `
+            Act as a coding game generator. Create a valid JSON object representing a coding puzzle.
+            The puzzle should be a snippet of ${selectedLang} code (5-12 lines) containing EXACTLY ONE syntax error or logical bug.
+            JSON Schema:
+            {
+                "lang": "${selectedLang}",
+                "filename": "file.${selectedLang === 'javascript' ? 'js' : selectedLang}",
+                "code": ["line1", "line2", ...], 
+                "errorLine": (integer, 0-based index of the line with error),
+                "explanation": "Short explanation of the error in Indonesian language"
+            }
+            Do not use markdown code blocks. Just raw JSON.
+            `;
+
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+            });
+
+            const result = await response.json();
+            const text = result.candidates[0].content.parts[0].text;
+            // Bersihkan markdown jika ada
+            const jsonStr = text.replace(/```json/g, '').replace(/```/g, '').trim();
+            return JSON.parse(jsonStr);
+        }
+
+        function renderCode(data) {
+            codeContainer.innerHTML = ''; // Clear loading
+
+            // Update Info Panel
+            langBadge.textContent = data.lang.toUpperCase();
+            filenameDisplay.textContent = data.filename;
+
+            // Loop buat baris kode
+            data.code.forEach((line, index) => {
+                const lineDiv = document.createElement('div');
+                lineDiv.className = 'code-line flex group py-1 px-2 rounded transition-colors duration-100';
+                lineDiv.onclick = () => checkLine(index, lineDiv);
+
+                // Line Number
+                const lineNum = document.createElement('span');
+                lineNum.className = 'w-8 text-slate-600 text-right mr-4 select-none font-mono text-xs pt-1';
+                lineNum.textContent = index + 1;
+
+                // Code Content (Basic Syntax Highlight Simulation)
+                const codeContent = document.createElement('pre');
+                codeContent.className = 'flex-1 font-mono text-slate-300 whitespace-pre-wrap group-hover:text-white pointer-events-none';
+                // Escape HTML tags untuk display aman
+                codeContent.textContent = line;
+
+                lineDiv.appendChild(lineNum);
+                lineDiv.appendChild(codeContent);
+                codeContainer.appendChild(lineDiv);
+            });
+        }
+
+        function checkLine(index, element) {
+            if (isProcessing) return; // Mencegah spam klik
+            isProcessing = true;
+
+            const isCorrect = index === currentCaseData.errorLine;
+
+            if (isCorrect) {
+                // MENANG
+                element.classList.add('bg-green-900/50', 'border-l-4', 'border-green-500');
+                score += 10;
+                scoreDisplay.textContent = score;
+
+                showStamp("CASE SOLVED", "text-green-500", "border-green-500");
+                playSound('success');
+
+                explanationText.innerHTML = `<span class="text-green-400 font-bold">KERJA BAGUS!</span><br>${currentCaseData.explanation}`;
+                feedbackPanel.classList.remove('hidden');
+
+            } else {
+                // SALAH
+                element.classList.add('bg-red-900/50', 'animate-pulse');
+                lives--;
+                livesDisplay.textContent = lives;
+
+                playSound('error');
+
+                if (lives <= 0) {
+                    gameOver();
+                } else {
+                    // Beri kesempatan lagi tapi jangan buka penjelasan dulu
+                    setTimeout(() => {
+                        element.classList.remove('bg-red-900/50', 'animate-pulse');
+                        isProcessing = false;
+                    }, 800);
+                }
+            }
+        }
+
+        function showStamp(text, textColor, borderColor) {
+            resultOverlay.classList.remove('hidden');
+            resultOverlay.classList.add('flex'); // Pastikan flex aktif
+
+            stampMark.textContent = text;
+            stampMark.className = `stamp-solved ${textColor} ${borderColor}`;
+
+            // Confetti effect simple (optional)
+        }
+
+        function gameOver() {
+            // Tampilkan baris yang benar
+            const lines = document.querySelectorAll('.code-line');
+            if (lines[currentCaseData.errorLine]) {
+                lines[currentCaseData.errorLine].classList.add('bg-yellow-900/50', 'border-l-4', 'border-yellow-500');
+            }
+
+            setTimeout(() => {
+                document.getElementById('final-score').textContent = score;
+                gameOverModal.classList.remove('hidden');
+                gameOverModal.classList.add('flex');
+
+                // Kirim data ke parent (Student Dashboard)
+                if (window.parent) {
+                    window.parent.postMessage({
+                        type: 'detektifResult',
+                        uid: studentUid,
+                        score: score
+                    }, '*');
+                }
+            }, 1500);
+        }
+
+        // --- UTILS ---
+        nextBtn.onclick = () => {
+            if (currentCaseIndex >= MAX_CASES) {
+                gameOver(); // Selesai sesi
+            } else {
+                nextCase();
+            }
+        };
+
+        document.getElementById('close-game-btn').onclick = () => {
+            // Logic menutup iframe di parent
+            if (window.parent && window.parent !== window) {
+                // --- MANTRA BARU: Kirim pesan selesai sebelum keluar (jika ada skor) ---
+                if (score > 0) {
+                    window.parent.postMessage({
+                        type: 'detektifResult',
+                        uid: studentUid,
+                        score: score
+                    }, '*');
+                }
+
+                // Bisa kirim pesan close modal
+                const closeBtn = window.parent.document.getElementById('close-dungeon-2d-modal'); // Updated ID
+                if (closeBtn) closeBtn.click();
+            } else {
+                // Logic jika terbuka di tab baru (Standalone)
+                // Redirect kembali ke halaman utama (Dashboard Siswa)
+                window.location.href = '../../student.html'; // Sesuaikan file dashboard jika beda
+            }
+        };
+
+        // Simple Audio Synth (biar gak perlu aset mp3)
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSound(type) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            if (type === 'success') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(500, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(1000, audioCtx.currentTime + 0.1);
+                gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.3);
+            } else {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+                osc.frequency.linearRampToValueAtTime(100, audioCtx.currentTime + 0.2);
+                gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.2);
+            }
+        }
+
+    </script>
+</body>
+
+</html>
