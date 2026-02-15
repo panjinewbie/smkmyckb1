@@ -1,48 +1,86 @@
-# smkmyckb1
-dreamy-gamifikasi
-📜 Deskripsi Repositori: Dunia D&D DREAMY
-Selamat datang di DREAMY (Dunia RPG Edukasi Anak Mardi Yuana), sebuah dunia fantasi di mana pembelajaran di kelas diubah menjadi petualangan Dungeons & Dragons (D&D) yang epik dan mendebarkan! Proyek ini bukan sekadar aplikasi, melainkan sebuah dunia yang hidup, dirancang untuk membangkitkan jiwa petualang dalam diri setiap siswa.
+# 🏰 DREAMY: Chronicles of Mardi Yuana (v2.0)
+> *Dunia RPG Edukasi Anak Mardi Yuana - Di mana Koding Bertemu Sihir!*
 
-Di dunia ini, sang Pencipta dan Dungeon Master (DM) utama adalah Mas Panji Purnomo. Setiap baris kode, setiap monster, dan setiap quest lahir dari imajinasinya. Di sisinya, berdiri Inem, asisten pribadi DM yang setia, bertugas memastikan petualangan berjalan lancar dan sesekali mengingatkan DM kalau dia mulai ngelantur.
+## 📜 Prolog: Apa itu DREAMY?
+Selamat datang di **DREAMY**, sebuah ekosistem pembelajaran gamifikasi revolusioner yang mengubah ruang kelas SMK Mardi Yuana Cikembar menjadi dunia fantasi "Aethelgard". Di sini, tugas bukan lagi beban, melainkan *Quest*. Ujian bukan lagi momok, melainkan *Boss Battle*.
 
-Dunia DREAMY sendiri dijalankan oleh para NPC (Non-Player Character) yang tak kenal lelah:
+Dunia ini diciptakan oleh **Grand Archmage Mas Panji Purnomo** (Guru & Dungeon Master), dibantu oleh asisten setianya, **Inem** (AI Assistant), untuk membangkitkan *jiwa petualang* dalam diri setiap siswa.
 
-HTML sang Arsitek: NPC yang bertanggung jawab membangun struktur dasar dunia, mulai dari kastil kelas hingga gua monster.
+---
 
-CSS sang Desainer Interior: NPC yang mempercantik setiap sudut dunia dengan mantra-mantra visual yang memukau.
+## 🚀 The Chronicles: Update Terbaru (Apa yang Baru?)
+Dunia DREAMY terus berkembang! Berikut adalah fitur-fitur mutakhir yang baru saja ditambahkan ke dalam *Source Code* kehidupan:
 
-JavaScript sang Penyihir Kehidupan: NPC paling kuat yang memberikan nyawa, sihir, dan logika pada semua elemen di dunia DREAMY, dari gerakan karakter hingga serangan monster.
+### 1. 🗺️ Peta Pelacak "Marauder's Map" (Leaflet JS)
+DM sekarang memiliki mata dewa! Dengan integrasi **Leaflet.js**, lokasi fisik para siswa (berdasarkan GPS HP mereka) dapat dipantau secara *real-time* di Dashboard Admin.
+* **Fungsi:** Memastikan siswa tidak bolos ke kantin saat jam pelajaran (atau terjebak di dungeon lain).
+* **Fitur:** *Marker* dinamis dengan foto profil siswa.
 
-🌳 Para Penghuni Dunia DREAMY
-Ivy, Roh Agung Pot Bunga: Setiap petualang akan didampingi oleh NPC AI bernama Ivy. Ia adalah roh agung yang bersemayam di dalam sebuah pot bunga. Sebagai anak dari Inem, Ivy punya sifat yang ceria tapi juga usil. Dia akan menjadi teman setia, menjawab pertanyaan seputar pelajaran, tapi jangan kaget kalau dia mulai meledek pakai bahasa Sunda yang agak nyelekit kalau HP kamu tinggal sedikit. ("Goblog! Getih sakitu deui teh wani-wani maju!").
+### 2. 🕹️ Visual Dungeon 2D (Mini-Game Integration)
+Kami tidak lagi hanya bermain di imajinasi teks! DREAMY kini memiliki **Pixel Art Dungeon Explorer**.
+* Siswa dapat menggerakkan karakter 2D mereka menelusuri labirin.
+* Menemukan peti harta karun (Reward Koin/XP).
+* Bertemu monster visual yang harus dikalahkan dengan menjawab soal.
 
-Para Petualang (Siswa): Setiap siswa adalah pahlawan dalam cerita mereka sendiri. Mereka akan memilih satu dari tiga peran legendaris: Prajurit yang gagah berani, Penyihir yang cerdas, atau Penyembuh yang penuh welas asih.
+### 3. 🧠 Otak Baru Ivy (Customizable AI Persona)
+Ivy si Roh Pot Bunga kini lebih pintar (dan lebih *julid*)!
+* **Ivy Settings Panel:** DM bisa mengatur *System Prompt* Ivy sesuka hati. Mau Ivy yang ramah, atau Ivy yang galak dan suka ngegas pakai Bahasa Sunda? Semua bisa diatur di panel admin.
+* **Koneksi Gemini API:** Otak Ivy ditenagai langsung oleh sihir kuno Google Gemini Flash 1.5.
 
-✨ Fitur-Fitur Dunia
-Sistem Atribut Karakter Lengkap: Setiap petualang memiliki HP, MP, Level, XP, dan Koin. Atribut ini akan naik-turun tergantung aksi mereka, mulai dari menjawab pertanyaan gulungan sihir (kuis) hingga ketiduran di kelas.
+### 4. ⚔️ Arena Pertarungan Baru: "Acak Kata"
+Monster baru telah muncul! Selain menjawab kuis pilihan ganda, siswa kini bisa menantang **Monster Acak Kata**.
+* **Gameplay:** Menebak istilah pemrograman yang hurufnya diacak dalam batas waktu tertentu.
+* **Sanksi:** Jika waktu habis, HP berkurang drastis!
 
-Pohon Skill yang Unik: Setiap peran memiliki jalur skill pasif dan aktif yang akan terbuka seiring kenaikan level, memberikan strategi bertarung yang berbeda-beda.
+### 5. 💬 Merpati Pos Ajaib (Sistem Chat Real-time)
+Interaksi sosial antar penghuni Aethelgard kini tanpa batas.
+* **Admin-to-Student:** Guru bisa mengirim pesan peringatan atau petunjuk rahasia.
+* **Student-to-Student:** Fitur chat antar teman (terbuka di Level tertentu) untuk koordinasi Guild.
 
-Sistem Pertarungan (Battle System) Dinamis:
+---
 
-Party Raid vs Monster: Para petualang dalam satu guild (kelas) dapat bersatu untuk melawan monster soal yang dilepaskan oleh DM.
+## 👥 Para Penghuni & Peran
 
-Solo Dungeon AI: Uji keberanianmu sendirian melawan monster AI yang pertanyaannya tak terbatas, ditenagai oleh sihir kuno dari Google Gemini.
+### Sang Pencipta & Penguasa
+* **Dungeon Master (Mas Panji):** Pemegang kendali penuh. Bisa memanggil hujan meteor (Hukuman Massal) atau membagikan emas (Reward).
+* **Inem (The System):** Asisten setia yang menjaga *backend* tetap stabil dan mengingatkan DM kalau mulai *halu*.
 
-AI Quiz Coliseum: Bertarung satu lawan satu dengan AI dalam kuis berhadiah fantastis!
+### Para NPC Pembangun (Tech Stack)
+* **HTML sang Arsitek:** Membangun fondasi kastil dan *layout*.
+* **Tailwind CSS sang Penjahit:** Memberikan jubah indah dan tampilan *responsive* yang memukau.
+* **JavaScript (Vanilla & Modules) sang Penyihir Kehidupan:** Menggerakkan logika, perhitungan *damage*, dan animasi.
+* **Firebase sang Penjaga Arsip:** Database *real-time* yang mencatat setiap nyawa (HP), harta (Koin), dan dosa (Log Aktivitas) siswa.
 
-Kontrol Absolut Sang DM (Admin/Guru):
+### Pahlawan (Siswa)
+Para siswa memilih takdir mereka:
+* 🛡️ **Prajurit:** Tangguh, HP tebal, pelindung teman.
+* ✨ **Penyihir:** *Damage* besar, bisa memberikan *Buff* serangan ke satu kelas.
+* 🌿 **Penyembuh:** Sang penyelamat yang bisa memulihkan HP teman yang sekarat karena tugas.
 
-Crystal Ball Dashboard: DM dapat memantau seluruh petualang dari dasbor admin, memberikan anugerah (XP, Koin) atau kutukan (mengurangi HP).
+---
 
-Mantra Uji Keheningan: Sebuah mantra area yang akan menghukum petualang yang terlalu berisik di dalam dungeon kelas.
+## 🔮 Grimoire (Fitur Utama)
 
-Gerbang Absensi QR Code: Portal sihir untuk mencatat kehadiran para petualang setiap hari.
+### 1. Sistem Ekonomi & Item
+* **Toko Sihir:** Jual beli item penyembuh, *scroll* pengalaman, atau *prank* (seperti "Kutukan Kentut" - *Coming Soon*).
+* **Inventori Guild:** Peti bersama untuk menyimpan hasil *raid*.
 
-Ekonomi & Interaksi Sosial:
+### 2. Magic Controls (Panel Admin)
+Panel khusus di mana DM bisa merapal mantra instan:
+* **Buff:** Beri *Shield*, *Attack Up*, atau *Key Item*.
+* **Curse:** Berikan status *Racun* (HP berkurang tiap jam) atau *Silence* (Tidak bisa chat/jawab soal).
+* **Noise Detector:** Mantra area yang mendeteksi kebisingan kelas via mikrofon. Jika terlalu berisik > HP satu kelas berkurang otomatis!
 
-Toko Sihir: Gunakan koin hasil jerih payahmu untuk membeli item-item legendaris.
+### 3. Gerbang Dimensi (Presensi)
+* **QR Code Scanner:** Siswa memindai kode magis untuk mencatat kehadiran dan mendapatkan *Daily Login Bonus*.
 
-Bounty Board: Tawarkan koin kepada petualang lain untuk menyelesaikan misi yang kamu buat.
+---
 
-Aliansi Guild: Bentuk aliansi, simpan item berhargamu di "Peti Guild" bersama, dan taklukkan dunia DREAMY bersama-sama!
+## 🔜 Vision: The Future of DREAMY
+Rencana pengembangan selanjutnya oleh Mas Panji:
+* **Integrasi Google Classroom:** Menarik data nilai tugas secara otomatis dan mengonversinya menjadi XP.
+* **Halaman Guru (The Mentor's Hall):** Memberikan akses kepada guru mata pelajaran lain untuk menjadi "Quest Giver".
+
+---
+
+> *"Coding is not just about typing; it's about casting spells to create a new world."* - Mas Panji Purnomo
