@@ -8128,18 +8128,27 @@ Respons harus dalam format:
             curseUpdates[`/students/${userId}/hp`] = 10;
 
             // Simpan log profanity di student node (untuk menghindari permission error)
-            curseUpdates[`/students/${userId}/profanityLog/${Date.now()}`] = {
+            const logTimestamp = Date.now();
+            curseUpdates[`/students/${userId}/profanityLog/${logTimestamp}`] = {
                 message: messageText,
                 reason: analysis.reason,
-                timestamp: Date.now()
+                timestamp: logTimestamp,
+                studentName: studentName // Tambahkan nama untuk memudahkan admin
             };
 
             await update(ref(db), curseUpdates);
 
+            // Kirim notifikasi ke admin (seperti Ivy)
+            addNotification(
+                `<strong>${studentName}</strong> terdeteksi menggunakan kata kasar di chat: "<i>${messageText.substring(0, 50)}...</i>"`,
+                'profanity_chat',
+                { studentId: userId, message: messageText, reason: analysis.reason }
+            );
+
             showToast('⚠️ Kata kasar terdeteksi! Kamu terkena kutukan Knock!', true);
             audioPlayer.error();
 
-            console.log(`Profanity detected from ${studentName}: ${analysis.reason}`);
+            console.log(`🚨 Profanity detected from ${studentName}: ${analysis.reason}`);
         }
     } catch (error) {
         console.error('Error in AI profanity check:', error);
@@ -8414,3 +8423,227 @@ window.focusOnStudentMap = function (lat, lng, uid) {
         }, 300);
     }
 };
+
+// =======================================================
+//          PROFANITY NOTIFICATION SYSTEM FOR ADMIN
+// =======================================================
+function initProfanityNotifications() {
+    const studentsRef = ref(db, 'students');
+
+    onValue(studentsRef, (snapshot) => {
+        if (!snapshot.exists()) return;
+
+        const students = snapshot.val();
+        const allProfanityLogs = [];
+
+        // Kumpulkan semua profanity logs dari semua siswa
+        Object.entries(students).forEach(([studentId, studentData]) => {
+            if (studentData.profanityLog) {
+                Object.entries(studentData.profanityLog).forEach(([logId, log]) => {
+                    allProfanityLogs.push({
+                        id: logId,
+                        studentId: studentId,
+                        ...log
+                    });
+                });
+            }
+        });
+
+        if (allProfanityLogs.length > 0) {
+            // Sort by timestamp (newest first)
+            allProfanityLogs.sort((a, b) => b.timestamp - a.timestamp);
+
+            // Ambil 10 terbaru
+            const recentLogs = allProfanityLogs.slice(0, 10);
+
+            // Tampilkan di console dengan format yang jelas
+            console.log('%c🚨 PROFANITY ALERTS (10 Terbaru) 🚨', 'color: red; font-size: 16px; font-weight: bold;');
+            console.table(recentLogs.map(log => ({
+                'Waktu': new Date(log.timestamp).toLocaleString('id-ID'),
+                'Siswa': log.studentName,
+                'Pesan': log.message.substring(0, 50),
+                'Alasan': log.reason
+            })));
+
+            // Tampilkan badge notifikasi
+            const notifBadge = document.getElementById('notification-badge');
+            if (notifBadge) {
+                notifBadge.classList.remove('hidden');
+            }
+
+            // Log total violations
+            console.warn(`📊 Total pelanggaran kata kasar: ${allProfanityLogs.length}`);
+        }
+    });
+}
+
+// Jalankan listener profanity notifications saat halaman admin dimuat
+function initAdminNotifications() {
+    if (document.getElementById('admin-dashboard-page')) {
+        console.log('Initializing admin notifications...');
+        initProfanityNotifications();
+        initNotificationPanel();
+    }
+}
+
+// Try multiple initialization points
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initAdminNotifications);
+} else {
+    // DOM already loaded
+    initAdminNotifications();
+}
+
+// Also try after a delay as fallback
+setTimeout(initAdminNotifications, 1500);
+
+
+
+// --- MANTRA BARU: Notification Panel Display ---
+let notificationPanelInitialized = false;
+
+function initNotificationPanel() {
+    // Prevent multiple initialization
+    if (notificationPanelInitialized) {
+        console.log('Notification panel already initialized');
+        return;
+    }
+
+    const notificationList = document.getElementById('notification-list');
+    const notificationBadge = document.getElementById('notification-badge');
+    const notificationButton = document.getElementById('notification-button');
+    const notificationPanel = document.getElementById('notification-panel');
+    const markAllReadButton = document.getElementById('mark-all-read-button');
+
+    if (!notificationList) {
+        console.warn('Notification list element not found');
+        return;
+    }
+
+    notificationPanelInitialized = true;
+    console.log('Notification panel initialized successfully');
+
+    // Toggle panel dengan event delegation yang lebih baik
+    if (notificationButton && notificationPanel) {
+        // Hapus listener lama jika ada
+        const oldListener = notificationButton.onclick;
+        notificationButton.onclick = null;
+
+        notificationButton.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+
+            console.log('Notification button clicked');
+
+            const isHidden = notificationPanel.classList.contains('hidden');
+
+            if (isHidden) {
+                // Buka panel
+                notificationPanel.classList.remove('hidden');
+                setTimeout(() => {
+                    notificationPanel.classList.remove('opacity-0', 'scale-95');
+                }, 10);
+            } else {
+                // Tutup panel
+                notificationPanel.classList.add('opacity-0', 'scale-95');
+                setTimeout(() => {
+                    notificationPanel.classList.add('hidden');
+                }, 300);
+            }
+        });
+
+        console.log('Notification button listener attached');
+    } else {
+        console.warn('Notification button or panel not found', {
+            button: !!notificationButton,
+            panel: !!notificationPanel
+        });
+    }
+
+    // Close panel when clicking outside
+    document.addEventListener('click', (e) => {
+        if (notificationPanel && !notificationPanel.classList.contains('hidden')) {
+            if (!notificationPanel.contains(e.target) && !notificationButton.contains(e.target)) {
+                notificationPanel.classList.add('opacity-0', 'scale-95');
+                setTimeout(() => {
+                    notificationPanel.classList.add('hidden');
+                }, 300);
+            }
+        }
+    });
+
+    // Mark all as read
+    if (markAllReadButton) {
+        markAllReadButton.addEventListener('click', () => {
+            const notificationsRef = ref(db, 'notifications');
+            get(notificationsRef).then((snapshot) => {
+                if (snapshot.exists()) {
+                    const updates = {};
+                    Object.keys(snapshot.val()).forEach(key => {
+                        updates[`notifications/${key}/read`] = true;
+                    });
+                    update(ref(db), updates);
+                }
+            });
+        });
+    }
+
+    // Listen to notifications
+    const notificationsRef = ref(db, 'notifications');
+    onValue(notificationsRef, (snapshot) => {
+        if (!snapshot.exists()) {
+            notificationList.innerHTML = '<div class="p-4 text-center text-gray-500">Tidak ada notifikasi baru.</div>';
+            notificationBadge.classList.add('hidden');
+            return;
+        }
+
+        const notifications = [];
+        snapshot.forEach((childSnapshot) => {
+            notifications.push({
+                id: childSnapshot.key,
+                ...childSnapshot.val()
+            });
+        });
+
+        // Sort by timestamp (newest first)
+        notifications.sort((a, b) => b.timestamp - a.timestamp);
+
+        // Count unread
+        const unreadCount = notifications.filter(n => !n.read).length;
+        if (unreadCount > 0) {
+            notificationBadge.classList.remove('hidden');
+        } else {
+            notificationBadge.classList.add('hidden');
+        }
+
+        // Display notifications
+        notificationList.innerHTML = '';
+        notifications.slice(0, 20).forEach(notif => {
+            const notifDiv = document.createElement('div');
+            notifDiv.className = `p-4 border-b hover:bg-gray-50 cursor-pointer ${notif.read ? 'opacity-60' : 'bg-blue-50'}`;
+
+            const typeIcon = notif.type === 'profanity_chat' ? '🚨' :
+                notif.type === 'abusive_chat' ? '⚠️' : '📢';
+
+            notifDiv.innerHTML = `
+                <div class="flex items-start gap-3">
+                    <span class="text-2xl">${typeIcon}</span>
+                    <div class="flex-1">
+                        <div class="text-sm text-gray-800">${notif.message}</div>
+                        <div class="text-xs text-gray-500 mt-1">
+                            ${new Date(notif.timestamp).toLocaleString('id-ID')}
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Mark as read on click
+            notifDiv.addEventListener('click', () => {
+                update(ref(db, `notifications/${notif.id}`), { read: true });
+            });
+
+            notificationList.appendChild(notifDiv);
+        });
+    });
+}
+
