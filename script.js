@@ -8475,13 +8475,7 @@ function initProfanityNotifications() {
             const recentLogs = allProfanityLogs.slice(0, 10);
 
             // Tampilkan di console dengan format yang jelas
-            console.log('%c🚨 PROFANITY ALERTS (10 Terbaru) 🚨', 'color: red; font-size: 16px; font-weight: bold;');
-            console.table(recentLogs.map(log => ({
-                'Waktu': new Date(log.timestamp).toLocaleString('id-ID'),
-                'Siswa': log.studentName,
-                'Pesan': log.message.substring(0, 50),
-                'Alasan': log.reason
-            })));
+
 
             // Tampilkan badge notifikasi
             const notifBadge = document.getElementById('notification-badge');
@@ -8490,18 +8484,17 @@ function initProfanityNotifications() {
             }
 
             // Log total violations
-            console.warn(`📊 Total pelanggaran kata kasar: ${allProfanityLogs.length}`);
+
         }
     });
 }
 
+// --- MANTRA BARU: Notification Panel Display ---
+let notificationPanelInitialized = false;
+
 // Jalankan listener profanity notifications saat halaman admin dimuat
 function initAdminNotifications() {
-    if (document.getElementById('admin-dashboard-page')) {
-        console.log('Initializing admin notifications...');
-        initProfanityNotifications();
-        initNotificationPanel();
-    }
+
 }
 
 // Try multiple initialization points
@@ -8514,11 +8507,6 @@ if (document.readyState === 'loading') {
 
 // Also try after a delay as fallback
 setTimeout(initAdminNotifications, 1500);
-
-
-
-// --- MANTRA BARU: Notification Panel Display ---
-let notificationPanelInitialized = false;
 
 function initNotificationPanel() {
     // Prevent multiple initialization
@@ -8543,34 +8531,36 @@ function initNotificationPanel() {
 
     // Toggle panel dengan event delegation yang lebih baik
     if (notificationButton && notificationPanel) {
-        // Hapus listener lama jika ada
-        const oldListener = notificationButton.onclick;
-        notificationButton.onclick = null;
+        // Only add listener if not already added
+        if (!notificationButton.dataset.listenerAdded) {
+            notificationButton.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
 
-        notificationButton.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
+                console.log('Notification button clicked');
 
-            console.log('Notification button clicked');
+                const isHidden = notificationPanel.classList.contains('hidden');
 
-            const isHidden = notificationPanel.classList.contains('hidden');
+                if (isHidden) {
+                    // Buka panel
+                    notificationPanel.classList.remove('hidden');
+                    setTimeout(() => {
+                        notificationPanel.classList.remove('opacity-0', 'scale-95');
+                    }, 10);
+                } else {
+                    // Tutup panel
+                    notificationPanel.classList.add('opacity-0', 'scale-95');
+                    setTimeout(() => {
+                        notificationPanel.classList.add('hidden');
+                    }, 300);
+                }
+            });
 
-            if (isHidden) {
-                // Buka panel
-                notificationPanel.classList.remove('hidden');
-                setTimeout(() => {
-                    notificationPanel.classList.remove('opacity-0', 'scale-95');
-                }, 10);
-            } else {
-                // Tutup panel
-                notificationPanel.classList.add('opacity-0', 'scale-95');
-                setTimeout(() => {
-                    notificationPanel.classList.add('hidden');
-                }, 300);
-            }
-        });
-
-        console.log('Notification button listener attached');
+            notificationButton.dataset.listenerAdded = 'true';
+            console.log('Notification button listener attached');
+        } else {
+            console.log('Notification button listener already exists, skipping');
+        }
     } else {
         console.warn('Notification button or panel not found', {
             button: !!notificationButton,
@@ -8578,21 +8568,33 @@ function initNotificationPanel() {
         });
     }
 
-    // Close panel when clicking outside
-    document.addEventListener('click', (e) => {
-        if (notificationPanel && !notificationPanel.classList.contains('hidden')) {
-            if (!notificationPanel.contains(e.target) && !notificationButton.contains(e.target)) {
-                notificationPanel.classList.add('opacity-0', 'scale-95');
-                setTimeout(() => {
-                    notificationPanel.classList.add('hidden');
-                }, 300);
-            }
-        }
-    });
+    // Prevent clicks inside panel from closing it (only add once)
+    if (notificationPanel && !notificationPanel.dataset.clickListenerAdded) {
+        notificationPanel.addEventListener('click', (e) => {
+            e.stopPropagation();
+        });
+        notificationPanel.dataset.clickListenerAdded = 'true';
+    }
 
-    // Mark all as read
-    if (markAllReadButton) {
-        markAllReadButton.addEventListener('click', () => {
+    // Close panel when clicking outside (only add once)
+    if (!window.notificationOutsideClickListenerAdded) {
+        document.addEventListener('click', (e) => {
+            if (notificationPanel && !notificationPanel.classList.contains('hidden')) {
+                if (!notificationPanel.contains(e.target) && notificationButton && !notificationButton.contains(e.target)) {
+                    notificationPanel.classList.add('opacity-0', 'scale-95');
+                    setTimeout(() => {
+                        notificationPanel.classList.add('hidden');
+                    }, 300);
+                }
+            }
+        });
+        window.notificationOutsideClickListenerAdded = true;
+    }
+
+    // Mark all as read (only add once)
+    if (markAllReadButton && !markAllReadButton.dataset.listenerAdded) {
+        markAllReadButton.addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevent panel from closing
             const notificationsRef = ref(db, 'notifications');
             get(notificationsRef).then((snapshot) => {
                 if (snapshot.exists()) {
@@ -8604,6 +8606,7 @@ function initNotificationPanel() {
                 }
             });
         });
+        markAllReadButton.dataset.listenerAdded = 'true';
     }
 
     // Listen to notifications
