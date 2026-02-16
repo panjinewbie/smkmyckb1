@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', function () {
 // --- Impor dan Konfigurasi Firebase ---
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
-import { getDatabase, ref, set, get, onValue, push, update, remove, query, orderByChild, equalTo, onDisconnect, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
+import { getDatabase, ref, set, get, onValue, push, update, remove, query, orderByChild, equalTo, onDisconnect, serverTimestamp, onChildChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyCA2Dwl7FPBDcbAtS5iTyTADx0YY5byxo8",
@@ -4315,7 +4315,11 @@ function setupAdminDashboard() {
     aiQuizBattleButton.onclick = () => openStudentSelectionForAiQuiz(); // <-- ADD THIS
     document.getElementById('toggle-map-button').onclick = () => {
         const mapContainer = document.getElementById('student-map-wrapper');
+        const logContainer = document.getElementById('location-log-wrapper');
+
         mapContainer.classList.toggle('hidden');
+        if (logContainer) logContainer.classList.toggle('hidden');
+
         if (!mapContainer.classList.contains('hidden')) {
             setTimeout(() => {
                 // Resize map agar tile ter-render dengan benar setelah container visible
@@ -8409,6 +8413,73 @@ function initStudentTrackerMap() {
     setTimeout(() => {
         map.invalidateSize();
     }, 500);
+
+    // Call Logger Init
+    initLocationLogger();
+}
+
+// =======================================================
+//          LOCATION LOGGING SYSTEM
+// =======================================================
+function initLocationLogger() {
+    const logList = document.getElementById('location-log-list');
+    const logWrapper = document.getElementById('location-log-wrapper');
+
+    // Only proceed if elements exist
+    if (!logList || !logWrapper) return;
+
+    // Show wrapper when map is shown (handled via toggle button logic usually, but ensure it's visible if map is)
+    // Actually, let's hook into the existing toggle logic or just leave it to the user to see it below map.
+    // For now, let's make sure it's not hidden if it should be visible. 
+    // The wrapper has 'hidden' class by default. We should toggle it with the map.
+
+    const studentsRef = ref(db, 'students');
+    let initialLoad = true;
+    const lastLogTimestamps = {}; // Store last logged timestamp per student
+
+    onChildChanged(studentsRef, (snapshot) => {
+        const student = snapshot.val();
+        if (student.location && student.location.timestamp) {
+            // Check if this timestamp is actually new
+            if (lastLogTimestamps[snapshot.key] === student.location.timestamp) {
+                return; // Skip duplicate logs (likely other data like XP/HP changed)
+            }
+            lastLogTimestamps[snapshot.key] = student.location.timestamp;
+
+            // Check if update is recent (within last minute) to avoid spamming old logs on reload
+            // But onChildChanged only triggers on new updates, so we are good.
+
+            const timestamp = new Date(student.location.timestamp);
+            const timeStr = timestamp.toLocaleTimeString('id-ID');
+            const lat = student.location.lat;
+            const lng = student.location.lng;
+            const mapLink = `https://www.google.com/maps?q=${lat},${lng}`;
+
+            const logEntry = document.createElement('div');
+            logEntry.className = 'border-b border-gray-100 last:border-0 pb-1 mb-1';
+            logEntry.innerHTML = `
+                <span class="text-gray-500 mr-2">[${timeStr}]</span>
+                <span class="font-semibold text-blue-700">${student.nama}</span> 
+                <span class="text-gray-400 text-[10px]">(${student.kelas})</span>: 
+                <a href="${mapLink}" target="_blank" class="text-blue-500 hover:text-blue-700 underline ml-1">
+                    ${lat.toFixed(5)}, ${lng.toFixed(5)}
+                </a>
+            `;
+
+            console.log(`[LOCATION] ${timeStr} - ${student.nama} (${student.kelas}) @ ${lat}, ${lng} | Map: ${mapLink}`);
+
+            // Prepend new entry
+            if (logList.querySelector('.text-center')) {
+                logList.innerHTML = ''; // Clear "No activity" message
+            }
+            logList.insertBefore(logEntry, logList.firstChild);
+
+            // Limit to 50 entries
+            while (logList.children.length > 50) {
+                logList.removeChild(logList.lastChild);
+            }
+        }
+    });
 }
 
 // =======================================================
