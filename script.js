@@ -8256,14 +8256,17 @@ async function initStudentTracker(uid) {
         // Kirim notifikasi ke admin tentang kegagalan tracking lokasi
         const studentSnap = await get(ref(db, `students/${uid}`));
         if (studentSnap.exists()) {
-            const studentName = studentSnap.val().nama;
+            const studentData = studentSnap.val();
+            const studentName = studentData.nama;
             let errorMessage = '';
             let errorType = '';
+            let shouldDeductMp = false;
 
             switch (error.code) {
                 case error.PERMISSION_DENIED:
                     errorMessage = `Siswa <strong>${studentName}</strong> menolak memberikan izin akses lokasi.`;
                     errorType = 'permission_denied';
+                    shouldDeductMp = true; // Kurangi MP jika siswa menolak
                     break;
                 case error.POSITION_UNAVAILABLE:
                     errorMessage = `Gagal melacak lokasi siswa <strong>${studentName}</strong> karena informasi lokasi tidak tersedia.`;
@@ -8278,6 +8281,29 @@ async function initStudentTracker(uid) {
                     errorType = 'unknown_error';
             }
 
+            // Kurangi MP jika siswa menolak akses lokasi
+            if (shouldDeductMp) {
+                const mpPenalty = 5;
+                const currentMp = studentData.mp || 0;
+                const newMp = Math.max(0, currentMp - mpPenalty);
+
+                await update(ref(db), {
+                    [`/students/${uid}/mp`]: newMp
+                });
+
+                // Update pesan notifikasi admin dengan info pengurangan MP
+                errorMessage += ` <strong>MP dikurangi ${mpPenalty}.</strong>`;
+
+                // Kirim notifikasi ke siswa tentang pengurangan MP
+                addNotification(
+                    `Kamu menolak memberikan izin akses lokasi. Sebagai konsekuensi, MP kamu dikurangi <strong>${mpPenalty}</strong>.`,
+                    'location_penalty',
+                    { mpPenalty: mpPenalty },
+                    uid
+                );
+            }
+
+            // Kirim notifikasi ke admin
             addNotification(
                 errorMessage,
                 'location_error',
