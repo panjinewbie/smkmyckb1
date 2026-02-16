@@ -8121,34 +8121,26 @@ Respons harus dalam format:
         const analysis = JSON.parse(result.candidates[0].content.parts[0].text);
 
         if (analysis.isOffensive) {
-            // Terapkan kutukan knock (HP jadi 10, efek 2 hari)
-            const knockExpiry = Date.now() + (2 * 24 * 60 * 60 * 1000);
-            const curseUpdates = {};
-            curseUpdates[`/students/${userId}/statusEffects/knock`] = { expires: knockExpiry };
-            curseUpdates[`/students/${userId}/hp`] = 10;
-
-            // Simpan log profanity di student node (untuk menghindari permission error)
+            // HANYA simpan log + kirim notifikasi admin, TANPA hukuman otomatis
             const logTimestamp = Date.now();
-            curseUpdates[`/students/${userId}/profanityLog/${logTimestamp}`] = {
+
+            // Simpan log untuk tracking (admin bisa lihat riwayat)
+            await set(ref(db, `students/${userId}/profanityLog/${logTimestamp}`), {
                 message: messageText,
                 reason: analysis.reason,
                 timestamp: logTimestamp,
-                studentName: studentName // Tambahkan nama untuk memudahkan admin
-            };
+                studentName: studentName
+            });
 
-            await update(ref(db), curseUpdates);
-
-            // Kirim notifikasi ke admin (seperti Ivy)
+            // Kirim notifikasi ke admin (admin yang memutuskan tindakan)
             addNotification(
-                `<strong>${studentName}</strong> terdeteksi menggunakan kata kasar di chat: "<i>${messageText.substring(0, 50)}...</i>"`,
-                'profanity_chat',
+                `🚨 <strong>${studentName}</strong> terdeteksi menggunakan kata kasar: "<i>${messageText.substring(0, 50)}...</i>" — Alasan: ${analysis.reason}`,
+                'profanity_alert',
                 { studentId: userId, message: messageText, reason: analysis.reason }
             );
 
-            showToast('⚠️ Kata kasar terdeteksi! Kamu terkena kutukan Knock!', true);
-            audioPlayer.error();
-
-            console.log(`🚨 Profanity detected from ${studentName}: ${analysis.reason}`);
+            console.log(`🚨 Profanity alert sent to admin for ${studentName}: ${analysis.reason}`);
+            // TIDAK ada toast error ke siswa, TIDAK ada kutukan otomatis
         }
     } catch (error) {
         console.error('Error in AI profanity check:', error);
@@ -8646,4 +8638,3 @@ function initNotificationPanel() {
         });
     });
 }
-
