@@ -93,6 +93,14 @@ const SKILL_BOOK = {
         ]
     }
 };
+
+// --- MANTRA BARU: DAFTAR KATA TERLARANG ---
+const BAD_WORDS = [
+    "anjing", "babi", "bangsat", "kunyuk", "bajingan", "asu", "kontol", "memek", "hentai", "bokep",
+    "goblog", "goblok", "tolol", "sarap", "edan", "bego", "idiot", "cacat", "pantek", "jancok",
+    "fuck", "shit", "bitch", "asshole", "dick", "pussy", "bastard", "sex", "porn", "ngentot"
+];
+
 // --- MANTRA BARU: Konfigurasi AI Quiz Battle ---
 const AI_QUIZ_PRIZES = [
     { xp: 10, coin: 5 }, { xp: 20, coin: 10 }, { xp: 30, coin: 15 }, { xp: 50, coin: 20 }, { xp: 75, coin: 25 }, // Level 1-5
@@ -2807,6 +2815,25 @@ function setupBountyBoardPage(uid) {
             if (!studentSnap.exists()) throw new Error("Data kamu tidak ditemukan!");
 
             const studentData = studentSnap.val();
+
+            // --- MANTRA BARU: Validasi Kata Kasar ---
+            const combinedText = (title + " " + description).toLowerCase();
+            // Gunakan regex agar 'masuk' tidak terdeteksi sebagai 'asu'
+            const badWordRegex = new RegExp('\\b(' + BAD_WORDS.join('|') + ')\\b', 'i');
+            const match = combinedText.match(badWordRegex);
+
+            if (match) {
+                const foundBadWord = match[0];
+                // Kirim notifikasi ke admin
+                addNotification(
+                    `<strong>${studentData.nama}</strong> mencoba membuat bounty dengan kata kasar: "<i>${foundBadWord}</i>"`,
+                    'warning',
+                    { studentId: uid, detectedWord: foundBadWord }
+                );
+                audioPlayer.error();
+                throw new Error("Kata kasar terdeteksi! Jaga ucapanmu.");
+            }
+
             if ((studentData.coin || 0) < rewardCoin) throw new Error("Koin kamu tidak cukup untuk dijadikan hadiah!");
 
             const bountyData = {
