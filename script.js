@@ -1985,7 +1985,11 @@ async function handleUseItem(uid, itemIndex, itemData, closeModalCallback) {
 
         // Logika Efek Instan
         if (itemData.effect === 'HEAL_HP') {
-            const maxHp = (studentData.level || 1) * 100;
+            let maxHp = (studentData.level || 1) * 100;
+            // --- MODIFIKASI: Cek Status Knock ---
+            if (studentData.statusEffects && studentData.statusEffects.knock) {
+                maxHp = 10; // Jika terkena Knock, HP maksimal untuk healing hanya 10
+            }
             const currentHp = Number(studentData.hp) || 0;
             const healAmount = Number(itemData.effectValue) || 0;
             updates[`/students/${uid}/hp`] = Math.min(maxHp, currentHp + healAmount);
@@ -2441,7 +2445,7 @@ async function handleUseCurseItem(casterUid, targetUid, itemIndex, itemData, tar
 
         // Logika khusus untuk 'knock'
         if (effect === 'knock') {
-            updates[`/students/${targetUid}/hp`] = 10;
+            updates[`/students/${targetUid}/hp`] = 5; // MODIFIKASI: HP jadi 5 saat terkena Knock
         }
 
         await update(ref(db), updates);
