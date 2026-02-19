@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Guru - SMK Mardi Yuana Cikembar</title>
+    <!-- Tailwind CSS untuk styling cepat dan responsif -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome untuk ikon-ikon cantik -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Noto Sans biar enak dibaca -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Lordicon -->
+    <script src="https://cdn.lordicon.com/lordicon.js"></script>
+
+    <style>
+        body {
+            font-family: 'Noto Sans', sans-serif;
+            background-color: #f3f4f6;
+        }
+
+        /* Animasi centil dikit */
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Custom scrollbar biar gak kaku */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+
+        .active-nav {
+            background-color: #e0e7ff;
+            /* Indigo 100 */
+            color: #4338ca;
+            /* Indigo 700 */
+            border-right: 4px solid #4338ca;
+        }
+    </style>
+</head>
+
+<body class="text-gray-800 h-screen flex overflow-hidden">
+
+    <!-- Sidebar (Asisten Pribadi Inem) -->
+    <aside class="w-64 bg-white shadow-lg hidden md:flex flex-col z-10 transition-all duration-300" id="sidebar">
+        <div
+            class="p-6 flex items-center justify-center border-b border-gray-200 bg-gradient-to-r from-blue-900 to-blue-700">
+            <img src="asset/gambar/logomymadival.png" alt="Logo SMK" class="h-12 w-auto mr-2 bg-white rounded-full p-1">
+            <div class="text-white font-bold text-lg leading-tight">
+                SMK MY<br><span class="text-yellow-300 text-sm">Teacher Panel</span>
+            </div>
+        </div>
+
+        <!-- Profil Singkat Guru -->
+        <div class="p-4 border-b border-gray-100 text-center group cursor-pointer" onclick="openProfileModal()">
+            <div class="relative w-24 h-24 mx-auto mb-3 transition-transform transform group-hover:scale-105">
+                <!-- Foto Profil Guru (Dinamis dari Firebase) -->
+                <img id="teacher-avatar" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Teacher" alt="Foto Profil"
+                    class="w-full h-full object-cover rounded-full border-4 border-blue-100 shadow-md group-hover:border-blue-300 transition-colors">
+                <div
+                    class="absolute bottom-0 right-0 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-sm border border-gray-100 group-hover:bg-blue-50 transition-colors">
+                    <i class="fas fa-pen text-xs text-gray-500 group-hover:text-blue-500"></i>
+                </div>
+            </div>
+            <h3 id="teacher-name" class="font-bold text-gray-800 text-lg group-hover:text-blue-600 transition-colors">
+                Loading...</h3>
+            <p class="text-xs text-gray-500 font-medium mb-1"><span id="teacher-role">Guru Kejuruan</span></p>
+            <p class="text-[10px] text-blue-400 font-semibold uppercase tracking-wider">Level <span
+                    id="teacher-level">1</span></p>
+        </div>
+
+        <!-- Menu Navigasi -->
+        <nav class="flex-1 overflow-y-auto py-4">
+            <ul class="space-y-1">
+                <li>
+                    <a href="#" onclick="switchTab('dashboard')" id="nav-dashboard"
+                        class="flex items-center px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-blue-600 transition-colors active-nav">
+                        <i class="fas fa-chart-line w-6 text-center mr-2"></i>
+                        Dashboard
+                    </a>
+                </li>
+                <li>
+                    <a href="#" onclick="switchTab('grind')" id="nav-grind"
+                        class="flex items-center px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-blue-600 transition-colors">
+                        <i class="fas fa-tasks w-6 text-center mr-2"></i>
+                        The Daily Grind
+                    </a>
+                </li>
+                <li>
+                    <a href="#" onclick="switchTab('jadwal')" id="nav-jadwal"
+                        class="flex items-center px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-blue-600 transition-colors">
+                        <i class="fas fa-calendar-alt w-6 text-center mr-2"></i>
+                        Jadwal Mengajar
+                    </a>
+                </li>
+                <li>
+                    <a href="#" onclick="switchTab('absensi')" id="nav-absensi"
+                        class="flex items-center px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-blue-600 transition-colors">
+                        <i class="fas fa-user-check w-6 text-center mr-2"></i>
+                        Absensi Siswa
+                    </a>
+                </li>
+                <li>
+                    <a href="#" onclick="switchTab('nilai')" id="nav-nilai"
+                        class="flex items-center px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-blue-600 transition-colors">
+                        <i class="fas fa-edit w-6 text-center mr-2"></i>
+                        Input Nilai
+                    </a>
+                </li>
+                <li>
+                    <a href="#" onclick="switchTab('materi')" id="nav-materi"
+                        class="flex items-center px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-blue-600 transition-colors">
+                        <i class="fas fa-book w-6 text-center mr-2"></i>
+                        Materi & E-Book
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+        <div class="p-4 border-t border-gray-200">
+            <button id="logout-btn"
+                class="w-full flex items-center justify-center px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors font-medium">
+                <i class="fas fa-sign-out-alt mr-2"></i> Logout
+            </button>
+        </div>
+    </aside>
+
+    <!-- Main Content (Area Kerja Detektif) -->
+    <main class="flex-1 flex flex-col h-screen overflow-hidden relative">
+        <!-- Header Mobile -->
+        <header class="bg-white shadow-sm p-4 flex justify-between items-center md:hidden z-20">
+            <div class="flex items-center">
+                <img src="asset/gambar/logomymadival.png" alt="Logo" class="h-8 mr-2">
+                <span class="font-bold text-gray-800">Guru Panel</span>
+            </div>
+            <button onclick="toggleSidebar()" class="text-gray-600 focus:outline-none">
+                <i class="fas fa-bars text-xl"></i>
+            </button>
+        </header>
+
+        <!-- Dynamic Content Area -->
+        <div class="flex-1 overflow-y-auto p-4 md:p-8 bg-gray-50" id="content-area">
+
+            <!-- SECTION: DASHBOARD -->
+            <div id="dashboard" class="fade-in">
+                <!-- Header Stats & Greeting -->
+                <div class="mb-8 bg-white p-6 rounded-2xl shadow-sm border border-gray-100 relative overflow-hidden">
+                    <div
+                        class="absolute top-0 right-0 w-64 h-64 bg-blue-50 rounded-full mix-blend-multiply filter blur-3xl opacity-30 -translate-y-12 translate-x-12">
+                    </div>
+                    <div
+                        class="absolute bottom-0 left-0 w-64 h-64 bg-purple-50 rounded-full mix-blend-multiply filter blur-3xl opacity-30 translate-y-12 -translate-x-12">
+                    </div>
+
+                    <div
+                        class="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                        <div>
+                            <h1 class="text-2xl md:text-3xl font-bold text-gray-800">Wilujeng Sumping, <span
+                                    id="welcome-name" class="text-blue-600">Guru</span>! ✨</h1>
+                            <p class="text-gray-500 mt-1">Hari ini mau mecahin kasus apa di kelas?</p>
+                            <p class="text-sm font-semibold text-gray-400 mt-2 flex items-center gap-2">
+                                <i class="far fa-calendar-alt"></i> <span id="current-date">Senin, 14 Februari
+                                    2026</span>
+                            </p>
+                        </div>
+
+                        <!-- Header Stats Container -->
+                        <div class="w-full md:w-auto flex-1 max-w-2xl">
+                            <div
+                                class="grid grid-cols-2 md:grid-cols-4 gap-4 bg-gray-50/50 p-4 rounded-xl backdrop-blur-sm border border-gray-100/50">
+                                <!-- HP -->
+                                <div class="bg-white p-3 rounded-lg shadow-sm border border-gray-100">
+                                    <div
+                                        class="flex justify-between text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
+                                        Health</div>
+                                    <div class="flex items-center gap-2">
+                                        <div
+                                            class="w-8 h-8 rounded-full bg-red-50 text-red-500 flex items-center justify-center flex-shrink-0">
+                                            <i class="fas fa-heart text-xs"></i>
+                                        </div>
+                                        <div class="flex-1">
+                                            <div class="text-sm font-bold text-gray-800"><span id="hp-text">100</span>%
+                                            </div>
+                                            <div class="w-full bg-gray-100 rounded-full h-1.5 mt-1 overflow-hidden">
+                                                <div id="hp-bar"
+                                                    class="bg-red-500 h-full rounded-full transition-all duration-500"
+                                                    style="width: 100%"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- MP -->
+                                <div class="bg-white p-3 rounded-lg shadow-sm border border-gray-100">
+                                    <div
+                                        class="flex justify-between text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
+                                        Mana</div>
+                                    <div class="flex items-center gap-2">
+                                        <div
+                                            class="w-8 h-8 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center flex-shrink-0">
+                                            <i class="fas fa-bolt text-xs"></i>
+                                        </div>
+                                        <div class="flex-1">
+                                            <div class="text-sm font-bold text-gray-800"><span id="mp-text">50</span>%
+                                            </div>
+                                            <div class="w-full bg-gray-100 rounded-full h-1.5 mt-1 overflow-hidden">
+                                                <div id="mp-bar"
+                                                    class="bg-blue-500 h-full rounded-full transition-all duration-500"
+                                                    style="width: 100%"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- XP -->
+                                <div class="bg-white p-3 rounded-lg shadow-sm border border-gray-100">
+                                    <div
+                                        class="flex justify-between text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
+                                        XP</div>
+                                    <div class="flex items-center gap-2">
+                                        <div
+                                            class="w-8 h-8 rounded-full bg-yellow-50 text-yellow-500 flex items-center justify-center flex-shrink-0">
+                                            <i class="fas fa-star text-xs"></i>
+                                        </div>
+                                        <div class="flex-1">
+                                            <div class="text-sm font-bold text-gray-800"><span id="xp-text">0</span>
+                                            </div>
+                                            <div class="w-full bg-gray-100 rounded-full h-1.5 mt-1 overflow-hidden">
+                                                <div id="xp-bar"
+                                                    class="bg-yellow-400 h-full rounded-full transition-all duration-500"
+                                                    style="width: 0%"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- COIN -->
+                                <div class="bg-white p-3 rounded-lg shadow-sm border border-gray-100">
+                                    <div
+                                        class="flex justify-between text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
+                                        Wealth</div>
+                                    <div class="flex items-center gap-2">
+                                        <div
+                                            class="w-8 h-8 rounded-full bg-amber-50 text-amber-500 flex items-center justify-center flex-shrink-0">
+                                            <i class="fas fa-coins text-xs"></i>
+                                        </div>
+                                        <div>
+                                            <div class="text-sm font-bold text-gray-800" id="coin-display">0</div>
+                                            <div class="text-[10px] text-gray-400">Gold</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stats Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <!-- Card 1 -->
+                    <div
+                        class="bg-white rounded-xl p-6 shadow-sm border-l-4 border-blue-500 hover:shadow-md transition-shadow">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <p class="text-sm text-gray-500 mb-1">Total Siswa Ajar</p>
+                                <h3 id="stat-student-count" class="text-2xl font-bold text-gray-800">...</h3>
+                            </div>
+                            <div class="bg-blue-100 p-3 rounded-full text-blue-600">
+                                <i class="fas fa-users text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Card 2 -->
+                    <div
+                        class="bg-white rounded-xl p-6 shadow-sm border-l-4 border-green-500 hover:shadow-md transition-shadow">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <p class="text-sm text-gray-500 mb-1">Kelas Hari Ini</p>
+                                <h3 id="stat-class-count" class="text-2xl font-bold text-gray-800">...</h3>
+                            </div>
+                            <div class="bg-green-100 p-3 rounded-full text-green-600">
+                                <i class="fas fa-chalkboard-teacher text-xl"></i>
+                            </div>
+                        </div>
+                        <p class="text-xs text-gray-400 mt-2">Jangan telat ya beb!</p>
+                    </div>
+                    <!-- Card 3 -->
+                    <div
+                        class="bg-white rounded-xl p-6 shadow-sm border-l-4 border-yellow-500 hover:shadow-md transition-shadow">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <p class="text-sm text-gray-500 mb-1">Tugas Belum Dinilai</p>
+                                <h3 id="stat-task-count" class="text-2xl font-bold text-gray-800">0</h3>
+                            </div>
+                            <div class="bg-yellow-100 p-3 rounded-full text-yellow-600">
+                                <i class="fas fa-file-alt text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Card 4 -->
+                    <div
+                        class="bg-white rounded-xl p-6 shadow-sm border-l-4 border-red-500 hover:shadow-md transition-shadow">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <p class="text-sm text-gray-500 mb-1">Siswa Bermasalah</p>
+                                <h3 id="stat-trouble-count" class="text-2xl font-bold text-gray-800">0</h3>
+                            </div>
+                            <div class="bg-red-100 p-3 rounded-full text-red-600">
+                                <i class="fas fa-exclamation-triangle text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Activity & Quick Actions -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <!-- Schedule Widget -->
+                    <div class="bg-white rounded-xl shadow-sm p-6 lg:col-span-2">
+                        <h3 class="font-bold text-lg text-gray-800 mb-4 flex items-center">
+                            <i class="far fa-clock text-blue-500 mr-2"></i> Jadwal Hari Ini
+                        </h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="text-gray-500 text-sm border-b border-gray-100">
+                                        <th class="pb-3 font-medium">Jam</th>
+                                        <th class="pb-3 font-medium">Kelas</th>
+                                        <th class="pb-3 font-medium">Mata Pelajaran</th>
+                                        <th class="pb-3 font-medium">Ruangan</th>
+                                        <th class="pb-3 font-medium">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="text-sm">
+                                    <tr class="border-b border-gray-50 hover:bg-gray-50">
+                                        <td class="py-3 font-mono text-gray-600">07:30 - 09:30</td>
+                                        <td class="py-3 font-semibold text-blue-900">X RPL 1</td>
+                                        <td class="py-3">Dasar Pemrograman</td>
+                                        <td class="py-3"><span class="bg-gray-200 px-2 py-1 rounded text-xs">Lab
+                                                1</span></td>
+                                        <td class="py-3">
+                                            <button onclick="switchTab('absensi')"
+                                                class="text-blue-600 hover:text-blue-800 text-xs font-bold">Absen</button>
+                                        </td>
+                                    </tr>
+                                    <tr class="border-b border-gray-50 hover:bg-gray-50">
+                                        <td class="py-3 font-mono text-gray-600">10:00 - 12:00</td>
+                                        <td class="py-3 font-semibold text-blue-900">XI TKJ 2</td>
+                                        <td class="py-3">Infrastruktur Jaringan</td>
+                                        <td class="py-3"><span class="bg-gray-200 px-2 py-1 rounded text-xs">R. Teori
+                                                3</span></td>
+                                        <td class="py-3">
+                                            <button onclick="switchTab('absensi')"
+                                                class="text-blue-600 hover:text-blue-800 text-xs font-bold">Absen</button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Quick Notifications -->
+                    <div class="bg-white rounded-xl shadow-sm p-6">
+                        <h3 class="font-bold text-lg text-gray-800 mb-4">Pengumuman Sekolah</h3>
+                        <ul class="space-y-4">
+                            <li class="flex items-start space-x-3">
+                                <div class="w-2 h-2 mt-2 bg-red-500 rounded-full flex-shrink-0"></div>
+                                <div>
+                                    <p class="text-sm font-semibold text-gray-800">Rapat Dewan Guru</p>
+                                    <p class="text-xs text-gray-500">Besok, 13:00 WIB di R. Guru. Jangan lupa bawa
+                                        gorengan beb.</p>
+                                </div>
+                            </li>
+                            <li class="flex items-start space-x-3">
+                                <div class="w-2 h-2 mt-2 bg-blue-500 rounded-full flex-shrink-0"></div>
+                                <div>
+                                    <p class="text-sm font-semibold text-gray-800">Update Dapodik</p>
+                                    <p class="text-xs text-gray-500">Batas akhir sinkronisasi data siswa Jumat ini.</p>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION: THE DAILY GRIND -->
+            <div id="grind" class="hidden fade-in">
+                <div class="flex items-center gap-2 mb-4 border-b pb-2">
+                    <!-- FIXED: Updated Lordicon URL -->
+                    <lord-icon src="https://cdn.lordicon.com/surcxhka.json" trigger="loop" delay="2000"
+                        colors="primary:#1e293b,secondary:#fbbf24" style="width:32px;height:32px"></lord-icon>
+                    <h2 class="text-xl font-bold text-gray-800">The Daily Grind</h2>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- Quest 1: Journal -->
+                    <div
+                        class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:border-blue-400 transition">
+                        <h3 class="font-bold text-gray-800 mb-2 flex justify-between items-center">
+                            <span>📜 Jurnal Harian</span>
+                            <span class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">+10 XP</span>
+                        </h3>
+                        <p class="text-xs text-gray-500 mb-4">Catat kegiatan mengajar hari ini untuk laporan.</p>
+                        <textarea id="journal-input" rows="3"
+                            class="w-full bg-gray-50 border border-gray-300 rounded p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 mb-2"
+                            placeholder="Apa yang Anda ajarkan hari ini?"></textarea>
+                        <button onclick="submitGrind('journal')"
+                            class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition-colors text-sm">
+                            Submit Report
+                        </button>
+                    </div>
+
+                    <!-- Quest 2: Grades -->
+                    <div
+                        class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:border-green-400 transition">
+                        <h3 class="font-bold text-gray-800 mb-2 flex justify-between items-center">
+                            <span>📊 Input Nilai</span>
+                            <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">+15 XP</span>
+                        </h3>
+                        <p class="text-xs text-gray-500 mb-4">Verifikasi dan input nilai siswa.</p>
+                        <div class="flex gap-2 mb-2">
+                            <select id="grade-class-select"
+                                class="bg-gray-50 border border-gray-300 rounded p-2 text-sm flex-1">
+                                <option>Pilih Kelas...</option>
+                                <option>X PPLG 1</option>
+                                <option>X PPLG 2</option>
+                            </select>
+                        </div>
+                        <button onclick="submitGrind('grades')"
+                            class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition-colors text-sm">
+                            Verifikasi Nilai
+                        </button>
+                    </div>
+
+                    <!-- Quest 3: Presence -->
+                    <div
+                        class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:border-purple-400 transition">
+                        <h3 class="font-bold text-gray-800 mb-2 flex justify-between items-center">
+                            <span>👁️ Presensi Siswa</span>
+                            <span class="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">+5 XP</span>
+                        </h3>
+                        <p class="text-xs text-gray-500 mb-4">Pastikan kehadiran siswa tercatat rapi.</p>
+
+                        <button onclick="submitGrind('presence')"
+                            class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded transition-colors text-sm mt-auto">
+                            Konfirmasi Presensi
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Curriculum Buff -->
+                <div class="mt-8 bg-white p-6 rounded-xl shadow-sm border border-l-4 border-l-amber-500">
+                    <div class="flex items-center gap-3 mb-4">
+                        <!-- FIXED: Updated Lordicon URL -->
+                        <lord-icon src="https://cdn.lordicon.com/nocovwne.json" trigger="hover"
+                            colors="primary:#1e293b,secondary:#fbbf24" style="width:32px;height:32px"></lord-icon>
+                        <h3 class="font-bold text-gray-800 text-lg">Curriculum Buff</h3>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h4 class="font-semibold text-gray-700">Pengaturan Jadwal</h4>
+                            <p class="text-xs text-gray-500">Aktifkan untuk mendapatkan bonus efisiensi mengajar.</p>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="schedule-toggle" class="sr-only peer" onchange="toggleBuff()">
+                            <div
+                                class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600">
+                            </div>
+                        </label>
+                    </div>
+                    <div id="buff-status"
+                        class="mt-3 text-sm text-green-600 font-medium hidden flex items-center gap-2">
+                        <i class="fas fa-check-circle"></i> Buff Aktif: Diskon MP 10% untuk semua spell!
+                    </div>
+                </div>
+
+                <!-- Grimoire Section -->
+                <div class="mt-8 border-t pt-6">
+                    <div class="flex items-center gap-2 mb-4">
+                        <h2 class="text-xl font-bold text-gray-800">Grimoire (Magic Spells)</h2>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Spell 1: Noise Detector -->
+                        <div
+                            class="bg-purple-50 p-4 rounded-xl border border-purple-100 flex items-center justify-between">
+                            <div>
+                                <h3 class="font-bold text-purple-900">Silence Detection</h3>
+                                <p class="text-xs text-purple-700">Cost: 20 MP • Lvl 5</p>
+                            </div>
+                            <button id="btn-noise" onclick="castSpell('noise')"
+                                class="bg-purple-600 text-white px-3 py-1 rounded shadow text-sm hover:bg-purple-700 transition">Cast</button>
+                            <div id="lock-noise"
+                                class="text-xs text-red-500 absolute bg-white/80 px-2 py-1 rounded hidden border border-red-200">
+                                <i class="fas fa-lock"></i> Locked
+                            </div>
+                        </div>
+                        <!-- Spell 2: Pigeon Post -->
+                        <div class="bg-blue-50 p-4 rounded-xl border border-blue-100 flex items-center justify-between">
+                            <div>
+                                <h3 class="font-bold text-blue-900">Merpati Pos</h3>
+                                <p class="text-xs text-blue-700">Cost: 5 MP • Lvl 3</p>
+                            </div>
+                            <button id="btn-chat" onclick="castSpell('chat')"
+                                class="bg-blue-600 text-white px-3 py-1 rounded shadow text-sm hover:bg-blue-700 transition">Cast</button>
+                            <div id="lock-chat"
+                                class="text-xs text-red-500 absolute bg-white/80 px-2 py-1 rounded hidden border border-red-200">
+                                <i class="fas fa-lock"></i> Locked
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Visualizer for Noise Spell -->
+                    <div id="noise-visualizer"
+                        class="hidden mt-4 bg-gray-900 p-4 rounded-lg h-16 flex items-center justify-center gap-1 shadow-inner"
+                        id="visualizer-bars">
+                        <div class="w-1 bg-green-500 h-2 animate-[pulse_0.5s_ease-in-out_infinite]"></div>
+                        <div class="w-1 bg-green-500 h-6 animate-[pulse_0.4s_ease-in-out_infinite]"></div>
+                        <div class="w-1 bg-green-500 h-3 animate-[pulse_0.6s_ease-in-out_infinite]"></div>
+                        <div class="w-1 bg-green-500 h-8 animate-[pulse_0.3s_ease-in-out_infinite]"></div>
+                        <div class="w-1 bg-green-500 h-4 animate-[pulse_0.5s_ease-in-out_infinite]"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION: JADWAL -->
+            <div id="jadwal" class="hidden fade-in">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6">Jadwal Mengajar Mingguan</h2>
+                <div class="bg-white rounded-xl shadow-sm p-6 overflow-x-auto">
+                    <!-- Disini bisa pake tabel jadwal yang lebih lengkap -->
+                    <div class="text-center py-10 text-gray-500">
+                        <i class="fas fa-calendar-check text-5xl mb-4 text-blue-200"></i>
+                        <p>Fitur Jadwal Lengkap dalam pengembangan Inem...</p>
+                        <p class="text-sm">Sementara liat di Dashboard dulu ya, Beb!</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION: ABSENSI -->
+            <div id="absensi" class="hidden fade-in">
+                <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+                    <h2 class="text-2xl font-bold text-gray-800">Input Absensi Siswa</h2>
+                    <div class="flex flex-col md:flex-row gap-2 w-full md:w-auto">
+                        <select id="attendance-class-select" onchange="loadStudentsForAttendance()"
+                            class="border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full md:w-auto">
+                            <option value="">Pilih Kelas...</option>
+                            <!-- Options populated dynamically -->
+                        </select>
+                        <input type="date" id="attendance-date"
+                            class="border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full md:w-auto">
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left">
+                            <thead class="bg-gray-50 border-b border-gray-200">
+                                <tr>
+                                    <th class="px-6 py-4 font-semibold text-gray-700 w-10">No</th>
+                                    <th class="px-6 py-4 font-semibold text-gray-700">Nama Siswa</th>
+                                    <th class="px-6 py-4 font-semibold text-gray-700 text-center">Status Kehadiran</th>
+                                    <th class="px-6 py-4 font-semibold text-gray-700">Keterangan</th>
+                                </tr>
+                            </thead>
+                            <tbody id="attendance-table-body" class="divide-y divide-gray-100">
+                                <tr>
+                                    <td colspan="4" class="px-6 py-8 text-center text-gray-500 italic">
+                                        Silakan pilih kelas terlebih dahulu untuk memuat data siswa.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="mt-6 flex justify-end">
+                    <button onclick="saveAttendance()"
+                        class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-xl shadow-lg shadow-blue-500/30 transition-all transform hover:-translate-y-1">
+                        <i class="fas fa-save mr-2"></i> Simpan Data Absensi
+                    </button>
+                </div>
+            </div>
+        </div>
+        </div>
+
+        <!-- SECTION: INPUT NILAI -->
+        <div id="nilai" class="hidden fade-in">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">Input Nilai Siswa</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-white p-6 rounded-xl shadow-sm">
+                    <h3 class="font-bold text-gray-700 mb-4 border-b pb-2">Form Penilaian</h3>
+                    <form onsubmit="event.preventDefault(); simpanData();">
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Kelas</label>
+                            <select
+                                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option>X RPL 1</option>
+                                <option>XII TKJ 2</option>
+                            </select>
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Jenis Nilai</label>
+                            <select
+                                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option>Tugas Harian</option>
+                                <option>Ulangan Tengah Semester (UTS)</option>
+                                <option>Ulangan Akhir Semester (UAS)</option>
+                                <option>Praktek</option>
+                            </select>
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Nama Siswa</label>
+                            <select
+                                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option>Pilih Siswa...</option>
+                                <option>Ahmad Zulfikar</option>
+                                <option>Budi Santoso</option>
+                                <option>Citra Lestari</option>
+                            </select>
+                        </div>
+                        <div class="mb-6">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Nilai (0-100)</label>
+                            <input type="number" min="0" max="100"
+                                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+                                placeholder="Contoh: 85">
+                        </div>
+                        <button type="submit"
+                            class="w-full bg-green-600 text-white font-bold py-2 rounded-lg hover:bg-green-700 transition">
+                            Input Nilai
+                        </button>
+                    </form>
+                </div>
+
+                <div
+                    class="bg-blue-50 p-6 rounded-xl border border-blue-100 flex flex-col justify-center items-center text-center">
+                    <img src="asset/gambar/pose2.jpg"
+                        class="w-32 h-32 rounded-full object-cover mb-4 border-4 border-white shadow-md opacity-80">
+                    <h4 class="font-bold text-blue-900">Tips Inem:</h4>
+                    <p class="text-sm text-blue-800 mt-2">"Beb, kalau input nilai jangan sambil ngantuk ya. Nanti
+                        nilai 70 jadi 07, bisa nangis anak orang. Kalau capek, makan eskrim durian dulu gih."</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION: MATERI -->
+        <div id="materi" class="hidden fade-in">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">Bank Materi & Modul</h2>
+                <button
+                    class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center">
+                    <i class="fas fa-upload mr-2"></i> Upload Materi Baru
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Materi Card 1 -->
+                <div
+                    class="bg-white p-4 rounded-xl shadow-sm border hover:border-blue-400 transition cursor-pointer group">
+                    <div
+                        class="h-32 bg-red-100 rounded-lg mb-3 flex items-center justify-center text-red-500 group-hover:bg-red-200 transition">
+                        <i class="fas fa-file-pdf text-4xl"></i>
+                    </div>
+                    <h3 class="font-bold text-gray-800 truncate">Modul Algoritma Dasar.pdf</h3>
+                    <p class="text-xs text-gray-500 mt-1">Diupload: 12 Jan 2026 • 2.4 MB</p>
+                </div>
+                <!-- Materi Card 2 -->
+                <div
+                    class="bg-white p-4 rounded-xl shadow-sm border hover:border-blue-400 transition cursor-pointer group">
+                    <div
+                        class="h-32 bg-blue-100 rounded-lg mb-3 flex items-center justify-center text-blue-500 group-hover:bg-blue-200 transition">
+                        <i class="fas fa-file-powerpoint text-4xl"></i>
+                    </div>
+                    <h3 class="font-bold text-gray-800 truncate">Presentasi Jaringan Komputer.pptx</h3>
+                    <p class="text-xs text-gray-500 mt-1">Diupload: 10 Feb 2026 • 5.1 MB</p>
+                </div>
+                <!-- Materi Card 3 -->
+                <div
+                    class="bg-white p-4 rounded-xl shadow-sm border hover:border-blue-400 transition cursor-pointer group">
+                    <div
+                        class="h-32 bg-green-100 rounded-lg mb-3 flex items-center justify-center text-green-500 group-hover:bg-green-200 transition">
+                        <i class="fas fa-file-code text-4xl"></i>
+                    </div>
+                    <h3 class="font-bold text-gray-800 truncate">Snippet Code HTML.txt</h3>
+                    <p class="text-xs text-gray-500 mt-1">Diupload: Hari ini • 12 KB</p>
+                </div>
+            </div>
+        </div>
+
+        </div>
+    </main>
+
+    <!-- Overlay untuk Mobile Sidebar -->
+    <div id="sidebar-overlay" onclick="toggleSidebar()"
+        class="fixed inset-0 bg-black bg-opacity-50 z-0 hidden md:hidden"></div>
+
+    <!-- Profile Edit Modal -->
+    <div id="profile-modal"
+        class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden opacity-0 transition-opacity duration-300 flex items-center justify-center p-4">
+        <div
+            class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl transform scale-95 transition-transform duration-300 overflow-hidden flex flex-col max-h-[90vh]">
+            <!-- Modal Header -->
+            <div class="bg-gradient-to-r from-blue-600 to-indigo-600 p-6 text-white flex justify-between items-center">
+                <h3 class="text-xl font-bold flex items-center gap-2">
+                    <i class="fas fa-user-edit"></i> Edit Profil Guru
+                </h3>
+                <button onclick="closeProfileModal()"
+                    class="text-white/80 hover:text-white hover:bg-white/10 rounded-full p-2 transition">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+
+            <!-- Modal Body (Scrollable) -->
+            <div class="p-6 overflow-y-auto custom-scrollbar">
+                <div class="flex flex-col md:flex-row gap-6">
+                    <!-- Left: Avatar Section -->
+                    <div class="flex flex-col items-center gap-4 min-w-[150px]">
+                        <div class="relative group cursor-pointer" onclick="openCameraModal()">
+                            <img id="modal-avatar-preview" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Teacher"
+                                class="w-32 h-32 rounded-full border-4 border-white shadow-lg object-cover bg-gray-100">
+                            <div
+                                class="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                <i class="fas fa-camera text-white text-2xl"></i>
+                            </div>
+                            <div
+                                class="absolute bottom-1 right-1 bg-blue-600 text-white p-2 rounded-full shadow-md text-xs">
+                                <i class="fas fa-camera"></i>
+                            </div>
+                        </div>
+                        <p class="text-xs text-gray-400 text-center">Klik untuk foto kamera</p>
+                        <button onclick="regenerateAvatar()"
+                            class="text-xs text-blue-500 hover:text-blue-700 underline">atau generate avatar</button>
+
+                        <div class="w-full bg-blue-50 p-3 rounded-lg border border-blue-100 text-center">
+                            <p class="text-xs font-bold text-blue-800 uppercase tracking-wider mb-1">Level</p>
+                            <span id="modal-level-display" class="text-2xl font-black text-blue-600">1</span>
+                        </div>
+                    </div>
+
+                    <!-- Right: Form Fields -->
+                    <div class="flex-1 space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Nama Lengkap</label>
+                                <input type="text" id="edit-name"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm font-semibold text-gray-700">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">NIY / NUPTK</label>
+                                <input type="text" id="edit-niy"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Jenis
+                                    Kelamin</label>
+                                <select id="edit-gender"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition-all text-sm">
+                                    <option value="">Pilih...</option>
+                                    <option value="Laki-laki">Laki-laki</option>
+                                    <option value="Perempuan">Perempuan</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Tanggal
+                                    Lahir</label>
+                                <input type="date" id="edit-dob"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition-all text-sm">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Jabatan / Peran</label>
+                            <select id="edit-role-detail"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition-all text-sm font-medium text-gray-700">
+                                <option value="Guru Mapel">Guru Mapel</option>
+                                <option value="Wali Kelas X PPLG 1">Wali Kelas X PPLG 1</option>
+                                <option value="Wali Kelas X PPLG 2">Wali Kelas X PPLG 2</option>
+                                <option value="Wali Kelas XI PPLG 1">Wali Kelas XI PPLG 1</option>
+                                <option value="Wali Kelas XI PPLG 2">Wali Kelas XI PPLG 2</option>
+                                <option value="Wali Kelas XII PPLG 1">Wali Kelas XII PPLG 1</option>
+                                <option value="Wali Kelas XII PPLG 2">Wali Kelas XII PPLG 2</option>
+                                <option value="Kepala Sekolah">Kepala Sekolah</option>
+                                <option value="Kaprog">Kaprog</option>
+                                <option value="Kurikulum">Kurikulum</option>
+                                <option value="Kesiswaan">Kesiswaan</option>
+                                <option value="Konseling">Konseling</option>
+                            </select>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">No. Telepon /
+                                    WA</label>
+                                <div class="relative">
+                                    <span class="absolute left-3 top-2 text-gray-400 text-sm"><i
+                                            class="fab fa-whatsapp"></i></span>
+                                    <input type="text" id="edit-phone"
+                                        class="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition-all text-sm">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Email (Read
+                                    Only)</label>
+                                <input type="email" id="edit-email" disabled
+                                    class="w-full px-3 py-2 border border-gray-200 bg-gray-50 rounded-lg text-gray-500 text-sm italic cursor-not-allowed">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Alamat Domisili</label>
+                            <textarea id="edit-address" rows="2"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition-all text-sm"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="bg-gray-50 p-4 border-t border-gray-200 flex justify-end gap-3">
+                <button onclick="closeProfileModal()"
+                    class="px-5 py-2 rounded-lg text-gray-600 font-medium hover:bg-gray-200 transition-colors text-sm">Batal</button>
+                <button onclick="saveProfile()"
+                    class="px-6 py-2 rounded-lg bg-blue-600 text-white font-bold shadow-lg shadow-blue-500/30 hover:bg-blue-700 hover:shadow-blue-600/40 transition-all transform hover:-translate-y-0.5 text-sm flex items-center gap-2">
+                    <i class="fas fa-save"></i> Simpan Perubahan
+                </button>
+            </div>
+        </div>
+    </div>
+    <!-- Camera Modal -->
+    <div id="camera-modal"
+        class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex flex-col items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl p-4 w-full max-w-lg relative">
+            <h3 class="text-center font-bold text-lg mb-4">Ambil Foto Profil</h3>
+
+            <div class="relative bg-black rounded-lg overflow-hidden aspect-square mb-4">
+                <video id="camera-stream" autoplay playsinline class="w-full h-full object-cover"></video>
+                <canvas id="camera-canvas" class="hidden w-full h-full object-cover"></canvas>
+            </div>
+
+            <div class="flex justify-center gap-4">
+                <button onclick="closeCameraModal()"
+                    class="px-4 py-2 bg-gray-200 rounded-lg font-bold text-gray-700">Batal</button>
+                <button id="btn-take-photo" onclick="takePhoto()"
+                    class="px-4 py-2 bg-blue-600 rounded-lg font-bold text-white">
+                    <i class="fas fa-camera"></i> Jepret
+                </button>
+                <button id="btn-retake-photo" onclick="retakePhoto()"
+                    class="hidden px-4 py-2 bg-yellow-500 rounded-lg font-bold text-white">
+                    <i class="fas fa-redo"></i> Ulang
+                </button>
+                <button id="btn-save-photo" onclick="savePhotoToModal()"
+                    class="hidden px-4 py-2 bg-green-600 rounded-lg font-bold text-white">
+                    <i class="fas fa-check"></i> Pakai
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast"
+        class="fixed bottom-4 right-4 bg-gray-800 text-white px-6 py-3 rounded-lg shadow-lg hidden flex items-center space-x-3 transition-opacity duration-300 opacity-0 z-50">
+        <i class="fas fa-info-circle text-blue-400"></i>
+        <span id="toast-message">Notification message</span>
+    </div>
+
+    <!-- Firebase & Logic -->
+    <script type="module" src="teacher.js"></script>
+
+    <script>
+        // Tanggal Otomatis
+        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        document.getElementById('current-date').innerText = new Date().toLocaleDateString('id-ID', options);
+
+        // Fungsi Ganti Tab (SPA Style)
+        function switchTab(tabName) {
+            // Sembunyikan semua section
+            const sections = ['dashboard', 'grind', 'jadwal', 'absensi', 'nilai', 'materi'];
+            sections.forEach(sec => {
+                const el = document.getElementById(sec);
+                if (el) el.classList.add('hidden');
+            });
+
+            // Tampilkan section yang dipilih
+            const target = document.getElementById(tabName);
+            if (target) target.classList.remove('hidden');
+
+            // Update Active State di Sidebar
+            const navLinks = document.querySelectorAll('nav a');
+            navLinks.forEach(link => {
+                link.classList.remove('active-nav', 'bg-indigo-50', 'text-indigo-700', 'border-r-4', 'border-indigo-700');
+                link.classList.add('text-gray-600');
+            });
+
+            // Highlight tombol yang aktif
+            const activeBtn = document.getElementById('nav-' + tabName);
+            if (activeBtn) {
+                activeBtn.classList.add('active-nav');
+                activeBtn.classList.remove('text-gray-600');
+            }
+
+            // Tutup sidebar kalo di mobile
+            if (window.innerWidth < 768) {
+                const sidebar = document.getElementById('sidebar');
+                if (!sidebar.classList.contains('hidden')) {
+                    toggleSidebar();
+                }
+            }
+        }
+
+        // Toggle Sidebar untuk Mobile (Responsif buat HP Poco F15 kamu)
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+
+            sidebar.classList.toggle('hidden');
+
+            // Hack buat toggle class 'flex' karena default tailwind hidden md:flex
+            if (sidebar.classList.contains('hidden')) {
+                sidebar.classList.remove('flex');
+                overlay.classList.add('hidden');
+            } else {
+                sidebar.classList.add('flex');
+                overlay.classList.remove('hidden');
+                // Posisikan absolute buat mobile
+                sidebar.classList.add('absolute', 'h-full');
+            }
+        }
+
+        // Simulasi Simpan Data (Feedback Visual)
+        // Note: Logic asli ada di teacher.js
+        function simpanData() {
+            alert('Data berhasil disimpan! (Tapi boong, ini cuma simulasi UI dulu beb)');
+        }
+    </script>
+</body>
+
+</html>
