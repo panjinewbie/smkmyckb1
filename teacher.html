@@ -4,959 +4,1121 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel Guru - SMK Mardi Yuana Cikembar</title>
-    <!-- Tailwind CSS untuk styling cepat dan responsif -->
+    <title>Guru Panel - Vue Edition</title>
+
+    <!-- Dependencies -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Font Awesome untuk ikon-ikon cantik -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Fonts: Noto Sans biar enak dibaca -->
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600;700&display=swap" rel="stylesheet">
-    <!-- Lordicon -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.lordicon.com/lordicon.js"></script>
 
     <style>
         body {
-            font-family: 'Noto Sans', sans-serif;
-            background-color: #f3f4f6;
+            font-family: 'Inter', sans-serif;
         }
 
-        /* Animasi centil dikit */
-        .fade-in {
-            animation: fadeIn 0.5s ease-in-out;
+        /* Transitions */
+        .fade-enter-active,
+        .fade-leave-active {
+            transition: opacity 0.3s ease;
         }
 
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        .fade-enter-from,
+        .fade-leave-to {
+            opacity: 0;
         }
 
-        /* Custom scrollbar biar gak kaku */
+        /* Slide Up Transition */
+        .slide-up-enter-active,
+        .slide-up-leave-active {
+            transition: all 0.4s ease-out;
+        }
+
+        .slide-up-enter-from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        .slide-up-leave-to {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+
+        /* Custom Scrollbar */
         ::-webkit-scrollbar {
-            width: 8px;
+            width: 6px;
+            height: 6px;
         }
 
         ::-webkit-scrollbar-track {
-            background: #f1f1f1;
+            background: transparent;
         }
 
         ::-webkit-scrollbar-thumb {
-            background: #888;
-            border-radius: 4px;
+            background: #cbd5e1;
+            border-radius: 3px;
         }
 
         ::-webkit-scrollbar-thumb:hover {
-            background: #555;
-        }
-
-        .active-nav {
-            background-color: #e0e7ff;
-            /* Indigo 100 */
-            color: #4338ca;
-            /* Indigo 700 */
-            border-right: 4px solid #4338ca;
+            background: #94a3b8;
         }
     </style>
 </head>
 
-<body class="text-gray-800 h-screen flex overflow-hidden">
+<body class="bg-slate-50 text-slate-800 h-screen flex overflow-hidden">
 
-    <!-- Sidebar (Asisten Pribadi Inem) -->
-    <aside class="w-64 bg-white shadow-lg hidden md:flex flex-col z-10 transition-all duration-300" id="sidebar">
-        <div
-            class="p-6 flex items-center justify-center border-b border-gray-200 bg-gradient-to-r from-blue-900 to-blue-700">
-            <img src="asset/gambar/logomymadival.png" alt="Logo SMK" class="h-12 w-auto mr-2 bg-white rounded-full p-1">
-            <div class="text-white font-bold text-lg leading-tight">
-                SMK MY<br><span class="text-yellow-300 text-sm">Teacher Panel</span>
-            </div>
-        </div>
+    <div id="app" class="flex w-full h-full" v-cloak>
 
-        <!-- Profil Singkat Guru -->
-        <div class="p-4 border-b border-gray-100 text-center group cursor-pointer" onclick="openProfileModal()">
-            <div class="relative w-24 h-24 mx-auto mb-3 transition-transform transform group-hover:scale-105">
-                <!-- Foto Profil Guru (Dinamis dari Firebase) -->
-                <img id="teacher-avatar" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Teacher" alt="Foto Profil"
-                    class="w-full h-full object-cover rounded-full border-4 border-blue-100 shadow-md group-hover:border-blue-300 transition-colors">
-                <div
-                    class="absolute bottom-0 right-0 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-sm border border-gray-100 group-hover:bg-blue-50 transition-colors">
-                    <i class="fas fa-pen text-xs text-gray-500 group-hover:text-blue-500"></i>
+        <!-- Sidebar -->
+        <aside class="w-64 bg-white border-r border-slate-200 flex flex-col z-20 transition-all duration-300"
+            :class="{'hidden': isMobile && !isSidebarOpen, 'fixed inset-y-0 left-0': isMobile}">
+
+            <!-- Logo Area -->
+            <div class="h-16 flex items-center px-6 border-b border-slate-100">
+                <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center mr-3 text-white font-bold">
+                    <i class="fas fa-graduation-cap"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-slate-800 leading-tight">SMKMYCKB</h1>
+                    <p class="text-[10px] text-slate-400 font-medium tracking-wider uppercase">Teacher Panel</p>
                 </div>
             </div>
-            <h3 id="teacher-name" class="font-bold text-gray-800 text-lg group-hover:text-blue-600 transition-colors">
-                Loading...</h3>
-            <p class="text-xs text-gray-500 font-medium mb-1"><span id="teacher-role">Guru Kejuruan</span></p>
-            <p class="text-[10px] text-blue-400 font-semibold uppercase tracking-wider">Level <span
-                    id="teacher-level">1</span></p>
-        </div>
 
-        <!-- Menu Navigasi -->
-        <nav class="flex-1 overflow-y-auto py-4">
-            <ul class="space-y-1">
-                <li>
-                    <a href="#" onclick="switchTab('dashboard')" id="nav-dashboard"
-                        class="flex items-center px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-blue-600 transition-colors active-nav">
-                        <i class="fas fa-chart-line w-6 text-center mr-2"></i>
-                        Dashboard
-                    </a>
-                </li>
-                <li>
-                    <a href="#" onclick="switchTab('grind')" id="nav-grind"
-                        class="flex items-center px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-blue-600 transition-colors">
-                        <i class="fas fa-tasks w-6 text-center mr-2"></i>
-                        The Daily Grind
-                    </a>
-                </li>
-                <li>
-                    <a href="#" onclick="switchTab('jadwal')" id="nav-jadwal"
-                        class="flex items-center px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-blue-600 transition-colors">
-                        <i class="fas fa-calendar-alt w-6 text-center mr-2"></i>
-                        Jadwal Mengajar
-                    </a>
-                </li>
-                <li>
-                    <a href="#" onclick="switchTab('absensi')" id="nav-absensi"
-                        class="flex items-center px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-blue-600 transition-colors">
-                        <i class="fas fa-user-check w-6 text-center mr-2"></i>
-                        Absensi Siswa
-                    </a>
-                </li>
-                <li>
-                    <a href="#" onclick="switchTab('nilai')" id="nav-nilai"
-                        class="flex items-center px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-blue-600 transition-colors">
-                        <i class="fas fa-edit w-6 text-center mr-2"></i>
-                        Input Nilai
-                    </a>
-                </li>
-                <li>
-                    <a href="#" onclick="switchTab('materi')" id="nav-materi"
-                        class="flex items-center px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-blue-600 transition-colors">
-                        <i class="fas fa-book w-6 text-center mr-2"></i>
-                        Materi & E-Book
-                    </a>
-                </li>
-            </ul>
-        </nav>
-
-        <div class="p-4 border-t border-gray-200">
-            <button id="logout-btn"
-                class="w-full flex items-center justify-center px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors font-medium">
-                <i class="fas fa-sign-out-alt mr-2"></i> Logout
-            </button>
-        </div>
-    </aside>
-
-    <!-- Main Content (Area Kerja Detektif) -->
-    <main class="flex-1 flex flex-col h-screen overflow-hidden relative">
-        <!-- Header Mobile -->
-        <header class="bg-white shadow-sm p-4 flex justify-between items-center md:hidden z-20">
-            <div class="flex items-center">
-                <img src="asset/gambar/logomymadival.png" alt="Logo" class="h-8 mr-2">
-                <span class="font-bold text-gray-800">Guru Panel</span>
+            <!-- User Profile Snippet -->
+            <div class="p-6 text-center border-b border-slate-50">
+                <div class="relative w-20 h-20 mx-auto mb-3 cursor-pointer group" @click="openProfileModal">
+                    <img :src="teacherData.photoBase64 || `https://api.dicebear.com/7.x/avataaars/svg?seed=${teacherData.avatar_seed || 'Teacher'}`"
+                        class="w-full h-full rounded-full object-cover border-4 border-slate-50 shadow-sm group-hover:border-blue-100 transition-all">
+                    <div
+                        class="absolute bottom-0 right-0 bg-white rounded-full p-1.5 shadow-sm border border-slate-100 text-slate-400 group-hover:text-blue-500">
+                        <i class="fas fa-pen text-xs"></i>
+                    </div>
+                </div>
+                <h3 class="font-bold text-slate-800 text-sm">{{ teacherData.name || 'Loading...' }}</h3>
+                <p class="text-xs text-slate-500 mb-2">{{ teacherData.role_detail || 'Guru Mapel' }}</p>
+                <div
+                    class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-600 border border-blue-100">
+                    LVL {{ teacherData.level || 1 }}
+                </div>
             </div>
-            <button onclick="toggleSidebar()" class="text-gray-600 focus:outline-none">
-                <i class="fas fa-bars text-xl"></i>
-            </button>
-        </header>
 
-        <!-- Dynamic Content Area -->
-        <div class="flex-1 overflow-y-auto p-4 md:p-8 bg-gray-50" id="content-area">
+            <!-- Navigation -->
+            <nav class="flex-1 overflow-y-auto py-4 px-3 space-y-1">
+                <!-- Standard Nav Items -->
+                <a v-for="item in navItems" :key="item.id"
+                    @click="currentTab = item.id; isMobile ? isSidebarOpen = false : null"
+                    class="flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer group"
+                    :class="currentTab === item.id ? 'bg-blue-50 text-blue-600' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'">
+                    <i :class="item.icon + ' w-5 text-center mr-3 transition-colors'"
+                        :class="currentTab === item.id ? 'text-blue-500' : 'text-slate-400 group-hover:text-slate-500'"></i>
+                    {{ item.label }}
+                </a>
 
-            <!-- SECTION: DASHBOARD -->
-            <div id="dashboard" class="fade-in">
-                <!-- Header Stats & Greeting -->
-                <div class="mb-8 bg-white p-6 rounded-2xl shadow-sm border border-gray-100 relative overflow-hidden">
-                    <div
-                        class="absolute top-0 right-0 w-64 h-64 bg-blue-50 rounded-full mix-blend-multiply filter blur-3xl opacity-30 -translate-y-12 translate-x-12">
+                <!-- Dreamy / D&D Submenu -->
+                <div class="pt-2">
+                    <button @click="isDreamyOpen = !isDreamyOpen"
+                        class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer group"
+                        :class="['dreamy','inventory','shop','grimoire'].includes(currentTab) ? 'bg-purple-50 text-purple-600' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'">
+                        <div class="flex items-center">
+                            <i class="fas fa-hat-wizard w-5 text-center mr-3 transition-colors"
+                                :class="['dreamy','inventory','shop','grimoire'].includes(currentTab) ? 'text-purple-500' : 'text-slate-400 group-hover:text-slate-500'"></i>
+                            <span>Dreamy / D&amp;D</span>
+                        </div>
+                        <i class="fas text-xs transition-transform duration-200"
+                            :class="isDreamyOpen ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+                    </button>
+                    <!-- Submenu Items -->
+                    <div v-show="isDreamyOpen" class="ml-4 mt-1 space-y-1 border-l-2 border-purple-100 pl-2">
+                        <a @click="currentTab = 'inventory'; isMobile ? isSidebarOpen = false : null"
+                            class="flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer group"
+                            :class="currentTab === 'inventory' ? 'bg-purple-50 text-purple-600' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'">
+                            <i class="fas fa-briefcase w-5 text-center mr-2 text-xs"
+                                :class="currentTab === 'inventory' ? 'text-purple-500' : 'text-slate-400'"></i>
+                            Tas &amp; Skill
+                        </a>
+                        <a @click="currentTab = 'shop'; isMobile ? isSidebarOpen = false : null"
+                            class="flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer group"
+                            :class="currentTab === 'shop' ? 'bg-purple-50 text-purple-600' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'">
+                            <i class="fas fa-shopping-cart w-5 text-center mr-2 text-xs"
+                                :class="currentTab === 'shop' ? 'text-purple-500' : 'text-slate-400'"></i>
+                            Toko Item
+                        </a>
+                        <a @click="currentTab = 'grimoire'; isMobile ? isSidebarOpen = false : null"
+                            class="flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer group"
+                            :class="currentTab === 'grimoire' ? 'bg-purple-50 text-purple-600' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'">
+                            <i class="fas fa-wand-magic-sparkles w-5 text-center mr-2 text-xs"
+                                :class="currentTab === 'grimoire' ? 'text-purple-500' : 'text-slate-400'"></i>
+                            Grimoire
+                        </a>
                     </div>
-                    <div
-                        class="absolute bottom-0 left-0 w-64 h-64 bg-purple-50 rounded-full mix-blend-multiply filter blur-3xl opacity-30 translate-y-12 -translate-x-12">
+                </div>
+            </nav>
+
+            <!-- Logout -->
+            <div class="mt-auto p-4 border-t border-slate-100">
+                <button @click="logout"
+                    class="w-full py-2.5 px-4 bg-red-50 text-red-600 rounded-lg text-sm font-bold flex items-center justify-center hover:bg-red-100 transition-colors shadow-sm active:scale-95 group">
+                    <i class="fas fa-sign-out-alt mr-2 group-hover:-translate-x-1 transition-transform"></i>
+                    Sign Out
+                </button>
+            </div>
+        </aside>
+
+        <!-- Overlay for Mobile -->
+        <div v-if="isMobile && isSidebarOpen" @click="isSidebarOpen = false"
+            class="fixed inset-0 bg-slate-900/20 z-10 backdrop-blur-sm"></div>
+
+        <!-- Main Content -->
+        <main class="flex-1 flex flex-col h-screen overflow-hidden bg-slate-50/50 relative">
+
+            <!-- Desktop Header -->
+            <header
+                class="h-16 bg-white/80 backdrop-blur-md border-b border-slate-200 hidden md:flex items-center justify-between px-8 sticky top-0 z-10">
+                <div class="flex items-center gap-4">
+                    <h2 class="text-xl font-bold text-slate-800 tracking-tight">DREAMY <span
+                            class="text-blue-600">Teacher</span></h2>
+                </div>
+                <div class="flex items-center gap-4">
+                    <!-- Teacher Chat Button -->
+                    <div class="relative">
+                        <button @click="toggleTeacherChat"
+                            class="p-2 rounded-full hover:bg-slate-100 transition-colors relative" title="Pigeon Post">
+                            <i class="fas fa-dove text-slate-400 hover:text-blue-500 transition-colors text-xl"></i>
+                            <span v-if="totalUnreadChats > 0"
+                                class="absolute top-1 right-1 flex items-center justify-center h-4 w-4 rounded-full bg-red-500 ring-1 ring-white text-[9px] text-white font-bold">{{
+                                totalUnreadChats }}</span>
+                        </button>
                     </div>
 
-                    <div
-                        class="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-                        <div>
-                            <h1 class="text-2xl md:text-3xl font-bold text-gray-800">Wilujeng Sumping, <span
-                                    id="welcome-name" class="text-blue-600">Guru</span>! ✨</h1>
-                            <p class="text-gray-500 mt-1">Hari ini mau mecahin kasus apa di kelas?</p>
-                            <p class="text-sm font-semibold text-gray-400 mt-2 flex items-center gap-2">
-                                <i class="far fa-calendar-alt"></i> <span id="current-date">Senin, 14 Februari
-                                    2026</span>
-                            </p>
+                    <!-- Notification Bell -->
+                    <div class="relative group">
+                        <button class="p-2 rounded-full hover:bg-slate-100 relative transition-colors">
+                            <lord-icon src="https://cdn.lordicon.com/ahxaipjb.json" trigger="hover"
+                                colors="primary:#64748b" style="width:24px;height:24px">
+                            </lord-icon>
+                            <!-- Badge (Hidden for now, can be dynamic later) -->
+                            <span
+                                class="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border border-white hidden"></span>
+                        </button>
+                        <!-- Dropdown (Simple/Placeholder) -->
+                        <div
+                            class="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-slate-100 p-4 hidden group-hover:block transition-all transform origin-top-right">
+                            <h4 class="font-bold text-slate-800 mb-3 text-sm">Notifikasi</h4>
+                            <div class="text-center py-8 text-slate-400 text-xs">
+                                <i class="fas fa-bell-slash text-2xl mb-2 opacity-50"></i>
+                                <p>Belum ada notifikasi baru.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Mobile Header -->
+            <header
+                class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:hidden flex-shrink-0">
+                <div class="font-bold text-slate-800">SMKMYCKB</div>
+                <button @click="isSidebarOpen = true" class="text-slate-500 p-2">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </header>
+
+            <!-- Content Scroll Area -->
+            <div class="flex-1 overflow-y-auto p-4 md:p-8" id="main-scroll">
+                <div class="max-w-7xl mx-auto flex flex-col min-h-full">
+
+                    <!-- Dynamic View Component -->
+                    <transition name="slide-up" mode="out-in">
+
+                        <!-- DASHBOARD VIEW -->
+                        <div v-if="currentTab === 'dashboard'" key="dashboard" class="space-y-6">
+                            <!-- Header & Greetings -->
+                            <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 mb-8">
+                                <div>
+                                    <h2 class="text-2xl font-bold text-slate-800">Wilujeng Enjing, <span
+                                            class="text-blue-600">{{ firstName }}</span>! 👋</h2>
+                                    <p class="text-slate-500 text-sm mt-1">Siap mencerdaskan kehidupan bangsa hari ini?
+                                    </p>
+                                </div>
+                                <div class="text-right hidden md:block">
+                                    <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">{{ currentDate
+                                        }}</p>
+                                </div>
+                            </div>
+
+                            <!-- HUD Stats -->
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <stat-card label="Health" icon="heart" color="red" :value="teacherData.hp"
+                                    :max="teacherData.max_hp" unit="%"></stat-card>
+                                <stat-card label="Mana" icon="bolt" color="blue" :value="teacherData.mp"
+                                    :max="teacherData.max_mp" unit="%"></stat-card>
+                                <stat-card label="Experience" icon="star" color="yellow" :value="teacherData.xp"
+                                    :max="teacherData.max_xp" unit="XP"></stat-card>
+                                <div
+                                    class="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex items-center justify-between">
+                                    <div>
+                                        <p class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Wealth
+                                        </p>
+                                        <div class="text-lg font-bold text-slate-800 mt-1">{{ teacherData.coin }} <span
+                                                class="text-xs font-normal text-amber-500">Gold</span></div>
+                                    </div>
+                                    <div
+                                        class="w-10 h-10 rounded-full bg-amber-50 text-amber-500 flex items-center justify-center">
+                                        <i class="fas fa-coins"></i>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Activity Cards -->
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                                <!-- Placeholders for now -->
+                                <div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between"
+                                    v-for="stat in quickStats" :key="stat.label">
+                                    <div>
+                                        <p class="text-xs text-slate-500 mb-1">{{ stat.label }}</p>
+                                        <h3 class="text-xl font-bold text-slate-800">{{ stat.value }}</h3>
+                                    </div>
+                                    <div :class="`p-3 rounded-full bg-${stat.color}-50 text-${stat.color}-500`">
+                                        <i :class="stat.icon"></i>
+                                    </div>
+                                </div>
+                            </div>
+
+
                         </div>
 
-                        <!-- Header Stats Container -->
-                        <div class="w-full md:w-auto flex-1 max-w-2xl">
-                            <div
-                                class="grid grid-cols-2 md:grid-cols-4 gap-4 bg-gray-50/50 p-4 rounded-xl backdrop-blur-sm border border-gray-100/50">
-                                <!-- HP -->
-                                <div class="bg-white p-3 rounded-lg shadow-sm border border-gray-100">
-                                    <div
-                                        class="flex justify-between text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
-                                        Health</div>
-                                    <div class="flex items-center gap-2">
-                                        <div
-                                            class="w-8 h-8 rounded-full bg-red-50 text-red-500 flex items-center justify-center flex-shrink-0">
-                                            <i class="fas fa-heart text-xs"></i>
+                        <!-- GRIMOIRE VIEW -->
+                        <div v-if="currentTab === 'grimoire'" key="grimoire" class="space-y-6">
+                            <div class="flex items-center gap-3 mb-2">
+                                <div class="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center">
+                                    <i class="fas fa-wand-magic-sparkles text-purple-600 text-lg"></i>
+                                </div>
+                                <div>
+                                    <h2 class="text-2xl font-bold text-slate-800">Grimoire</h2>
+                                    <p class="text-xs text-slate-500">Mantra dan sihir yang kamu kuasai</p>
+                                </div>
+                            </div>
+
+                            <div class="bg-white p-6 rounded-2xl shadow-sm border border-purple-100">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <spell-card name="Silence Detection" desc="Cost: 20 MP • Lvl 5" color="purple"
+                                        :locked="teacherData.level < 5" @cast="castSpell('noise')">
+                                    </spell-card>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- THE DAILY GRIND VIEW -->
+                        <div v-if="currentTab === 'grind'" key="grind" class="space-y-6">
+                            <h2 class="text-2xl font-bold text-slate-800 mb-6">Jurnal Refleksi Guru</h2>
+
+                            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-500 mb-1">Tanggal</label>
+                                        <input v-model="journalForm.date" type="date"
+                                            class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-500 mb-1">Hari</label>
+                                        <input v-model="journalForm.day" type="text" readonly
+                                            class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-100 text-slate-500 cursor-not-allowed">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-500 mb-1">Kelas</label>
+                                        <select v-model="journalForm.class"
+                                            class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50">
+                                            <option disabled value="">Pilih Kelas</option>
+                                            <option v-for="cls in classList" :key="cls" :value="cls">{{ cls }}</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-500 mb-1">Mata
+                                            Pelajaran</label>
+                                        <input v-model="journalForm.subject" placeholder="Contoh: Matematika"
+                                            type="text"
+                                            class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50">
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+                                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                                        <label class="block text-xs font-bold text-slate-500 mb-2">Cuaca Hati
+                                            (Mood)</label>
+                                        <div class="flex gap-4">
+                                            <label class="cursor-pointer">
+                                                <input type="radio" v-model="journalForm.feeling" value="Senang"
+                                                    class="hidden peer">
+                                                <div
+                                                    class="px-3 py-2 bg-white border border-slate-200 rounded-lg peer-checked:bg-green-100 peer-checked:border-green-400 peer-checked:text-green-700 flex items-center gap-2 hover:bg-slate-50">
+                                                    <i class="fas fa-smile text-yellow-500"></i> <span
+                                                        class="text-sm">Senang</span>
+                                                </div>
+                                            </label>
+                                            <label class="cursor-pointer">
+                                                <input type="radio" v-model="journalForm.feeling" value="Biasa"
+                                                    class="hidden peer">
+                                                <div
+                                                    class="px-3 py-2 bg-white border border-slate-200 rounded-lg peer-checked:bg-blue-100 peer-checked:border-blue-400 peer-checked:text-blue-700 flex items-center gap-2 hover:bg-slate-50">
+                                                    <i class="fas fa-meh text-blue-500"></i> <span
+                                                        class="text-sm">Biasa</span>
+                                                </div>
+                                            </label>
+                                            <label class="cursor-pointer">
+                                                <input type="radio" v-model="journalForm.feeling" value="Sedih"
+                                                    class="hidden peer">
+                                                <div
+                                                    class="px-3 py-2 bg-white border border-slate-200 rounded-lg peer-checked:bg-red-100 peer-checked:border-red-400 peer-checked:text-red-700 flex items-center gap-2 hover:bg-slate-50">
+                                                    <i class="fas fa-frown text-red-500"></i> <span
+                                                        class="text-sm">Sedih</span>
+                                                </div>
+                                            </label>
                                         </div>
-                                        <div class="flex-1">
-                                            <div class="text-sm font-bold text-gray-800"><span id="hp-text">100</span>%
-                                            </div>
-                                            <div class="w-full bg-gray-100 rounded-full h-1.5 mt-1 overflow-hidden">
-                                                <div id="hp-bar"
-                                                    class="bg-red-500 h-full rounded-full transition-all duration-500"
-                                                    style="width: 100%"></div>
-                                            </div>
+                                    </div>
+                                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                                        <label class="block text-xs font-bold text-slate-500 mb-2">Cuaca
+                                            (Weather)</label>
+                                        <div class="flex gap-4">
+                                            <label class="cursor-pointer">
+                                                <input type="radio" v-model="journalForm.weather" value="Cerah"
+                                                    class="hidden peer">
+                                                <div
+                                                    class="px-3 py-2 bg-white border border-slate-200 rounded-lg peer-checked:bg-yellow-100 peer-checked:border-yellow-400 peer-checked:text-yellow-700 flex items-center gap-2 hover:bg-slate-50">
+                                                    <i class="fas fa-sun text-orange-500"></i> <span
+                                                        class="text-sm">Cerah</span>
+                                                </div>
+                                            </label>
+                                            <label class="cursor-pointer">
+                                                <input type="radio" v-model="journalForm.weather" value="Hujan"
+                                                    class="hidden peer">
+                                                <div
+                                                    class="px-3 py-2 bg-white border border-slate-200 rounded-lg peer-checked:bg-slate-200 peer-checked:border-slate-400 peer-checked:text-slate-700 flex items-center gap-2 hover:bg-slate-50">
+                                                    <i class="fas fa-cloud-showers-heavy text-slate-500"></i> <span
+                                                        class="text-sm">Hujan</span>
+                                                </div>
+                                            </label>
                                         </div>
                                     </div>
                                 </div>
 
-                                <!-- MP -->
-                                <div class="bg-white p-3 rounded-lg shadow-sm border border-gray-100">
-                                    <div
-                                        class="flex justify-between text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
-                                        Mana</div>
-                                    <div class="flex items-center gap-2">
-                                        <div
-                                            class="w-8 h-8 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center flex-shrink-0">
-                                            <i class="fas fa-bolt text-xs"></i>
-                                        </div>
-                                        <div class="flex-1">
-                                            <div class="text-sm font-bold text-gray-800"><span id="mp-text">50</span>%
-                                            </div>
-                                            <div class="w-full bg-gray-100 rounded-full h-1.5 mt-1 overflow-hidden">
-                                                <div id="mp-bar"
-                                                    class="bg-blue-500 h-full rounded-full transition-all duration-500"
-                                                    style="width: 100%"></div>
-                                            </div>
-                                        </div>
+                                <div class="space-y-4">
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-500 mb-1">Uraian Tugas /
+                                            Kegiatan</label>
+                                        <textarea v-model="journalForm.tasks" rows="3"
+                                            class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:ring-blue-500"
+                                            placeholder="Apa yang diajarkan hari ini?"></textarea>
                                     </div>
-                                </div>
-
-                                <!-- XP -->
-                                <div class="bg-white p-3 rounded-lg shadow-sm border border-gray-100">
-                                    <div
-                                        class="flex justify-between text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
-                                        XP</div>
-                                    <div class="flex items-center gap-2">
-                                        <div
-                                            class="w-8 h-8 rounded-full bg-yellow-50 text-yellow-500 flex items-center justify-center flex-shrink-0">
-                                            <i class="fas fa-star text-xs"></i>
-                                        </div>
-                                        <div class="flex-1">
-                                            <div class="text-sm font-bold text-gray-800"><span id="xp-text">0</span>
-                                            </div>
-                                            <div class="w-full bg-gray-100 rounded-full h-1.5 mt-1 overflow-hidden">
-                                                <div id="xp-bar"
-                                                    class="bg-yellow-400 h-full rounded-full transition-all duration-500"
-                                                    style="width: 0%"></div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- COIN -->
-                                <div class="bg-white p-3 rounded-lg shadow-sm border border-gray-100">
-                                    <div
-                                        class="flex justify-between text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
-                                        Wealth</div>
-                                    <div class="flex items-center gap-2">
-                                        <div
-                                            class="w-8 h-8 rounded-full bg-amber-50 text-amber-500 flex items-center justify-center flex-shrink-0">
-                                            <i class="fas fa-coins text-xs"></i>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label class="block text-xs font-bold text-slate-500 mb-1">Pencapaian Siswa
+                                                / Kejadian Penting</label>
+                                            <textarea v-model="journalForm.achievements" rows="2"
+                                                class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:ring-blue-500"></textarea>
                                         </div>
                                         <div>
-                                            <div class="text-sm font-bold text-gray-800" id="coin-display">0</div>
-                                            <div class="text-[10px] text-gray-400">Gold</div>
+                                            <label class="block text-xs font-bold text-slate-500 mb-1">Catatan Khusus /
+                                                Kendala</label>
+                                            <textarea v-model="journalForm.notes" rows="2"
+                                                class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:ring-blue-500"></textarea>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-500 mb-1">Rencana Tindak Lanjut
+                                            (Besok)</label>
+                                        <input v-model="journalForm.tomorrowPlan" type="text"
+                                            class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:ring-blue-500">
+                                    </div>
+                                </div>
+
+                                <div class="mt-6 flex justify-end">
+                                    <button @click="submitJournal"
+                                        class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-xl shadow-lg shadow-blue-500/30 transition transform hover:-translate-y-1 active:translate-y-0">
+                                        <i class="fas fa-paper-plane mr-2"></i> Simpan Jurnal & Dapat XP
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Journal History List -->
+                            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                                <h3 class="font-bold text-lg text-slate-800 mb-4">Riwayat Jurnal</h3>
+
+                                <!-- Filters -->
+                                <div class="flex flex-wrap gap-4 mb-6 relative z-10">
+                                    <div class="flex-1 min-w-[150px]">
+                                        <label class="block text-xs font-bold text-slate-500 mb-1">Cari</label>
+                                        <input v-model="journalFilter.search" type="text"
+                                            placeholder="Mapel, kegiatan..."
+                                            class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-blue-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-500 mb-1">Dari Tanggal</label>
+                                        <input v-model="journalFilter.startDate" type="date"
+                                            class="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-blue-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-500 mb-1">Sampai
+                                            Tanggal</label>
+                                        <input v-model="journalFilter.endDate" type="date"
+                                            class="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-blue-500">
+                                    </div>
+                                    <div class="flex items-end">
+                                        <button @click="printJournals"
+                                            class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg text-sm transition shadow-sm h-[38px] flex items-center"
+                                            title="Cetak Laporan">
+                                            <i class="fas fa-print mr-2"></i> Cetak
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Empty State -->
+                                <div v-if="filteredJournals.length === 0" class="text-center py-10 text-slate-400">
+                                    <i class="fas fa-book-open text-4xl mb-3 opacity-30"></i>
+                                    <p>Belum ada jurnal yang ditemukan.</p>
+                                </div>
+
+                                <!-- Journal Cards -->
+                                <div class="space-y-4">
+                                    <div v-for="j in filteredJournals" :key="j.id"
+                                        class="p-4 border border-l-4 border-slate-100 rounded-lg hover:shadow-md transition bg-slate-50 border-l-blue-500 relative group">
+
+                                        <!-- Delete Button -->
+                                        <button @click="deleteJournal(j.id)"
+                                            class="absolute top-3 right-3 text-slate-300 hover:text-red-500 transition opacity-0 group-hover:opacity-100"
+                                            title="Hapus Jurnal">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+
+                                        <div class="flex items-center gap-3 mb-2">
+                                            <span
+                                                class="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-bold rounded">{{
+                                                j.class }}</span>
+                                            <span class="font-bold text-slate-700">{{ j.subject }}</span>
+                                            <span class="text-xs text-slate-400">• {{ j.date }} ({{ j.day }})</span>
+                                            <div class="flex gap-2 ml-auto mr-8">
+                                                <span v-if="j.feeling"
+                                                    class="text-xs px-2 py-0.5 rounded bg-white border border-slate-200"
+                                                    :title="j.feeling">
+                                                    <i v-if="j.feeling === 'Senang'"
+                                                        class="fas fa-smile text-green-500"></i>
+                                                    <i v-else-if="j.feeling === 'Biasa'"
+                                                        class="fas fa-meh text-blue-500"></i>
+                                                    <i v-else-if="j.feeling === 'Sedih'"
+                                                        class="fas fa-frown text-red-500"></i>
+                                                    {{ j.feeling }}
+                                                </span>
+                                                <span v-if="j.weather"
+                                                    class="text-xs px-2 py-0.5 rounded bg-white border border-slate-200"
+                                                    :title="j.weather">
+                                                    <i v-if="j.weather === 'Cerah'"
+                                                        class="fas fa-sun text-orange-500"></i>
+                                                    <i v-else-if="j.weather === 'Hujan'"
+                                                        class="fas fa-cloud-showers-heavy text-slate-500"></i>
+                                                    {{ j.weather }}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <div class="text-sm text-slate-600 mb-2 whitespace-pre-line">{{ j.tasks }}</div>
+
+                                        <div v-if="j.achievements || j.notes"
+                                            class="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs mt-3 pt-3 border-t border-slate-200">
+                                            <div v-if="j.achievements">
+                                                <strong class="text-green-600">Pencapaian:</strong> {{ j.achievements }}
+                                            </div>
+                                            <div v-if="j.notes">
+                                                <strong class="text-orange-500">Catatan/Kendala:</strong> {{ j.notes }}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                </div>
 
-                <!-- Stats Cards -->
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                    <!-- Card 1 -->
-                    <div
-                        class="bg-white rounded-xl p-6 shadow-sm border-l-4 border-blue-500 hover:shadow-md transition-shadow">
-                        <div class="flex justify-between items-center">
-                            <div>
-                                <p class="text-sm text-gray-500 mb-1">Total Siswa Ajar</p>
-                                <h3 id="stat-student-count" class="text-2xl font-bold text-gray-800">...</h3>
-                            </div>
-                            <div class="bg-blue-100 p-3 rounded-full text-blue-600">
-                                <i class="fas fa-users text-xl"></i>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- Card 2 -->
-                    <div
-                        class="bg-white rounded-xl p-6 shadow-sm border-l-4 border-green-500 hover:shadow-md transition-shadow">
-                        <div class="flex justify-between items-center">
-                            <div>
-                                <p class="text-sm text-gray-500 mb-1">Kelas Hari Ini</p>
-                                <h3 id="stat-class-count" class="text-2xl font-bold text-gray-800">...</h3>
-                            </div>
-                            <div class="bg-green-100 p-3 rounded-full text-green-600">
-                                <i class="fas fa-chalkboard-teacher text-xl"></i>
-                            </div>
-                        </div>
-                        <p class="text-xs text-gray-400 mt-2">Jangan telat ya beb!</p>
-                    </div>
-                    <!-- Card 3 -->
-                    <div
-                        class="bg-white rounded-xl p-6 shadow-sm border-l-4 border-yellow-500 hover:shadow-md transition-shadow">
-                        <div class="flex justify-between items-center">
-                            <div>
-                                <p class="text-sm text-gray-500 mb-1">Tugas Belum Dinilai</p>
-                                <h3 id="stat-task-count" class="text-2xl font-bold text-gray-800">0</h3>
-                            </div>
-                            <div class="bg-yellow-100 p-3 rounded-full text-yellow-600">
-                                <i class="fas fa-file-alt text-xl"></i>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- Card 4 -->
-                    <div
-                        class="bg-white rounded-xl p-6 shadow-sm border-l-4 border-red-500 hover:shadow-md transition-shadow">
-                        <div class="flex justify-between items-center">
-                            <div>
-                                <p class="text-sm text-gray-500 mb-1">Siswa Bermasalah</p>
-                                <h3 id="stat-trouble-count" class="text-2xl font-bold text-gray-800">0</h3>
-                            </div>
-                            <div class="bg-red-100 p-3 rounded-full text-red-600">
-                                <i class="fas fa-exclamation-triangle text-xl"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Recent Activity & Quick Actions -->
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    <!-- Schedule Widget -->
-                    <div class="bg-white rounded-xl shadow-sm p-6 lg:col-span-2">
-                        <h3 class="font-bold text-lg text-gray-800 mb-4 flex items-center">
-                            <i class="far fa-clock text-blue-500 mr-2"></i> Jadwal Hari Ini
-                        </h3>
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left border-collapse">
-                                <thead>
-                                    <tr class="text-gray-500 text-sm border-b border-gray-100">
-                                        <th class="pb-3 font-medium">Jam</th>
-                                        <th class="pb-3 font-medium">Kelas</th>
-                                        <th class="pb-3 font-medium">Mata Pelajaran</th>
-                                        <th class="pb-3 font-medium">Ruangan</th>
-                                        <th class="pb-3 font-medium">Aksi</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="text-sm">
-                                    <tr class="border-b border-gray-50 hover:bg-gray-50">
-                                        <td class="py-3 font-mono text-gray-600">07:30 - 09:30</td>
-                                        <td class="py-3 font-semibold text-blue-900">X RPL 1</td>
-                                        <td class="py-3">Dasar Pemrograman</td>
-                                        <td class="py-3"><span class="bg-gray-200 px-2 py-1 rounded text-xs">Lab
-                                                1</span></td>
-                                        <td class="py-3">
-                                            <button onclick="switchTab('absensi')"
-                                                class="text-blue-600 hover:text-blue-800 text-xs font-bold">Absen</button>
-                                        </td>
-                                    </tr>
-                                    <tr class="border-b border-gray-50 hover:bg-gray-50">
-                                        <td class="py-3 font-mono text-gray-600">10:00 - 12:00</td>
-                                        <td class="py-3 font-semibold text-blue-900">XI TKJ 2</td>
-                                        <td class="py-3">Infrastruktur Jaringan</td>
-                                        <td class="py-3"><span class="bg-gray-200 px-2 py-1 rounded text-xs">R. Teori
-                                                3</span></td>
-                                        <td class="py-3">
-                                            <button onclick="switchTab('absensi')"
-                                                class="text-blue-600 hover:text-blue-800 text-xs font-bold">Absen</button>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <!-- Quick Notifications -->
-                    <div class="bg-white rounded-xl shadow-sm p-6">
-                        <h3 class="font-bold text-lg text-gray-800 mb-4">Pengumuman Sekolah</h3>
-                        <ul class="space-y-4">
-                            <li class="flex items-start space-x-3">
-                                <div class="w-2 h-2 mt-2 bg-red-500 rounded-full flex-shrink-0"></div>
+                        <!-- ATTENDANCE VIEW -->
+                        <div v-if="currentTab === 'absensi'" key="absensi" class="space-y-6">
+                            <div
+                                class="flex flex-col md:flex-row justify-between items-center gap-4 bg-white p-4 rounded-xl shadow-sm border border-slate-100">
                                 <div>
-                                    <p class="text-sm font-semibold text-gray-800">Rapat Dewan Guru</p>
-                                    <p class="text-xs text-gray-500">Besok, 13:00 WIB di R. Guru. Jangan lupa bawa
-                                        gorengan beb.</p>
+                                    <h2 class="text-xl font-bold text-slate-800">Absensi Siswa</h2>
+                                    <p class="text-xs text-slate-500">Catat kehadiran dan berikan reward/punishment.</p>
                                 </div>
-                            </li>
-                            <li class="flex items-start space-x-3">
-                                <div class="w-2 h-2 mt-2 bg-blue-500 rounded-full flex-shrink-0"></div>
+                                <div class="flex gap-2 w-full md:w-auto">
+                                    <select v-model="selectedClass" @change="fetchStudents"
+                                        class="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-blue-500 outline-none">
+                                        <option value="">Pilih Kelas...</option>
+                                        <option v-for="cls in classList" :key="cls" :value="cls">{{ cls }}</option>
+                                    </select>
+                                    <input type="date" v-model="selectedDate"
+                                        class="px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none">
+                                </div>
+                            </div>
+
+                            <!-- Attendance Table -->
+                            <div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+                                <div v-if="loadingStudents" class="p-8 text-center text-slate-500">Loading data...</div>
+                                <div v-else-if="students.length === 0" class="p-8 text-center text-slate-400 italic">
+                                    Pilih kelas untuk memuat data.</div>
+                                <table v-else class="w-full text-left text-sm">
+                                    <thead
+                                        class="bg-slate-50 border-b border-slate-100 text-slate-500 Uppercase text-xs">
+                                        <tr>
+                                            <th class="px-4 py-3 font-semibold w-12">No</th>
+                                            <th class="px-4 py-3 font-semibold">Nama Siswa</th>
+                                            <th class="px-4 py-3 font-semibold text-center">Status</th>
+                                            <th class="px-4 py-3 font-semibold">Note</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-50">
+                                        <tr v-for="(student, idx) in students" :key="student.uid"
+                                            class="hover:bg-slate-50 transition">
+                                            <td class="px-4 py-3 text-slate-400">{{ idx + 1 }}</td>
+                                            <td class="px-4 py-3 font-medium text-slate-700">{{ student.name }}</td>
+                                            <td class="px-4 py-3 text-center">
+                                                <div class="inline-flex bg-slate-100 rounded-lg p-1">
+                                                    <button v-for="status in ['H', 'S', 'I', 'A']" :key="status"
+                                                        @click="updateStatus(student.uid, status)"
+                                                        :class="{'bg-white shadow-sm font-bold': attendanceUpdates[student.uid]?.status === status,
+                                                                      'text-green-600': attendanceUpdates[student.uid]?.status === 'H' && status === 'H',
+                                                                      'text-red-500': attendanceUpdates[student.uid]?.status === 'A' && status === 'A',
+                                                                      'text-slate-400': attendanceUpdates[student.uid]?.status !== status}"
+                                                        class="w-8 h-8 rounded-md text-xs transition-all">
+                                                        {{ status }}
+                                                    </button>
+                                                </div>
+                                            </td>
+                                            <td class="px-4 py-3">
+                                                <div v-if="attendanceUpdates[student.uid]?.status === 'H'"
+                                                    class="text-xs text-green-600 font-medium">✨ Rajin (+XP)</div>
+                                                <div v-else-if="attendanceUpdates[student.uid]?.status === 'A'"
+                                                    class="text-xs text-red-500 font-medium">⚠️ Bolos (-HP)</div>
+                                                <input v-else type="text" v-model="attendanceUpdates[student.uid].note"
+                                                    class="w-full text-xs border-b border-slate-200 focus:border-blue-500 outline-none bg-transparent py-1"
+                                                    placeholder="Keterangan...">
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div class="flex justify-end" v-if="students.length > 0">
+                                <button @click="saveAttendance"
+                                    class="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-blue-700 shadow-lg shadow-blue-500/20 transition-all active:scale-95">
+                                    Simpan Absensi
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- INVENTORY & SKILLS VIEW -->
+                        <div v-if="currentTab === 'inventory'" key="inventory" class="space-y-6">
+
+                            <!-- Header -->
+                            <div
+                                class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex justify-between items-center">
                                 <div>
-                                    <p class="text-sm font-semibold text-gray-800">Update Dapodik</p>
-                                    <p class="text-xs text-gray-500">Batas akhir sinkronisasi data siswa Jumat ini.</p>
+                                    <h2 class="text-xl font-bold text-slate-800">Tas & Skill Guru</h2>
+                                    <p class="text-xs text-slate-500">Kelola item, efek aktif, dan gunakan skill mu.</p>
                                 </div>
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
+                                <div
+                                    class="bg-blue-50 px-4 py-2 rounded-lg border border-blue-100 flex items-center gap-3">
+                                    <i class="fas fa-gem text-blue-500"></i>
+                                    <div>
+                                        <div class="text-xs text-slate-400 font-bold">Level Kamu</div>
+                                        <div class="text-lg font-bold text-blue-700">{{ teacherData.level || 1 }}</div>
+                                    </div>
+                                </div>
+                            </div>
 
-            <!-- SECTION: THE DAILY GRIND -->
-            <div id="grind" class="hidden fade-in">
-                <div class="flex items-center gap-2 mb-4 border-b pb-2">
-                    <!-- FIXED: Updated Lordicon URL -->
-                    <lord-icon src="https://cdn.lordicon.com/surcxhka.json" trigger="loop" delay="2000"
-                        colors="primary:#1e293b,secondary:#fbbf24" style="width:32px;height:32px"></lord-icon>
-                    <h2 class="text-xl font-bold text-gray-800">The Daily Grind</h2>
-                </div>
+                            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                <!-- Active Effects (Left Col) -->
+                                <div class="lg:col-span-1 space-y-6">
+                                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 h-full">
+                                        <h3 class="font-bold text-md text-slate-800 mb-4 flex items-center gap-2">
+                                            <i class="fas fa-magic text-purple-500"></i> Status Efek Aktif
+                                        </h3>
+                                        <div v-if="activeEffects.length === 0"
+                                            class="text-center py-8 text-slate-400 text-sm bg-slate-50 rounded-lg border border-dashed border-slate-200">
+                                            Tidak ada efek/buff aktif.
+                                        </div>
+                                        <div v-else class="space-y-3">
+                                            <div v-for="(effect, index) in activeEffects" :key="index"
+                                                class="p-3 bg-purple-50 border border-purple-100 rounded-lg flex items-center gap-3">
+                                                <div class="bg-white p-2 rounded-full shadow-sm">
+                                                    <img :src="effect.icon || 'https://via.placeholder.com/32'"
+                                                        class="w-8 h-8 object-contain">
+                                                </div>
+                                                <div>
+                                                    <div class="font-bold text-sm text-slate-700">{{ effect.name }}
+                                                    </div>
+                                                    <div class="text-xs text-slate-500">{{ effect.description }}</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <!-- Quest 1: Journal -->
-                    <div
-                        class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:border-blue-400 transition">
-                        <h3 class="font-bold text-gray-800 mb-2 flex justify-between items-center">
-                            <span>📜 Jurnal Harian</span>
-                            <span class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">+10 XP</span>
-                        </h3>
-                        <p class="text-xs text-gray-500 mb-4">Catat kegiatan mengajar hari ini untuk laporan.</p>
-                        <textarea id="journal-input" rows="3"
-                            class="w-full bg-gray-50 border border-gray-300 rounded p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 mb-2"
-                            placeholder="Apa yang Anda ajarkan hari ini?"></textarea>
-                        <button onclick="submitGrind('journal')"
-                            class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition-colors text-sm">
-                            Submit Report
-                        </button>
-                    </div>
+                                <!-- Skills & Inventory (Right Col) -->
+                                <div class="lg:col-span-2 space-y-6">
 
-                    <!-- Quest 2: Grades -->
-                    <div
-                        class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:border-green-400 transition">
-                        <h3 class="font-bold text-gray-800 mb-2 flex justify-between items-center">
-                            <span>📊 Input Nilai</span>
-                            <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">+15 XP</span>
-                        </h3>
-                        <p class="text-xs text-gray-500 mb-4">Verifikasi dan input nilai siswa.</p>
-                        <div class="flex gap-2 mb-2">
-                            <select id="grade-class-select"
-                                class="bg-gray-50 border border-gray-300 rounded p-2 text-sm flex-1">
-                                <option>Pilih Kelas...</option>
-                                <option>X PPLG 1</option>
-                                <option>X PPLG 2</option>
-                            </select>
+                                    <!-- Skills Section -->
+                                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                                        <h3 class="font-bold text-md text-slate-800 mb-4 flex items-center gap-2">
+                                            <i class="fas fa-meteor text-orange-500"></i> Skill Guru
+                                        </h3>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div v-for="skill in skills" :key="skill.id"
+                                                class="relative overflow-hidden p-4 rounded-xl border transition-all"
+                                                :class="skill.locked ? 'bg-slate-50 border-slate-200' : 'bg-white border-slate-200 hover:border-blue-300 hover:shadow-md'">
+
+                                                <div class="flex justify-between items-start z-10 relative">
+                                                    <div class="flex items-center gap-3">
+                                                        <div class="p-2 rounded-lg"
+                                                            :class="skill.locked ? 'bg-slate-200 text-slate-400' : `bg-${skill.color}-100 text-${skill.color}-600`">
+                                                            <i :class="`fas fa-${skill.icon}`"></i>
+                                                        </div>
+                                                        <div>
+                                                            <h4 class="font-bold text-slate-800 text-sm">{{ skill.name
+                                                                }}</h4>
+                                                            <div class="text-[10px] font-bold px-1.5 py-0.5 rounded inline-block mt-1"
+                                                                :class="skill.locked ? 'bg-slate-200 text-slate-500' : 'bg-slate-100 text-slate-600'">
+                                                                LVL {{ skill.minLevel }}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <button @click="openSkillModal(skill)" :disabled="skill.locked"
+                                                        class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all"
+                                                        :class="skill.locked ? 'bg-slate-200 text-slate-400 cursor-not-allowed' : `bg-${skill.color}-600 text-white hover:bg-${skill.color}-700 shadow-lg shadow-${skill.color}-500/30`">
+                                                        {{ skill.locked ? 'Terkunci' : 'Gunakan' }}
+                                                    </button>
+                                                </div>
+                                                <p class="text-xs text-slate-500 mt-3 relative z-10">{{ skill.desc }}
+                                                </p>
+
+                                                <!-- Locked Overlay -->
+                                                <div v-if="skill.locked" class="absolute inset-0 bg-slate-100/50 z-0">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Inventory Section -->
+                                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                                        <h3 class="font-bold text-md text-slate-800 mb-4 flex items-center gap-2">
+                                            <i class="fas fa-briefcase text-amber-600"></i> Tas Baramg
+                                        </h3>
+                                        <div class="grid grid-cols-4 sm:grid-cols-5 gap-3">
+                                            <div v-for="(item, idx) in inventory" :key="idx"
+                                                class="aspect-square bg-slate-50 rounded-lg border border-slate-200 flex flex-col items-center justify-center p-2 hover:border-blue-300 transition cursor-pointer relative group">
+                                                <img :src="item.icon || 'https://via.placeholder.com/48'"
+                                                    class="w-8 h-8 object-contain mb-1">
+                                                <span
+                                                    class="text-[10px] text-center leading-tight line-clamp-2 text-slate-600 font-medium">{{
+                                                    item.name }}</span>
+                                                <span
+                                                    class="absolute top-1 right-1 bg-slate-800 text-white text-[9px] px-1 rounded-full">{{
+                                                    item.quantity || 1 }}</span>
+
+                                                <!-- Tooltip -->
+                                                <div
+                                                    class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-32 bg-slate-800 text-white text-xs rounded p-2 hidden group-hover:block z-20">
+                                                    <div class="font-bold">{{ item.name }}</div>
+                                                    <div class="text-[10px] text-slate-300">{{ item.description }}</div>
+                                                </div>
+                                            </div>
+                                            <!-- Empty Slots Filler (Visual Only) -->
+                                            <div v-for="n in Math.max(0, 10 - inventory.length)" :key="'empty'+n"
+                                                class="aspect-square bg-slate-50/50 rounded-lg border border-dashed border-slate-200">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <button onclick="submitGrind('grades')"
-                            class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition-colors text-sm">
-                            Verifikasi Nilai
-                        </button>
-                    </div>
-
-                    <!-- Quest 3: Presence -->
-                    <div
-                        class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:border-purple-400 transition">
-                        <h3 class="font-bold text-gray-800 mb-2 flex justify-between items-center">
-                            <span>👁️ Presensi Siswa</span>
-                            <span class="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">+5 XP</span>
-                        </h3>
-                        <p class="text-xs text-gray-500 mb-4">Pastikan kehadiran siswa tercatat rapi.</p>
-
-                        <button onclick="submitGrind('presence')"
-                            class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded transition-colors text-sm mt-auto">
-                            Konfirmasi Presensi
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Curriculum Buff -->
-                <div class="mt-8 bg-white p-6 rounded-xl shadow-sm border border-l-4 border-l-amber-500">
-                    <div class="flex items-center gap-3 mb-4">
-                        <!-- FIXED: Updated Lordicon URL -->
-                        <lord-icon src="https://cdn.lordicon.com/nocovwne.json" trigger="hover"
-                            colors="primary:#1e293b,secondary:#fbbf24" style="width:32px;height:32px"></lord-icon>
-                        <h3 class="font-bold text-gray-800 text-lg">Curriculum Buff</h3>
-                    </div>
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <h4 class="font-semibold text-gray-700">Pengaturan Jadwal</h4>
-                            <p class="text-xs text-gray-500">Aktifkan untuk mendapatkan bonus efisiensi mengajar.</p>
-                        </div>
-                        <label class="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" id="schedule-toggle" class="sr-only peer" onchange="toggleBuff()">
+                        <!-- SHOP VIEW -->
+                        <div v-if="currentTab === 'shop'" key="shop" class="space-y-6">
+                            <!-- Shop Header -->
                             <div
-                                class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600">
+                                class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex justify-between items-center">
+                                <div>
+                                    <h2 class="text-xl font-bold text-slate-800">Toko Item</h2>
+                                    <p class="text-xs text-slate-500">Beli item untuk membantu siswa atau diri sendiri.
+                                    </p>
+                                </div>
+                                <div
+                                    class="bg-amber-50 px-4 py-2 rounded-lg border border-amber-100 flex items-center gap-3">
+                                    <i class="fas fa-coins text-amber-500"></i>
+                                    <div>
+                                        <div class="text-xs text-slate-400 font-bold">Koin Kamu</div>
+                                        <div class="text-lg font-bold text-amber-600">{{ teacherData.coin || 0 }}</div>
+                                    </div>
+                                </div>
                             </div>
-                        </label>
-                    </div>
-                    <div id="buff-status"
-                        class="mt-3 text-sm text-green-600 font-medium hidden flex items-center gap-2">
-                        <i class="fas fa-check-circle"></i> Buff Aktif: Diskon MP 10% untuk semua spell!
-                    </div>
-                </div>
 
-                <!-- Grimoire Section -->
-                <div class="mt-8 border-t pt-6">
-                    <div class="flex items-center gap-2 mb-4">
-                        <h2 class="text-xl font-bold text-gray-800">Grimoire (Magic Spells)</h2>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <!-- Spell 1: Noise Detector -->
-                        <div
-                            class="bg-purple-50 p-4 rounded-xl border border-purple-100 flex items-center justify-between">
-                            <div>
-                                <h3 class="font-bold text-purple-900">Silence Detection</h3>
-                                <p class="text-xs text-purple-700">Cost: 20 MP • Lvl 5</p>
-                            </div>
-                            <button id="btn-noise" onclick="castSpell('noise')"
-                                class="bg-purple-600 text-white px-3 py-1 rounded shadow text-sm hover:bg-purple-700 transition">Cast</button>
-                            <div id="lock-noise"
-                                class="text-xs text-red-500 absolute bg-white/80 px-2 py-1 rounded hidden border border-red-200">
-                                <i class="fas fa-lock"></i> Locked
+                            <!-- Shop Grid -->
+                            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 h-full">
+                                <div v-if="shopItems.length === 0"
+                                    class="flex flex-col items-center justify-center py-10 text-center">
+                                    <i class="fas fa-store-slash text-4xl text-slate-300 mb-2"></i>
+                                    <p class="text-slate-500">Toko sedang tutup atau belum ada barang.</p>
+                                </div>
+
+                                <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    <div v-for="item in shopItems" :key="item.id"
+                                        class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-md transition-all flex flex-col group relative">
+
+                                        <!-- Item Image -->
+                                        <div class="h-40 bg-slate-50 relative overflow-hidden">
+                                            <img :src="item.imageBase64 || item.icon || 'https://via.placeholder.com/300x200?text=Item'"
+                                                class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                                            <div v-if="(item.stock || 0) <= 0"
+                                                class="absolute inset-0 bg-slate-900/60 flex items-center justify-center backdrop-blur-[1px]">
+                                                <span
+                                                    class="text-white font-bold text-lg border-2 border-white px-3 py-1 -rotate-6 rounded">STOK
+                                                    HABIS</span>
+                                            </div>
+                                            <div
+                                                class="absolute top-2 right-2 bg-white/90 backdrop-blur-sm text-xs px-2 py-1 rounded shadow-sm text-slate-500 font-medium">
+                                                Stok: {{ item.stock || 0 }}
+                                            </div>
+                                        </div>
+
+                                        <!-- Item Content -->
+                                        <div class="p-4 flex-1 flex flex-col">
+                                            <div class="flex justify-between items-start mb-2">
+                                                <h3 class="font-bold text-slate-800 text-sm line-clamp-1">{{ item.name
+                                                    }}</h3>
+                                                <div
+                                                    class="flex items-center gap-1 text-amber-600 font-bold text-sm bg-amber-50 px-2 py-0.5 rounded-md">
+                                                    <i class="fas fa-coins text-xs"></i>
+                                                    {{ item.price }}
+                                                </div>
+                                            </div>
+
+                                            <p class="text-xs text-slate-400 mb-4 line-clamp-2 h-8 leading-tight">{{
+                                                item.description }}</p>
+
+                                            <!-- Buy Button -->
+                                            <button @click="buyItem(item)"
+                                                :disabled="(item.stock || 0) <= 0 || (teacherData.coin || 0) < item.price"
+                                                class="mt-auto w-full py-2.5 rounded-lg font-bold text-xs transition-all flex items-center justify-center gap-2"
+                                                :class="(item.stock || 0) > 0 && (teacherData.coin || 0) >= item.price 
+                                                    ? 'bg-blue-600 text-white hover:bg-blue-700 active:scale-95 shadow-lg shadow-blue-500/20' 
+                                                    : 'bg-slate-100 text-slate-400 cursor-not-allowed'">
+                                                <i class="fas fa-shopping-cart text-[10px]"></i>
+                                                {{ (item.stock || 0) <= 0 ? 'Habis' : ((teacherData.coin || 0) <
+                                                    item.price ? 'Koin Kurang' : 'Beli Sekarang' ) }} </button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                        <!-- Spell 2: Pigeon Post -->
-                        <div class="bg-blue-50 p-4 rounded-xl border border-blue-100 flex items-center justify-between">
-                            <div>
-                                <h3 class="font-bold text-blue-900">Merpati Pos</h3>
-                                <p class="text-xs text-blue-700">Cost: 5 MP • Lvl 3</p>
-                            </div>
-                            <button id="btn-chat" onclick="castSpell('chat')"
-                                class="bg-blue-600 text-white px-3 py-1 rounded shadow text-sm hover:bg-blue-700 transition">Cast</button>
-                            <div id="lock-chat"
-                                class="text-xs text-red-500 absolute bg-white/80 px-2 py-1 rounded hidden border border-red-200">
-                                <i class="fas fa-lock"></i> Locked
-                            </div>
-                        </div>
-                    </div>
 
-                    <!-- Visualizer for Noise Spell -->
-                    <div id="noise-visualizer"
-                        class="hidden mt-4 bg-gray-900 p-4 rounded-lg h-16 flex items-center justify-center gap-1 shadow-inner"
-                        id="visualizer-bars">
-                        <div class="w-1 bg-green-500 h-2 animate-[pulse_0.5s_ease-in-out_infinite]"></div>
-                        <div class="w-1 bg-green-500 h-6 animate-[pulse_0.4s_ease-in-out_infinite]"></div>
-                        <div class="w-1 bg-green-500 h-3 animate-[pulse_0.6s_ease-in-out_infinite]"></div>
-                        <div class="w-1 bg-green-500 h-8 animate-[pulse_0.3s_ease-in-out_infinite]"></div>
-                        <div class="w-1 bg-green-500 h-4 animate-[pulse_0.5s_ease-in-out_infinite]"></div>
-                    </div>
+                        <!-- OTHER PLACEHOLDERS -->
+                        <div v-if="['jadwal', 'nilai', 'materi'].includes(currentTab)" key="placeholder"
+                            class="flex flex-col items-center justify-center h-96 text-center">
+                            <div class="bg-slate-100 p-6 rounded-full mb-4">
+                                <i class="fas fa-hammer text-4xl text-slate-300"></i>
+                            </div>
+                            <h3 class="text-xl font-bold text-slate-600">Fitur Sedang Dibangun</h3>
+                            <p class="text-slate-400">Tukang sedang bekerja, harap kembali lagi nanti.</p>
+                        </div>
+
+                    </transition>
+
+                    <!-- Footer -->
+                    <footer class="mt-auto py-6 text-center border-t border-slate-200/60">
+                        <p class="text-xs text-slate-400 font-medium">
+                            &copy; 2026 SMKMYCKB. All rights reserved.
+                            <span class="mx-2">•</span>
+                            Built by <b class="text-slate-500">Mas Panji Purnomo</b>
+                        </p>
+                    </footer>
+
                 </div>
             </div>
+        </main>
 
-            <!-- SECTION: JADWAL -->
-            <div id="jadwal" class="hidden fade-in">
-                <h2 class="text-2xl font-bold text-gray-800 mb-6">Jadwal Mengajar Mingguan</h2>
-                <div class="bg-white rounded-xl shadow-sm p-6 overflow-x-auto">
-                    <!-- Disini bisa pake tabel jadwal yang lebih lengkap -->
-                    <div class="text-center py-10 text-gray-500">
-                        <i class="fas fa-calendar-check text-5xl mb-4 text-blue-200"></i>
-                        <p>Fitur Jadwal Lengkap dalam pengembangan Inem...</p>
-                        <p class="text-sm">Sementara liat di Dashboard dulu ya, Beb!</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- SECTION: ABSENSI -->
-            <div id="absensi" class="hidden fade-in">
-                <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
-                    <h2 class="text-2xl font-bold text-gray-800">Input Absensi Siswa</h2>
-                    <div class="flex flex-col md:flex-row gap-2 w-full md:w-auto">
-                        <select id="attendance-class-select" onchange="loadStudentsForAttendance()"
-                            class="border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full md:w-auto">
-                            <option value="">Pilih Kelas...</option>
-                            <!-- Options populated dynamically -->
-                        </select>
-                        <input type="date" id="attendance-date"
-                            class="border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full md:w-auto">
-                    </div>
-                </div>
-
-                <div class="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left">
-                            <thead class="bg-gray-50 border-b border-gray-200">
-                                <tr>
-                                    <th class="px-6 py-4 font-semibold text-gray-700 w-10">No</th>
-                                    <th class="px-6 py-4 font-semibold text-gray-700">Nama Siswa</th>
-                                    <th class="px-6 py-4 font-semibold text-gray-700 text-center">Status Kehadiran</th>
-                                    <th class="px-6 py-4 font-semibold text-gray-700">Keterangan</th>
-                                </tr>
-                            </thead>
-                            <tbody id="attendance-table-body" class="divide-y divide-gray-100">
-                                <tr>
-                                    <td colspan="4" class="px-6 py-8 text-center text-gray-500 italic">
-                                        Silakan pilih kelas terlebih dahulu untuk memuat data siswa.
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <div class="mt-6 flex justify-end">
-                    <button onclick="saveAttendance()"
-                        class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-xl shadow-lg shadow-blue-500/30 transition-all transform hover:-translate-y-1">
-                        <i class="fas fa-save mr-2"></i> Simpan Data Absensi
-                    </button>
-                </div>
-            </div>
-        </div>
-        </div>
-
-        <!-- SECTION: INPUT NILAI -->
-        <div id="nilai" class="hidden fade-in">
-            <h2 class="text-2xl font-bold text-gray-800 mb-6">Input Nilai Siswa</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div class="bg-white p-6 rounded-xl shadow-sm">
-                    <h3 class="font-bold text-gray-700 mb-4 border-b pb-2">Form Penilaian</h3>
-                    <form onsubmit="event.preventDefault(); simpanData();">
-                        <div class="mb-4">
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Kelas</label>
-                            <select
-                                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
-                                <option>X RPL 1</option>
-                                <option>XII TKJ 2</option>
-                            </select>
-                        </div>
-                        <div class="mb-4">
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Jenis Nilai</label>
-                            <select
-                                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
-                                <option>Tugas Harian</option>
-                                <option>Ulangan Tengah Semester (UTS)</option>
-                                <option>Ulangan Akhir Semester (UAS)</option>
-                                <option>Praktek</option>
-                            </select>
-                        </div>
-                        <div class="mb-4">
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Nama Siswa</label>
-                            <select
-                                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
-                                <option>Pilih Siswa...</option>
-                                <option>Ahmad Zulfikar</option>
-                                <option>Budi Santoso</option>
-                                <option>Citra Lestari</option>
-                            </select>
-                        </div>
-                        <div class="mb-6">
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Nilai (0-100)</label>
-                            <input type="number" min="0" max="100"
-                                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
-                                placeholder="Contoh: 85">
-                        </div>
-                        <button type="submit"
-                            class="w-full bg-green-600 text-white font-bold py-2 rounded-lg hover:bg-green-700 transition">
-                            Input Nilai
+        <!-- Skill Target Modal -->
+        <transition name="fade">
+            <div v-if="isSkillModalOpen"
+                class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+                <div class="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden transform transition-all">
+                    <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                        <h3 class="font-bold text-lg text-slate-800">
+                            Gunakan Skill: <span :class="`text-${selectedSkill?.color}-600`">{{ selectedSkill?.name
+                                }}</span>
+                        </h3>
+                        <button @click="isSkillModalOpen = false"
+                            class="text-slate-400 hover:text-slate-600 transition">
+                            <i class="fas fa-times"></i>
                         </button>
-                    </form>
-                </div>
-
-                <div
-                    class="bg-blue-50 p-6 rounded-xl border border-blue-100 flex flex-col justify-center items-center text-center">
-                    <img src="asset/gambar/pose2.jpg"
-                        class="w-32 h-32 rounded-full object-cover mb-4 border-4 border-white shadow-md opacity-80">
-                    <h4 class="font-bold text-blue-900">Tips Inem:</h4>
-                    <p class="text-sm text-blue-800 mt-2">"Beb, kalau input nilai jangan sambil ngantuk ya. Nanti
-                        nilai 70 jadi 07, bisa nangis anak orang. Kalau capek, makan eskrim durian dulu gih."</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- SECTION: MATERI -->
-        <div id="materi" class="hidden fade-in">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold text-gray-800">Bank Materi & Modul</h2>
-                <button
-                    class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center">
-                    <i class="fas fa-upload mr-2"></i> Upload Materi Baru
-                </button>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <!-- Materi Card 1 -->
-                <div
-                    class="bg-white p-4 rounded-xl shadow-sm border hover:border-blue-400 transition cursor-pointer group">
-                    <div
-                        class="h-32 bg-red-100 rounded-lg mb-3 flex items-center justify-center text-red-500 group-hover:bg-red-200 transition">
-                        <i class="fas fa-file-pdf text-4xl"></i>
                     </div>
-                    <h3 class="font-bold text-gray-800 truncate">Modul Algoritma Dasar.pdf</h3>
-                    <p class="text-xs text-gray-500 mt-1">Diupload: 12 Jan 2026 • 2.4 MB</p>
-                </div>
-                <!-- Materi Card 2 -->
-                <div
-                    class="bg-white p-4 rounded-xl shadow-sm border hover:border-blue-400 transition cursor-pointer group">
-                    <div
-                        class="h-32 bg-blue-100 rounded-lg mb-3 flex items-center justify-center text-blue-500 group-hover:bg-blue-200 transition">
-                        <i class="fas fa-file-powerpoint text-4xl"></i>
-                    </div>
-                    <h3 class="font-bold text-gray-800 truncate">Presentasi Jaringan Komputer.pptx</h3>
-                    <p class="text-xs text-gray-500 mt-1">Diupload: 10 Feb 2026 • 5.1 MB</p>
-                </div>
-                <!-- Materi Card 3 -->
-                <div
-                    class="bg-white p-4 rounded-xl shadow-sm border hover:border-blue-400 transition cursor-pointer group">
-                    <div
-                        class="h-32 bg-green-100 rounded-lg mb-3 flex items-center justify-center text-green-500 group-hover:bg-green-200 transition">
-                        <i class="fas fa-file-code text-4xl"></i>
-                    </div>
-                    <h3 class="font-bold text-gray-800 truncate">Snippet Code HTML.txt</h3>
-                    <p class="text-xs text-gray-500 mt-1">Diupload: Hari ini • 12 KB</p>
-                </div>
-            </div>
-        </div>
+                    <div class="p-4">
+                        <p class="text-sm text-slate-600 mb-4">{{ selectedSkill?.desc }}</p>
 
-        </div>
-    </main>
-
-    <!-- Overlay untuk Mobile Sidebar -->
-    <div id="sidebar-overlay" onclick="toggleSidebar()"
-        class="fixed inset-0 bg-black bg-opacity-50 z-0 hidden md:hidden"></div>
-
-    <!-- Profile Edit Modal -->
-    <div id="profile-modal"
-        class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden opacity-0 transition-opacity duration-300 flex items-center justify-center p-4">
-        <div
-            class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl transform scale-95 transition-transform duration-300 overflow-hidden flex flex-col max-h-[90vh]">
-            <!-- Modal Header -->
-            <div class="bg-gradient-to-r from-blue-600 to-indigo-600 p-6 text-white flex justify-between items-center">
-                <h3 class="text-xl font-bold flex items-center gap-2">
-                    <i class="fas fa-user-edit"></i> Edit Profil Guru
-                </h3>
-                <button onclick="closeProfileModal()"
-                    class="text-white/80 hover:text-white hover:bg-white/10 rounded-full p-2 transition">
-                    <i class="fas fa-times text-xl"></i>
-                </button>
-            </div>
-
-            <!-- Modal Body (Scrollable) -->
-            <div class="p-6 overflow-y-auto custom-scrollbar">
-                <div class="flex flex-col md:flex-row gap-6">
-                    <!-- Left: Avatar Section -->
-                    <div class="flex flex-col items-center gap-4 min-w-[150px]">
-                        <div class="relative group cursor-pointer" onclick="openCameraModal()">
-                            <img id="modal-avatar-preview" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Teacher"
-                                class="w-32 h-32 rounded-full border-4 border-white shadow-lg object-cover bg-gray-100">
-                            <div
-                                class="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                <i class="fas fa-camera text-white text-2xl"></i>
-                            </div>
-                            <div
-                                class="absolute bottom-1 right-1 bg-blue-600 text-white p-2 rounded-full shadow-md text-xs">
-                                <i class="fas fa-camera"></i>
+                        <label class="block text-xs font-bold text-slate-500 mb-2">Pilih Target Siswa:</label>
+                        <div v-if="students.length === 0"
+                            class="text-center p-4 bg-red-50 text-red-500 rounded text-sm mb-4">
+                            <i class="fas fa-exclamation-circle mr-1"></i> Data siswa kosong. Pilih kelas di menu
+                            Absensi dulu.
+                        </div>
+                        <div v-else class="max-h-60 overflow-y-auto space-y-2 border border-slate-100 rounded-lg p-2">
+                            <div v-for="student in students" :key="student.uid" @click="castSkillOnStudent(student.uid)"
+                                class="p-3 hover:bg-slate-50 cursor-pointer rounded-lg border border-transparent hover:border-slate-200 flex justify-between items-center transition">
+                                <div>
+                                    <div class="font-bold text-sm text-slate-800">{{ student.name }}</div>
+                                    <div class="text-[10px] text-slate-400">XP: {{ student.xp || 0 }} | HP: {{
+                                        student.hp || 0 }}</div>
+                                </div>
+                                <button
+                                    class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1.5 rounded-lg shadow font-medium">
+                                    Pilih
+                                </button>
                             </div>
                         </div>
-                        <p class="text-xs text-gray-400 text-center">Klik untuk foto kamera</p>
-                        <button onclick="regenerateAvatar()"
-                            class="text-xs text-blue-500 hover:text-blue-700 underline">atau generate avatar</button>
+                    </div>
+                </div>
+            </div>
+        </transition>
 
-                        <div class="w-full bg-blue-50 p-3 rounded-lg border border-blue-100 text-center">
-                            <p class="text-xs font-bold text-blue-800 uppercase tracking-wider mb-1">Level</p>
-                            <span id="modal-level-display" class="text-2xl font-black text-blue-600">1</span>
+        <!-- Teacher Chat Modal -->
+        <transition name="fade">
+            <div v-if="isTeacherChatOpen"
+                class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+                <div
+                    class="bg-white rounded-2xl shadow-xl w-full max-w-4xl h-[80vh] flex overflow-hidden border border-slate-200">
+
+                    <!-- Sidebar (Recipients) -->
+                    <div class="w-1/3 border-r border-slate-100 flex flex-col bg-slate-50">
+                        <div class="p-4 border-b border-slate-100 bg-white">
+                            <h3 class="font-bold text-slate-800 mb-2">Pigeon Post</h3>
+                            <input v-model="chatSearchQuery" type="text" placeholder="Cari Siswa..."
+                                class="w-full px-3 py-2 bg-slate-100 border-none rounded-lg text-sm focus:ring-2 focus:ring-blue-100 transition-all">
+                        </div>
+
+                        <div class="flex-1 overflow-y-auto">
+                            <div v-if="filteredChatRecipients.length === 0"
+                                class="p-4 text-center text-slate-400 text-sm">
+                                Tidak ada siswa ditemukan.
+                            </div>
+                            <div v-for="recipient in filteredChatRecipients" :key="recipient.uid"
+                                @click="selectChatRecipient(recipient)"
+                                class="p-3 border-b border-slate-100 cursor-pointer hover:bg-white transition-colors flex items-center gap-3 relative"
+                                :class="currentChatRecipient?.uid === recipient.uid ? 'bg-white border-l-4 border-l-blue-500 shadow-sm' : ''">
+
+                                <div class="relative">
+                                    <img :src="recipient.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${recipient.name}`"
+                                        class="w-10 h-10 rounded-full bg-slate-200 border border-white shadow-sm">
+                                    <span v-if="recipient.unreadCount > 0"
+                                        class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center ring-2 ring-white">
+                                        {{ recipient.unreadCount }}
+                                    </span>
+                                </div>
+
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex justify-between items-baseline">
+                                        <h4 class="font-bold text-slate-700 text-sm truncate">{{ recipient.name }}</h4>
+                                        <span class="text-[10px] text-slate-400">{{
+                                            formatTime(recipient.lastMessageTime) }}</span>
+                                    </div>
+                                    <p class="text-xs text-slate-500 truncate mt-0.5"
+                                        :class="recipient.unreadCount > 0 ? 'font-bold text-slate-700' : ''">
+                                        {{ recipient.lastMessage }}
+                                    </p>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Right: Form Fields -->
-                    <div class="flex-1 space-y-4">
+                    <!-- Chat Area -->
+                    <div class="flex-1 flex flex-col bg-white relative">
+                        <!-- Header -->
+                        <div class="p-4 border-b border-slate-100 flex justify-between items-center shadow-sm z-10">
+                            <div v-if="currentChatRecipient" class="flex items-center gap-3">
+                                <img :src="currentChatRecipient.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentChatRecipient.name}`"
+                                    class="w-8 h-8 rounded-full border border-slate-100">
+                                <div>
+                                    <h4 class="font-bold text-slate-800 text-sm">{{ currentChatRecipient.name }}</h4>
+                                    <p class="text-[10px] text-slate-500">{{ currentChatRecipient.role || 'Siswa' }}</p>
+                                </div>
+                            </div>
+                            <div v-else class="text-slate-400 text-sm font-medium">Pilih siswa untuk memulai chat</div>
+
+                            <button @click="toggleTeacherChat"
+                                class="text-slate-400 hover:text-red-500 transition-colors p-2">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+
+                        <!-- Messages -->
+                        <div class="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/50" id="teacher-chat-messages">
+                            <div v-if="!currentChatRecipient"
+                                class="h-full flex flex-col items-center justify-center text-slate-300">
+                                <i class="fas fa-dove text-6xl mb-4 opacity-20"></i>
+                                <p>Pigeon Post System</p>
+                            </div>
+
+                            <template v-else>
+                                <div v-if="currentChatMessages.length === 0"
+                                    class="text-center py-10 text-slate-400 text-sm">
+                                    Belum ada pesan. Sapa siswa ini!
+                                </div>
+                                <div v-for="msg in currentChatMessages" :key="msg.id" class="flex flex-col max-w-[80%]"
+                                    :class="msg.senderId === user.uid ? 'ml-auto items-end' : 'items-start'">
+
+                                    <div class="p-3 rounded-2xl text-sm relative group shadow-sm"
+                                        :class="msg.senderId === user.uid ? 'bg-blue-600 text-white rounded-br-none' : 'bg-white text-slate-700 border border-slate-100 rounded-bl-none'">
+                                        {{ msg.text }}
+                                        <div class="text-[9px] mt-1 opacity-70 flex items-center justify-end gap-1">
+                                            {{ formatTime(msg.timestamp) }}
+                                            <span v-if="msg.senderId === user.uid">
+                                                <i class="fas" :class="msg.read ? 'fa-check-double' : 'fa-check'"></i>
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+
+                        <!-- Input -->
+                        <div class="p-4 border-t border-slate-100 bg-white">
+                            <form @submit.prevent="sendChatMessage" class="flex gap-2">
+                                <input v-model="chatInput" type="text" placeholder="Tulis pesan..."
+                                    :disabled="!currentChatRecipient"
+                                    class="flex-1 px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 transition-all">
+                                <button type="submit" :disabled="!currentChatRecipient || !chatInput.trim()"
+                                    class="bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white p-2 w-10 h-10 rounded-lg flex items-center justify-center transition-all shadow-md active:scale-95">
+                                    <i class="fas fa-paper-plane text-sm"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </transition>
+
+        <!-- Profile Modal -->
+        <transition name="fade">
+            <div v-if="isProfileModalOpen"
+                class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+                <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden transform transition-all">
+                    <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                        <h3 class="font-bold text-lg text-slate-800">Edit Profil Guru</h3>
+                        <button @click="closeProfileModal" class="text-slate-400 hover:text-slate-600 transition">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+
+                    <div class="p-6 max-h-[70vh] overflow-y-auto">
+                        <div class="text-center mb-6">
+                            <div class="relative w-24 h-24 mx-auto mb-3">
+                                <img :src="editForm.photoBase64 || `https://api.dicebear.com/7.x/avataaars/svg?seed=${editForm.avatar_seed || 'Teacher'}`"
+                                    class="w-full h-full rounded-full object-cover border-4 border-white shadow-lg bg-white">
+                                <button @click="startCamera"
+                                    class="absolute bottom-0 right-0 bg-blue-600 text-white p-2 rounded-full shadow-md hover:bg-blue-700 transition"
+                                    title="Ambil Foto">
+                                    <i class="fas fa-camera text-xs"></i>
+                                </button>
+                            </div>
+                            <div class="flex justify-center gap-2">
+                                <button @click="regenerateAvatar"
+                                    class="text-xs px-3 py-1 bg-slate-100 text-slate-600 rounded-full hover:bg-slate-200 transition">
+                                    <i class="fas fa-dice mr-1"></i> Random Avatar
+                                </button>
+                            </div>
+                        </div>
+
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Nama Lengkap</label>
-                                <input type="text" id="edit-name"
-                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm font-semibold text-gray-700">
+                                <label class="block text-xs font-bold text-slate-500 mb-1">Nama Lengkap</label>
+                                <input v-model="editForm.name" type="text"
+                                    class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500">
                             </div>
                             <div>
-                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">NIY / NUPTK</label>
-                                <input type="text" id="edit-niy"
-                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm">
+                                <label class="block text-xs font-bold text-slate-500 mb-1">NIP / NIY</label>
+                                <input v-model="editForm.niy" type="text"
+                                    class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500">
                             </div>
-                        </div>
-
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Jenis
-                                    Kelamin</label>
-                                <select id="edit-gender"
-                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition-all text-sm">
-                                    <option value="">Pilih...</option>
-                                    <option value="Laki-laki">Laki-laki</option>
-                                    <option value="Perempuan">Perempuan</option>
+                                <label class="block text-xs font-bold text-slate-500 mb-1">Jenis Kelamin</label>
+                                <select v-model="editForm.gender"
+                                    class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="L">Laki-laki</option>
+                                    <option value="P">Perempuan</option>
                                 </select>
                             </div>
                             <div>
-                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Tanggal
-                                    Lahir</label>
-                                <input type="date" id="edit-dob"
-                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition-all text-sm">
-                            </div>
-                        </div>
-
-                        <div>
-                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Jabatan / Peran</label>
-                            <select id="edit-role-detail"
-                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition-all text-sm font-medium text-gray-700">
-                                <option value="Guru Mapel">Guru Mapel</option>
-                                <option value="Wali Kelas X PPLG 1">Wali Kelas X PPLG 1</option>
-                                <option value="Wali Kelas X PPLG 2">Wali Kelas X PPLG 2</option>
-                                <option value="Wali Kelas XI PPLG 1">Wali Kelas XI PPLG 1</option>
-                                <option value="Wali Kelas XI PPLG 2">Wali Kelas XI PPLG 2</option>
-                                <option value="Wali Kelas XII PPLG 1">Wali Kelas XII PPLG 1</option>
-                                <option value="Wali Kelas XII PPLG 2">Wali Kelas XII PPLG 2</option>
-                                <option value="Kepala Sekolah">Kepala Sekolah</option>
-                                <option value="Kaprog">Kaprog</option>
-                                <option value="Kurikulum">Kurikulum</option>
-                                <option value="Kesiswaan">Kesiswaan</option>
-                                <option value="Konseling">Konseling</option>
-                            </select>
-                        </div>
-
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">No. Telepon /
-                                    WA</label>
-                                <div class="relative">
-                                    <span class="absolute left-3 top-2 text-gray-400 text-sm"><i
-                                            class="fab fa-whatsapp"></i></span>
-                                    <input type="text" id="edit-phone"
-                                        class="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition-all text-sm">
-                                </div>
+                                <label class="block text-xs font-bold text-slate-500 mb-1">Tanggal Lahir</label>
+                                <input v-model="editForm.dob" type="date"
+                                    class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500">
                             </div>
                             <div>
-                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Email (Read
-                                    Only)</label>
-                                <input type="email" id="edit-email" disabled
-                                    class="w-full px-3 py-2 border border-gray-200 bg-gray-50 rounded-lg text-gray-500 text-sm italic cursor-not-allowed">
+                                <label class="block text-xs font-bold text-slate-500 mb-1">Jabatan / Mapel</label>
+                                <input v-model="editForm.role_detail" type="text"
+                                    class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 mb-1">No. HP</label>
+                                <input v-model="editForm.phone" type="text"
+                                    class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            <div class="col-span-1 md:col-span-2">
+                                <label class="block text-xs font-bold text-slate-500 mb-1">Alamat</label>
+                                <textarea v-model="editForm.address" rows="2"
+                                    class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500"></textarea>
                             </div>
                         </div>
+                    </div>
 
-                        <div>
-                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Alamat Domisili</label>
-                            <textarea id="edit-address" rows="2"
-                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition-all text-sm"></textarea>
+                    <div class="p-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
+                        <button @click="closeProfileModal"
+                            class="px-4 py-2 text-sm font-medium text-slate-500 hover:text-slate-700 hover:bg-slate-200 rounded-lg transition">Batal</button>
+                        <button @click="saveProfile"
+                            class="px-4 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-lg shadow-blue-500/30 transition">Simpan
+                            Perubahan</button>
+                    </div>
+                </div>
+            </div>
+        </transition>
+
+        <!-- Camera Modal -->
+        <transition name="fade">
+            <div v-if="isCameraModalOpen"
+                class="fixed inset-0 z-[60] flex items-center justify-center bg-black/90 cursor-auto">
+                <div
+                    class="relative w-full max-w-lg bg-black rounded-xl overflow-hidden shadow-2xl border border-slate-800">
+                    <video ref="videoRef" autoplay playsinline class="w-full h-64 md:h-96 object-cover bg-black"
+                        :class="{'hidden': photoPreview}"></video>
+                    <canvas ref="canvasRef" class="hidden"></canvas>
+                    <img v-if="photoPreview" :src="photoPreview" class="w-full h-64 md:h-96 object-cover">
+
+                    <div
+                        class="absolute bottom-0 inset-x-0 p-6 flex justify-center items-center gap-4 bg-gradient-to-t from-black/80 to-transparent">
+                        <div v-if="!photoPreview">
+                            <button @click="stopCamera"
+                                class="absolute left-6 text-white text-sm hover:text-slate-300">Batal</button>
+                            <button @click="takePhoto"
+                                class="w-16 h-16 rounded-full border-4 border-white flex items-center justify-center hover:bg-white/20 transition active:scale-95">
+                                <div class="w-12 h-12 bg-white rounded-full"></div>
+                            </button>
+                        </div>
+                        <div v-else class="flex gap-4">
+                            <button @click="retakePhoto"
+                                class="px-6 py-2 bg-slate-600 text-white rounded-full font-bold hover:bg-slate-500">Ulangi</button>
+                            <button @click="savePhoto"
+                                class="px-6 py-2 bg-blue-600 text-white rounded-full font-bold hover:bg-blue-500 shadow-lg shadow-blue-500/50">Gunakan
+                                Foto</button>
                         </div>
                     </div>
                 </div>
             </div>
+        </transition>
 
-            <!-- Modal Footer -->
-            <div class="bg-gray-50 p-4 border-t border-gray-200 flex justify-end gap-3">
-                <button onclick="closeProfileModal()"
-                    class="px-5 py-2 rounded-lg text-gray-600 font-medium hover:bg-gray-200 transition-colors text-sm">Batal</button>
-                <button onclick="saveProfile()"
-                    class="px-6 py-2 rounded-lg bg-blue-600 text-white font-bold shadow-lg shadow-blue-500/30 hover:bg-blue-700 hover:shadow-blue-600/40 transition-all transform hover:-translate-y-0.5 text-sm flex items-center gap-2">
-                    <i class="fas fa-save"></i> Simpan Perubahan
-                </button>
-            </div>
-        </div>
-    </div>
-    <!-- Camera Modal -->
-    <div id="camera-modal"
-        class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex flex-col items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-2xl p-4 w-full max-w-lg relative">
-            <h3 class="text-center font-bold text-lg mb-4">Ambil Foto Profil</h3>
-
-            <div class="relative bg-black rounded-lg overflow-hidden aspect-square mb-4">
-                <video id="camera-stream" autoplay playsinline class="w-full h-full object-cover"></video>
-                <canvas id="camera-canvas" class="hidden w-full h-full object-cover"></canvas>
-            </div>
-
-            <div class="flex justify-center gap-4">
-                <button onclick="closeCameraModal()"
-                    class="px-4 py-2 bg-gray-200 rounded-lg font-bold text-gray-700">Batal</button>
-                <button id="btn-take-photo" onclick="takePhoto()"
-                    class="px-4 py-2 bg-blue-600 rounded-lg font-bold text-white">
-                    <i class="fas fa-camera"></i> Jepret
-                </button>
-                <button id="btn-retake-photo" onclick="retakePhoto()"
-                    class="hidden px-4 py-2 bg-yellow-500 rounded-lg font-bold text-white">
-                    <i class="fas fa-redo"></i> Ulang
-                </button>
-                <button id="btn-save-photo" onclick="savePhotoToModal()"
-                    class="hidden px-4 py-2 bg-green-600 rounded-lg font-bold text-white">
-                    <i class="fas fa-check"></i> Pakai
-                </button>
-            </div>
-        </div>
     </div>
 
-    <div id="toast"
-        class="fixed bottom-4 right-4 bg-gray-800 text-white px-6 py-3 rounded-lg shadow-lg hidden flex items-center space-x-3 transition-opacity duration-300 opacity-0 z-50">
-        <i class="fas fa-info-circle text-blue-400"></i>
-        <span id="toast-message">Notification message</span>
-    </div>
-
-    <!-- Firebase & Logic -->
-    <script type="module" src="teacher.js"></script>
-
-    <script>
-        // Tanggal Otomatis
-        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-        document.getElementById('current-date').innerText = new Date().toLocaleDateString('id-ID', options);
-
-        // Fungsi Ganti Tab (SPA Style)
-        function switchTab(tabName) {
-            // Sembunyikan semua section
-            const sections = ['dashboard', 'grind', 'jadwal', 'absensi', 'nilai', 'materi'];
-            sections.forEach(sec => {
-                const el = document.getElementById(sec);
-                if (el) el.classList.add('hidden');
-            });
-
-            // Tampilkan section yang dipilih
-            const target = document.getElementById(tabName);
-            if (target) target.classList.remove('hidden');
-
-            // Update Active State di Sidebar
-            const navLinks = document.querySelectorAll('nav a');
-            navLinks.forEach(link => {
-                link.classList.remove('active-nav', 'bg-indigo-50', 'text-indigo-700', 'border-r-4', 'border-indigo-700');
-                link.classList.add('text-gray-600');
-            });
-
-            // Highlight tombol yang aktif
-            const activeBtn = document.getElementById('nav-' + tabName);
-            if (activeBtn) {
-                activeBtn.classList.add('active-nav');
-                activeBtn.classList.remove('text-gray-600');
-            }
-
-            // Tutup sidebar kalo di mobile
-            if (window.innerWidth < 768) {
-                const sidebar = document.getElementById('sidebar');
-                if (!sidebar.classList.contains('hidden')) {
-                    toggleSidebar();
-                }
-            }
-        }
-
-        // Toggle Sidebar untuk Mobile (Responsif buat HP Poco F15 kamu)
-        function toggleSidebar() {
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('sidebar-overlay');
-
-            sidebar.classList.toggle('hidden');
-
-            // Hack buat toggle class 'flex' karena default tailwind hidden md:flex
-            if (sidebar.classList.contains('hidden')) {
-                sidebar.classList.remove('flex');
-                overlay.classList.add('hidden');
-            } else {
-                sidebar.classList.add('flex');
-                overlay.classList.remove('hidden');
-                // Posisikan absolute buat mobile
-                sidebar.classList.add('absolute', 'h-full');
-            }
-        }
-
-        // Simulasi Simpan Data (Feedback Visual)
-        // Note: Logic asli ada di teacher.js
-        function simpanData() {
-            alert('Data berhasil disimpan! (Tapi boong, ini cuma simulasi UI dulu beb)');
-        }
-    </script>
+    <!-- Script Module -->
+    <script type="module" src="./teacher.js"></script>
 </body>
 
 </html>
