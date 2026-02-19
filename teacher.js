@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
-import { getDatabase, ref, get, set, update, onValue } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
+import { getDatabase, ref as dbRef, get, set, update, onValue, push, remove, query, orderByChild, equalTo } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
 
 const firebaseConfig = {
@@ -17,755 +17,855 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 const auth = getAuth(app);
 
-// --- Audio Player Simple ---
-const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-function playSound(freq = 440, type = 'sine', duration = 0.1) {
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.type = type;
-    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-    gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
-    osc.start();
-    osc.stop(audioCtx.currentTime + duration);
-}
-const sounds = {
-    coin: () => { playSound(1200, 'sine', 0.1); setTimeout(() => playSound(1600, 'sine', 0.2), 100); },
-    xp: () => { playSound(400, 'square', 0.1); setTimeout(() => playSound(600, 'square', 0.1), 100); },
-    error: () => playSound(200, 'sawtooth', 0.3),
-    spell: () => { playSound(800, 'sine', 0.5); playSound(1200, 'triangle', 0.5); }
-};
+const { createApp, ref, reactive, onMounted, computed, watch } = Vue;
 
-// --- Initialization ---
-let currentUser = null;
-let teacherData = null;
+const appVue = createApp({
+    setup() {
+        // --- State ---
+        const user = ref(null);
+        const currentTab = ref('dashboard');
+        const isMobile = ref(false);
+        const isSidebarOpen = ref(false);
+        const isDreamyOpen = ref(false);
+        const loading = ref(true);
 
-onAuthStateChanged(auth, async (user) => {
-    if (user) {
-        currentUser = user;
-        const roleRef = ref(db, `roles/${user.uid}`);
-        const roleSnap = await get(roleRef);
+        const teacherData = reactive({
+            name: '',
+            level: 1,
+            xp: 0, max_xp: 1000,
+            hp: 100, max_hp: 100,
+            mp: 50, max_mp: 50,
+            coin: 0,
+            role_detail: 'Guru Mapel',
+            avatar_seed: 'Teacher',
+            photoBase64: null
+        });
 
-        if (roleSnap.exists() && roleSnap.val().role === 'teacher') {
-            initTeacherDashboard(user.uid);
-        } else {
-            // If not teacher, check if admin or student and redirect accordingly
-            if (roleSnap.exists() && roleSnap.val().isAdmin) {
-                window.location.replace('admin.html');
-            } else {
-                window.location.replace('student.html');
+        const navItems = [
+            { id: 'dashboard', label: 'Dashboard', icon: 'fas fa-chart-pie' },
+            { id: 'grind', label: 'The Daily Grind', icon: 'fas fa-fire' },
+            { id: 'jadwal', label: 'Jadwal', icon: 'fas fa-calendar-alt' },
+            { id: 'absensi', label: 'Absensi', icon: 'fas fa-user-check' },
+            { id: 'nilai', label: 'Input Nilai', icon: 'fas fa-pen-fancy' },
+            { id: 'materi', label: 'Materi', icon: 'fas fa-book-open' },
+        ];
+
+        // Attendance State
+        const classList = ref([]);
+        const students = ref([]);
+        const selectedClass = ref('');
+        const selectedDate = ref(new Date().toISOString().split('T')[0]);
+        const attendanceUpdates = reactive({});
+        const loadingStudents = ref(false);
+
+
+        // Notifs
+        const quickStats = ref([
+            { label: 'Total Siswa', value: '...', icon: 'fas fa-users', color: 'blue' },
+            { label: 'Kelas Hari Ini', value: '...', icon: 'fas fa-chalkboard-teacher', color: 'green' },
+            { label: 'Tugas Masuk', value: '0', icon: 'fas fa-file-alt', color: 'yellow' },
+            { label: 'Masalah', value: '0', icon: 'fas fa-exclamation-triangle', color: 'red' }
+        ]);
+
+        // --- Computed ---
+        const firstName = computed(() => teacherData.name ? teacherData.name.split(' ')[0] : 'Guru');
+        const currentDate = computed(() => {
+            return new Date().toLocaleDateString('id-ID', {
+                weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+            });
+        });
+
+        // --- Auth & Init ---
+        onMounted(() => {
+            checkMobile();
+            window.addEventListener('resize', checkMobile);
+
+            onAuthStateChanged(auth, async (u) => {
+                if (u) {
+                    user.value = u;
+                    const roleSnap = await get(dbRef(db, `roles/${u.uid}`));
+                    if (roleSnap.exists() && roleSnap.val().role === 'teacher') {
+                        initTeacherData(u.uid);
+                    } else {
+                        // Redirect Logic can be enabled later
+                        // window.location.replace(roleSnap.val().isAdmin ? 'admin.html' : 'student.html');
+                    }
+                } else {
+                    // window.location.replace('index.html');
+                }
+            });
+        });
+
+        const checkMobile = () => { isMobile.value = window.innerWidth < 768; };
+
+        const initTeacherData = (uid) => {
+            const teacherRef = dbRef(db, `teachers/${uid}`);
+            onValue(teacherRef, (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    Object.assign(teacherData, data);
+                    loading.value = false;
+                }
+            });
+            loadClassList();
+            fetchDashboardStats();
+            fetchJournals(uid);
+            fetchInventoryAndEffects(uid);
+            fetchShopItems();
+            fetchChatRecipients();
+        };
+
+        const loadClassList = async () => {
+            const studentsRef = dbRef(db, 'students');
+            onValue(studentsRef, (snap) => {
+                if (snap.exists()) {
+                    const classes = new Set();
+                    let studentCount = 0;
+                    Object.values(snap.val()).forEach(s => {
+                        if (s.kelas) classes.add(s.kelas);
+                        if (s.class) classes.add(s.class);
+                        studentCount++;
+                    });
+                    classList.value = Array.from(classes).sort();
+                    quickStats.value[0].value = studentCount;
+                    quickStats.value[1].value = classes.size + ' Kelas';
+                }
+            }, { onlyOnce: true });
+        };
+
+        const fetchDashboardStats = () => {
+            // Placeholder for simpler logic than original
+        };
+
+        // --- Methods ---
+
+        // Attendance Logic
+        const fetchStudents = async () => {
+            if (!selectedClass.value) return;
+            loadingStudents.value = true;
+            students.value = [];
+
+            // Clear existing keys in reactive object
+            Object.keys(attendanceUpdates).forEach(key => delete attendanceUpdates[key]);
+
+            const snap = await get(dbRef(db, 'students'));
+            if (snap.exists()) {
+                const list = [];
+                Object.entries(snap.val()).forEach(([uid, s]) => {
+                    // Check both 'kelas' and 'class'
+                    const sClass = s.kelas || s.class;
+                    if (sClass === selectedClass.value) {
+                        const studentObj = { uid, name: s.name || s.nama || 'Tanpa Nama', ...s };
+                        list.push(studentObj);
+
+                        // Init reactive update object
+                        attendanceUpdates[uid] = { status: 'H', note: 'Hadir' };
+                    }
+                });
+                students.value = list.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
             }
-        }
+            loadingStudents.value = false;
+        };
 
-        // Setup Modal Close on Click Outside
-        const overlay = document.getElementById('sidebar-overlay');
-        if (overlay) overlay.onclick = toggleSidebar;
+        const updateStatus = (uid, status) => {
+            const noteMap = { 'H': 'Hadir', 'A': 'Alpha', 'S': '', 'I': '' };
+            if (attendanceUpdates[uid]) {
+                attendanceUpdates[uid].status = status;
+                attendanceUpdates[uid].note = noteMap[status];
+            }
+        };
 
-    } else {
-        window.location.replace('index.html');
+        const saveAttendance = async () => {
+            if (!selectedClass.value || !selectedDate.value) {
+                alert("Pilih kelas dan tanggal!"); return;
+            }
+
+            const updates = {};
+            const attendRecord = {};
+            let count = 0;
+
+            students.value.forEach(student => {
+                const uid = student.uid;
+                const record = attendanceUpdates[uid];
+                if (record) {
+                    attendRecord[uid] = {
+                        status: record.status,
+                        note: record.note,
+                        timestamp: new Date().toISOString()
+                    };
+                    count++;
+                }
+            });
+
+            if (count === 0) return;
+
+            updates[`attendance/${selectedDate.value}/${selectedClass.value}`] = attendRecord;
+
+            // RPG Effects: In a real implementation, we would update student stats here.
+            // For now, we focus on saving the attendance record correctly.
+
+            try {
+                await update(dbRef(db), updates);
+                await submitGrind('presence');
+                alert("✅ Absensi Disimpan!");
+            } catch (e) {
+                console.error(e);
+                alert("❌ Gagal simpan");
+            }
+        };
+
+        // Grind Logic
+        const journalForm = reactive({
+            class: '',
+            date: new Date().toISOString().split('T')[0],
+            subject: '',
+            day: '',
+            weather: '',
+            feeling: '',
+            tasks: '',
+            achievements: '',
+            notes: '',
+            tomorrowPlan: ''
+        });
+
+        watch(() => journalForm.date, (newDate) => {
+            if (newDate) {
+                const date = new Date(newDate);
+                const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+                journalForm.day = days[date.getDay()];
+            }
+        }, { immediate: true });
+
+        // --- Journal History Logic ---
+        const journalList = ref([]);
+        const journalFilter = reactive({
+            startDate: '',
+            endDate: '',
+            search: ''
+        });
+
+        const fetchJournals = (uid) => {
+            // Query journals where 'author' == uid
+            const q = query(dbRef(db, 'reflectionJournals'), orderByChild('author'), equalTo(uid));
+            onValue(q, (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    // Convert object to array and reverse sort by date (descending)
+                    const arr = Object.entries(data).map(([id, val]) => ({ id, ...val }));
+                    arr.sort((a, b) => new Date(b.date) - new Date(a.date));
+                    journalList.value = arr;
+                } else {
+                    journalList.value = [];
+                }
+            });
+        };
+
+        const filteredJournals = computed(() => {
+            return journalList.value.filter(j => {
+                const matchesDate = (!journalFilter.startDate || j.date >= journalFilter.startDate) &&
+                    (!journalFilter.endDate || j.date <= journalFilter.endDate);
+                const searchLower = journalFilter.search.toLowerCase();
+                const matchesSearch = !journalFilter.search ||
+                    (j.subject && j.subject.toLowerCase().includes(searchLower)) ||
+                    (j.tasks && j.tasks.toLowerCase().includes(searchLower)) ||
+                    (j.class && j.class.toLowerCase().includes(searchLower));
+                return matchesDate && matchesSearch;
+            });
+        });
+
+        const deleteJournal = async (id) => {
+            if (!confirm("Yakin ingin menghapus jurnal ini?")) return;
+            try {
+                await remove(dbRef(db, `reflectionJournals/${id}`));
+                alert("Jurnal dihapus.");
+            } catch (e) {
+                console.error(e);
+                alert("Gagal menghapus jurnal.");
+            }
+        };
+
+        const printJournals = () => {
+            if (filteredJournals.value.length === 0) {
+                alert("Tidak ada jurnal untuk dicetak. Sesuaikan filter Anda.");
+                return;
+            }
+
+            const printWindow = window.open('', '_blank');
+            if (!printWindow) {
+                alert("Popup blocked. Please allow popups for this site.");
+                return;
+            }
+
+            const journals = filteredJournals.value;
+            const startDate = journalFilter.startDate || 'Awal';
+            const endDate = journalFilter.endDate || 'Akhir';
+
+            let html = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Laporan Jurnal Refleksi Guru</title>
+                <style>
+                    body { font-family: 'Segoe UI', sans-serif; line-height: 1.6; color: #333; padding: 20px; }
+                    .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #eee; padding-bottom: 20px; }
+                    .header h1 { margin: 0; color: #2c3e50; }
+                    .header p { margin: 5px 0; color: #7f8c8d; }
+                    .journal-entry { border: 1px solid #ddd; border-radius: 8px; padding: 15px; margin-bottom: 20px; page-break-inside: avoid; background: #fff; }
+                    .meta { display: flex; justify-content: space-between; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 10px; font-weight: bold; color: #2c3e50; }
+                    .content p { margin: 5px 0; }
+                    .label { font-weight: bold; color: #7f8c8d; font-size: 0.9em; }
+                    .footer { text-align: center; margin-top: 50px; font-size: 0.8em; color: #aaa; }
+                    @media print {
+                        body { padding: 0; }
+                        .journal-entry { border: 1px solid #ccc; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <h1>Laporan Jurnal Refleksi Guru</h1>
+                    <p>Nama: ${teacherData.name || 'Guru'}</p>
+                    <p>Periode: ${startDate} s/d ${endDate}</p>
+                    <p>Total Jurnal: ${journals.length}</p>
+                </div>
+            `;
+
+            journals.forEach(j => {
+                html += `
+                <div class="journal-entry">
+                    <div class="meta">
+                        <span>${j.day}, ${j.date}</span>
+                        <span>${j.class} | ${j.subject}</span>
+                    </div>
+                    <div class="content">
+                         <p><span class="label">Perasaan / Cuaca:</span> ${j.feeling || '-'} / ${j.weather || '-'}</p>
+                         <p><span class="label">Kegiatan:</span><br>${(j.tasks || '').replace(/\n/g, '<br>')}</p>
+                         ${j.achievements ? `<p><span class="label">Pencapaian:</span><br>${j.achievements.replace(/\n/g, '<br>')}</p>` : ''}
+                         ${j.notes ? `<p><span class="label">Catatan/Kendala:</span><br>${j.notes.replace(/\n/g, '<br>')}</p>` : ''}
+                         ${j.tomorrowPlan ? `<p><span class="label">Rencana Besok:</span><br>${j.tomorrowPlan.replace(/\n/g, '<br>')}</p>` : ''}
+                    </div>
+                </div>
+                `;
+            });
+
+            html += `
+                <div class="footer">
+                    Dicetak pada: ${new Date().toLocaleString()}
+                </div>
+            </body>
+            </html>
+            `;
+
+            printWindow.document.write(html);
+            printWindow.document.close();
+
+            // Wait for resources to load then print
+            setTimeout(() => {
+                printWindow.focus();
+                printWindow.print();
+                // printWindow.close(); // Optional: close after print
+            }, 500);
+        };
+
+        const inventory = ref([]);
+        const activeEffects = ref([]);
+        const skills = computed(() => {
+            const lvl = teacherData.level || 1;
+            return [
+                { id: 'xp_boost', name: 'Inspirasi', minLevel: 3, desc: 'Berikan 50 XP ke siswa', icon: 'lightbulb', type: 'xp', value: 50, color: 'yellow' },
+                { id: 'hp_heal', name: 'Penyembuhan', minLevel: 5, desc: 'Pulihkan 20 HP siswa', icon: 'heart', type: 'hp', value: 20, color: 'green' },
+                { id: 'hp_dmg', name: 'Hukuman', minLevel: 5, desc: 'Kurangi 20 HP siswa', icon: 'gavel', type: 'hp', value: -20, color: 'red' }
+            ].map(s => ({ ...s, locked: lvl < s.minLevel }));
+        });
+
+        // --- Active Skill Logic ---
+        const isSkillModalOpen = ref(false);
+        const selectedSkill = ref(null);
+
+        const openSkillModal = (skill) => {
+            if (skill.locked) return;
+            selectedSkill.value = skill;
+            isSkillModalOpen.value = true;
+
+            // If no class selected, prompt.
+            if (!selectedClass.value) {
+                // If we have classList, auto select first? No, let user choose.
+                // We rely on the user having loaded students.
+                // We can check if students are empty.
+            }
+        };
+
+        const castSkillOnStudent = async (studentUid) => {
+            if (!selectedSkill.value) return;
+            const skill = selectedSkill.value;
+            const studentRef = dbRef(db, `users/${studentUid}`);
+
+            try {
+                const snapshot = await get(studentRef);
+                const student = snapshot.val();
+                if (!student) return;
+
+                let updates = {};
+                let msg = "";
+
+                if (skill.type === 'xp') {
+                    const newXp = (student.xp || 0) + skill.value;
+                    // Note: Full level up logic is complex to duplicate, simplified here.
+                    updates = { xp: newXp };
+                    msg = `Skill ${skill.name} berhasil! Siswa dapat ${skill.value} XP.`;
+                } else if (skill.type === 'hp') {
+                    let newHp = (student.hp || 0) + skill.value;
+                    if (student.max_hp && newHp > student.max_hp) newHp = student.max_hp;
+                    if (newHp < 0) newHp = 0;
+                    updates = { hp: newHp };
+                    msg = `Skill ${skill.name} berhasil! HP siswa ${skill.value > 0 ? '+' : ''}${skill.value}.`;
+                }
+
+                await update(studentRef, updates);
+                alert(msg);
+                isSkillModalOpen.value = false;
+            } catch (error) {
+                console.error("Skill cast failed", error);
+                alert("Gagal menggunakan skill.");
+            }
+        };
+
+        // --- Inventory & Effects Fetcher ---
+        const fetchInventoryAndEffects = (uid) => {
+            onValue(dbRef(db, `teachers/${uid}/inventory`), (snap) => {
+                inventory.value = snap.val() ? Object.values(snap.val()) : [];
+            });
+            onValue(dbRef(db, `teachers/${uid}/active_effects`), (snap) => {
+                activeEffects.value = snap.val() ? Object.values(snap.val()) : [];
+            });
+        };
+
+        // --- Shop Logic ---
+        const shopItems = ref([]);
+
+        const fetchShopItems = () => {
+            onValue(dbRef(db, 'shopItems'), (snap) => {
+                if (snap.exists()) {
+                    shopItems.value = Object.entries(snap.val()).map(([id, val]) => ({ id, ...val }));
+                } else {
+                    shopItems.value = [];
+                }
+            });
+        };
+
+        const buyItem = async (item) => {
+            if ((teacherData.coin || 0) < item.price) {
+                alert("Koin tidak cukup!"); return;
+            }
+            if ((item.stock || 0) <= 0) {
+                alert("Stok Habis!"); return;
+            }
+            if (!confirm(`Beli ${item.name} seharga ${item.price} Coin?`)) return;
+
+            try {
+                // Deduct Coin
+                const newCoin = (teacherData.coin || 0) - item.price;
+                await update(dbRef(db, `teachers/${user.value.uid}`), { coin: newCoin });
+
+                // Add to Inventory
+                // Check if item exists to stack?
+                // For simplicity, just add new entry with unique ID for now.
+                // Teacher inventory structure: /inventory/ITEM_ID
+                const newItemKey = Date.now().toString();
+
+                await update(dbRef(db, `teachers/${user.value.uid}/inventory/${newItemKey}`), {
+                    name: item.name,
+                    description: item.description || '',
+                    icon: item.imageBase64 || item.icon || '',
+                    hp_bonus: item.hp_bonus || 0,
+                    mp_bonus: item.mp_bonus || 0,
+                    quantity: 1,
+                    type: 'item'
+                });
+
+                // Decrease Stock in Shop
+                const newStock = (item.stock || 0) - 1;
+                await update(dbRef(db, `shopItems/${item.id}`), { stock: newStock });
+
+                alert(`Berhasil membeli ${item.name}!`);
+            } catch (e) {
+                console.error(e);
+                alert("Gagal membeli item.");
+            }
+        };
+
+        const submitJournal = async () => {
+            if (!journalForm.class || !journalForm.subject || !journalForm.tasks) {
+                alert("Mohon lengkapi Kelas, Mapel, dan Uraian Tugas.");
+                return;
+            }
+
+            try {
+                const newJournal = {
+                    author: user.value.uid,
+                    createdAt: new Date().toISOString(),
+                    ...journalForm
+                };
+                await push(dbRef(db, 'reflectionJournals'), newJournal);
+                await submitGrind('journal'); // Award XP
+
+                // Reset minimal fields
+                journalForm.tasks = '';
+                journalForm.achievements = '';
+                journalForm.notes = '';
+                journalForm.tomorrowPlan = '';
+                journalForm.weather = '';
+                journalForm.feeling = '';
+
+                alert("✅ Jurnal Refleksi Berhasil Disimpan!");
+            } catch (e) {
+                console.error(e);
+                alert("Gagal menyimpan jurnal");
+            }
+        };
+
+        const submitGrind = async (type) => {
+            if (!user.value) return;
+            let xp = 0, coin = 0;
+            if (type === 'journal') {
+                // xp/coin handled by logic below
+                xp = 10; coin = 5;
+            }
+            if (type === 'presence') { xp = 5; coin = 2; }
+
+            const newXp = (teacherData.xp || 0) + xp;
+            const newCoin = (teacherData.coin || 0) + coin;
+
+            let level = teacherData.level;
+            let max_xp = teacherData.max_xp;
+
+            if (newXp >= max_xp) {
+                level++;
+                const adjustedXp = newXp - max_xp;
+                max_xp = Math.floor(max_xp * 1.2);
+
+                await update(dbRef(db, `teachers/${user.value.uid}`), {
+                    xp: adjustedXp, coin: newCoin, level, max_xp
+                });
+                alert("🎉 Level Up!");
+            } else {
+                await update(dbRef(db, `teachers/${user.value.uid}`), {
+                    xp: newXp, coin: newCoin
+                });
+            }
+        };
+
+        const castSpell = async (spell) => {
+            if (teacherData.mp < 10) { alert("Not enough MP!"); return; }
+            await update(dbRef(db, `teachers/${user.value.uid}`), {
+                mp: teacherData.mp - 10
+            });
+            alert(`${spell} casted!`);
+        };
+
+        // --- Chat Logic ---
+        const isTeacherChatOpen = ref(false);
+        const chatRecipients = ref([]);
+        const chatSearchQuery = ref('');
+        const currentChatRecipient = ref(null);
+        const currentChatMessages = ref([]);
+        const chatInput = ref('');
+
+        const formatTime = (timestamp) => {
+            if (!timestamp) return '';
+            const date = new Date(timestamp);
+            const now = new Date();
+            if (date.toDateString() === now.toDateString()) {
+                return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            }
+            return date.toLocaleDateString([], { day: 'numeric', month: 'short' });
+        };
+
+        const getCanonicalChatId = (uid1, uid2) => {
+            return [uid1, uid2].sort().join('_');
+        };
+
+        const fetchChatRecipients = () => {
+            // Fetch all students (Realtime)
+            onValue(dbRef(db, 'students'), (snap) => {
+                if (!snap.exists()) { chatRecipients.value = []; return; }
+                const studentsData = snap.val();
+
+                // Fetch My Notifications (Realtime)
+                onValue(dbRef(db, `chatNotifications/${user.value.uid}`), (notifSnap) => {
+                    const notifications = notifSnap.exists() ? notifSnap.val() : {};
+
+                    // Transform to array
+                    const list = Object.entries(studentsData).map(([uid, data]) => {
+                        // Count unreads for this student
+                        const unreadCount = Object.values(notifications).filter(n => n.senderId === uid && !n.read).length;
+                        // Get last message info
+                        const lastNotif = Object.values(notifications).filter(n => n.senderId === uid).sort((a, b) => b.timestamp - a.timestamp)[0];
+
+                        return {
+                            uid,
+                            name: data.nama,
+                            photoURL: data.photoURL,
+                            role: `Lv.${data.level || 1} ${data.kelas || ''}`,
+                            unreadCount: unreadCount,
+                            lastMessage: lastNotif ? lastNotif.text : 'Klik untuk chat',
+                            lastMessageTime: lastNotif ? lastNotif.timestamp : 0
+                        };
+                    });
+
+                    // Sort by unread, then time
+                    chatRecipients.value = list.sort((a, b) => {
+                        if (b.unreadCount !== a.unreadCount) return b.unreadCount - a.unreadCount;
+                        return b.lastMessageTime - a.lastMessageTime;
+                    });
+                });
+            });
+        };
+
+        const toggleTeacherChat = () => {
+            isTeacherChatOpen.value = !isTeacherChatOpen.value;
+        };
+
+        const filteredChatRecipients = computed(() => {
+            if (!chatSearchQuery.value) return chatRecipients.value;
+            return chatRecipients.value.filter(r => r.name.toLowerCase().includes(chatSearchQuery.value.toLowerCase()));
+        });
+
+        const totalUnreadChats = computed(() => {
+            return chatRecipients.value.reduce((sum, r) => sum + r.unreadCount, 0);
+        });
+
+        const selectChatRecipient = (recipient) => {
+            currentChatRecipient.value = recipient;
+            const chatId = getCanonicalChatId(user.value.uid, recipient.uid);
+
+            // Listen to messages
+            onValue(dbRef(db, `chats/${chatId}`), (snap) => {
+                if (snap.exists()) {
+                    const msgs = Object.entries(snap.val()).map(([id, val]) => ({ id, ...val }));
+                    currentChatMessages.value = msgs.sort((a, b) => a.timestamp - b.timestamp);
+
+                    // Mark as Read
+                    msgs.forEach(msg => {
+                        if (msg.recipientId === user.value.uid && !msg.read) {
+                            update(dbRef(db, `chats/${chatId}/${msg.id}`), { read: true });
+                            remove(dbRef(db, `chatNotifications/${user.value.uid}/${msg.id}`));
+                        }
+                    });
+                } else {
+                    currentChatMessages.value = [];
+                }
+                setTimeout(() => {
+                    const container = document.getElementById('teacher-chat-messages');
+                    if (container) container.scrollTop = container.scrollHeight;
+                }, 100);
+            });
+        };
+
+        const sendChatMessage = async () => {
+            if (!chatInput.value.trim() || !currentChatRecipient.value) return;
+            const text = chatInput.value.trim();
+            chatInput.value = '';
+
+            const recipientId = currentChatRecipient.value.uid;
+            const chatId = getCanonicalChatId(user.value.uid, recipientId);
+
+            const msgData = {
+                senderId: user.value.uid,
+                senderName: teacherData.name || 'Guru',
+                recipientId: recipientId,
+                text: text,
+                timestamp: Date.now(),
+                read: false,
+                isFromTeacher: true
+            };
+
+            const msgKey = push(dbRef(db, `chats/${chatId}`)).key;
+            await update(dbRef(db, `chats/${chatId}/${msgKey}`), msgData);
+            await update(dbRef(db, `chatNotifications/${recipientId}/${msgKey}`), msgData);
+        };
+
+        const logout = async () => {
+            try {
+                await signOut(auth);
+                window.location.href = 'index.html';
+            } catch (error) {
+                console.error("Logout Error:", error);
+                alert("Gagal logout: " + error.message);
+            }
+        };
+        // --- Profile & Camera Logic ---
+        const isProfileModalOpen = ref(false);
+        const isCameraModalOpen = ref(false);
+        const editForm = reactive({});
+        const cameraStream = ref(null);
+        const videoRef = ref(null);
+        const canvasRef = ref(null);
+        const photoPreview = ref(null);
+
+        const openProfileModal = () => {
+            Object.assign(editForm, JSON.parse(JSON.stringify(teacherData)));
+            isProfileModalOpen.value = true;
+        };
+
+        const closeProfileModal = () => {
+            isProfileModalOpen.value = false;
+        };
+
+        const saveProfile = async () => {
+            try {
+                await update(dbRef(db, `teachers/${user.value.uid}`), editForm);
+                // Object.assign(teacherData, editForm); // Listener will auto-update
+                isProfileModalOpen.value = false;
+                alert("Profil berhasil diperbarui!");
+            } catch (e) {
+                console.error(e);
+                alert("Gagal menyimpan profil.");
+            }
+        };
+
+        const regenerateAvatar = () => {
+            editForm.avatar_seed = Math.random().toString(36).substring(7);
+            editForm.photoBase64 = null;
+        };
+
+        const startCamera = async () => {
+            isCameraModalOpen.value = true;
+            photoPreview.value = null;
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+                cameraStream.value = stream;
+                // Wait for next tick/render
+                setTimeout(() => {
+                    if (videoRef.value) {
+                        videoRef.value.srcObject = stream;
+                        videoRef.value.play();
+                    }
+                }, 100);
+            } catch (err) {
+                console.error(err);
+                alert("Gagal akses kamera: " + err.message);
+                isCameraModalOpen.value = false;
+            }
+        };
+
+        const stopCamera = () => {
+            if (cameraStream.value) {
+                cameraStream.value.getTracks().forEach(track => track.stop());
+                cameraStream.value = null;
+            }
+            isCameraModalOpen.value = false;
+        };
+
+        const takePhoto = () => {
+            if (videoRef.value && canvasRef.value) {
+                const context = canvasRef.value.getContext('2d');
+                canvasRef.value.width = videoRef.value.videoWidth;
+                canvasRef.value.height = videoRef.value.videoHeight;
+                context.drawImage(videoRef.value, 0, 0);
+                photoPreview.value = canvasRef.value.toDataURL('image/jpeg', 0.8);
+            }
+        };
+
+        const retakePhoto = () => {
+            photoPreview.value = null;
+        };
+
+        const savePhoto = () => {
+            if (photoPreview.value) {
+                editForm.photoBase64 = photoPreview.value;
+                editForm.avatar_seed = null; // Clear seed
+                stopCamera();
+            }
+        };
+
+        return {
+            user, teacherData, currentTab, navItems,
+            isMobile, isSidebarOpen, isDreamyOpen,
+            firstName, currentDate,
+            logout,
+            // Attendance
+            classList, students, selectedClass, selectedDate,
+            fetchStudents, attendanceUpdates, updateStatus, saveAttendance, loadingStudents,
+            // Grind
+            journalForm, submitJournal, submitGrind,
+            journalFilter, filteredJournals, deleteJournal, printJournals,
+            castSpell, quickStats,
+            // Inventory, Effects, Skills
+            inventory, activeEffects, skills, shopItems, buyItem,
+            isSkillModalOpen, selectedSkill, openSkillModal, castSkillOnStudent,
+            // Profile & Camera
+            isProfileModalOpen, isCameraModalOpen, editForm,
+            openProfileModal, closeProfileModal, saveProfile, regenerateAvatar,
+            startCamera, stopCamera, takePhoto, retakePhoto, savePhoto,
+            videoRef, canvasRef, photoPreview,
+            // Chat
+            isTeacherChatOpen, toggleTeacherChat, chatRecipients, chatSearchQuery,
+            filteredChatRecipients, totalUnreadChats, selectChatRecipient,
+            currentChatRecipient, currentChatMessages, chatInput, sendChatMessage, formatTime
+        };
     }
 });
 
-document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
-
-async function initTeacherDashboard(uid) {
-    const teacherRef = ref(db, `teachers/${uid}`);
-
-    // Realtime Listener
-    onValue(teacherRef, (snapshot) => {
-        if (!snapshot.exists()) {
-            // First time setup - Extended with new profile fields
-            const initialData = {
-                name: currentUser.displayName || "Unknown Mentor",
-                email: currentUser.email,
-                level: 1,
-                xp: 0,
-                max_xp: 1000,
-                hp: 100,
-                max_hp: 100,
-                mp: 50,
-                max_mp: 50,
-                coin: 0,
-                last_login: new Date().toISOString(),
-                schedule_buff_active: false,
-                // New Profile Fields
-                niy: "",
-                gender: "",
-                dob: "",
-                role_detail: "Guru Mapel",
-                phone: "",
-                address: "",
-                avatar_seed: currentUser.displayName || "Teacher"
-            };
-            set(teacherRef, initialData);
-            teacherData = initialData;
-        } else {
-            teacherData = snapshot.val();
-            // Ensure new fields exist for legacy data
-            if (!teacherData.avatar_seed) teacherData.avatar_seed = teacherData.name || "Teacher";
-            if (!teacherData.role_detail) teacherData.role_detail = "Guru Mapel";
-        }
-        updateUI();
-        fetchDashboardStats();
-        populateClassDropdown(); // New function call
-    });
-
-    // Check Inactivity (The Curse of Sloth)
-    const snap = await get(teacherRef);
-    if (snap.exists()) {
-        const data = snap.val();
-        const lastLogin = new Date(data.last_login);
-        const now = new Date();
-        const diffTime = Math.abs(now - lastLogin);
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-        if (diffDays > 7) {
-            const newHp = Math.max(0, data.hp - 50);
-            update(teacherRef, { hp: newHp, last_login: now.toISOString() });
-            showToast("⚠️ THE CURSE OF SLOTH! HP decreased by 50 due to inactivity.", true);
-            const avatar = document.getElementById('teacher-avatar');
-            if (avatar) avatar.classList.add('cursed');
-        } else {
-            // Update last login if < 7 days (Daily check)
-            // To avoid spamming updates, check if day changed
-            if (diffDays >= 1) {
-                update(teacherRef, { last_login: now.toISOString() });
-            }
-        }
-    }
-}
-
-function updateUI() {
-    if (!teacherData) return;
-
-    // Sidebar & Header Profile
-    document.getElementById('teacher-name').textContent = teacherData.name;
-    document.getElementById('welcome-name').textContent = teacherData.name.split(' ')[0]; // First name only
-    document.getElementById('teacher-level').textContent = teacherData.level;
-    document.getElementById('teacher-role').textContent = teacherData.role_detail || "Guru Kejuruan";
-
-    // Avatar Update
-    document.getElementById('teacher-avatar').src = teacherData.photoBase64 || `https://api.dicebear.com/7.x/avataaars/svg?seed=${teacherData.avatar_seed}`;
-
-    // Header Stats HUD
-    updateBar('hp-bar', teacherData.hp, teacherData.max_hp, 'hp-text');
-    updateBar('mp-bar', teacherData.mp, teacherData.max_mp, 'mp-text');
-    updateBar('xp-bar', teacherData.xp, teacherData.max_xp, 'xp-text');
-
-    const coinDisplay = document.getElementById('coin-display');
-    if (coinDisplay) coinDisplay.textContent = `${teacherData.coin}`;
-
-    // Spell Locks
-    toggleSpellLock('lock-noise', teacherData.level >= 5);
-    toggleSpellLock('lock-chat', teacherData.level >= 3);
-
-    // Spell Buttons
-    const btnNoise = document.getElementById('btn-noise');
-    if (btnNoise) btnNoise.disabled = teacherData.level < 5;
-
-    const btnChat = document.getElementById('btn-chat');
-    if (btnChat) btnChat.disabled = teacherData.level < 3;
-}
-
-// --- Profile Modal Logic ---
-window.openProfileModal = () => {
-    if (!teacherData) return;
-
-    // Populate Fields
-    document.getElementById('edit-name').value = teacherData.name || "";
-    document.getElementById('edit-niy').value = teacherData.niy || "";
-    document.getElementById('edit-gender').value = teacherData.gender || "";
-    document.getElementById('edit-dob').value = teacherData.dob || "";
-    document.getElementById('edit-role-detail').value = teacherData.role_detail || "Guru Mapel";
-    document.getElementById('edit-phone').value = teacherData.phone || "";
-    document.getElementById('edit-email').value = teacherData.email || "";
-    document.getElementById('edit-address').value = teacherData.address || "";
-
-    document.getElementById('modal-level-display').textContent = teacherData.level;
-    document.getElementById('modal-avatar-preview').src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${teacherData.avatar_seed}`;
-
-    // Show Modal with Animation
-    const modal = document.getElementById('profile-modal');
-    modal.classList.remove('hidden');
-    // Small delay to allow display:block to apply before opacity transition
-    setTimeout(() => {
-        modal.classList.remove('opacity-0');
-        modal.querySelector('div').classList.remove('scale-95');
-        modal.querySelector('div').classList.add('scale-100');
-    }, 10);
-};
-
-window.closeProfileModal = () => {
-    const modal = document.getElementById('profile-modal');
-    modal.classList.add('opacity-0');
-    modal.querySelector('div').classList.add('scale-95');
-    modal.querySelector('div').classList.remove('scale-100');
-
-    setTimeout(() => {
-        modal.classList.add('hidden');
-    }, 300);
-};
-
-// --- Avatar & Camera Logic ---
-let tempAvatarSeed = null;
-let cameraStream = null;
-let capturedPhotoParams = null; // Store base64 photo
-
-window.regenerateAvatar = () => {
-    tempAvatarSeed = Math.random().toString(36).substring(7);
-    capturedPhotoParams = null; // Reset photo if generating seed
-    document.getElementById('modal-avatar-preview').src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${tempAvatarSeed}`;
-};
-
-window.openCameraModal = async () => {
-    const modal = document.getElementById('camera-modal');
-    modal.classList.remove('hidden');
-
-    try {
-        cameraStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-        document.getElementById('camera-stream').srcObject = cameraStream;
-
-        // Reset state
-        document.getElementById('camera-stream').classList.remove('hidden');
-        document.getElementById('camera-canvas').classList.add('hidden');
-        document.getElementById('btn-take-photo').classList.remove('hidden');
-        document.getElementById('btn-retake-photo').classList.add('hidden');
-        document.getElementById('btn-save-photo').classList.add('hidden');
-
-    } catch (err) {
-        console.error("Camera access denied:", err);
-        showToast("❌ Tidak dapat mengakses kamera", true);
-        closeCameraModal();
-    }
-};
-
-window.closeCameraModal = () => {
-    const modal = document.getElementById('camera-modal');
-    modal.classList.add('hidden');
-
-    if (cameraStream) {
-        cameraStream.getTracks().forEach(track => track.stop());
-        cameraStream = null;
-    }
-};
-
-window.takePhoto = () => {
-    const video = document.getElementById('camera-stream');
-    const canvas = document.getElementById('camera-canvas');
-    const context = canvas.getContext('2d');
-
-    // Set canvas dimensions to match video
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-
-    // Draw frame
-    context.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-    // Convert to Base64 (Resize/Compress simple approach: set smaller quality/size if needed)
-    // For now, raw capture. For optimization, we could draw to smaller canvas.
-
-    // UI Update
-    video.classList.add('hidden');
-    canvas.classList.remove('hidden');
-    document.getElementById('btn-take-photo').classList.add('hidden');
-    document.getElementById('btn-retake-photo').classList.remove('hidden');
-    document.getElementById('btn-save-photo').classList.remove('hidden');
-};
-
-window.retakePhoto = () => {
-    document.getElementById('camera-stream').classList.remove('hidden');
-    document.getElementById('camera-canvas').classList.add('hidden');
-    document.getElementById('btn-take-photo').classList.remove('hidden');
-    document.getElementById('btn-retake-photo').classList.add('hidden');
-    document.getElementById('btn-save-photo').classList.add('hidden');
-};
-
-window.savePhotoToModal = () => {
-    const canvas = document.getElementById('camera-canvas');
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.8); // 80% quality JPEG
-
-    capturedPhotoParams = dataUrl;
-    tempAvatarSeed = null; // Clear seed since we used photo
-
-    document.getElementById('modal-avatar-preview').src = dataUrl;
-    closeCameraModal();
-};
-
-window.saveProfile = async () => {
-    if (!currentUser) return;
-
-    const updates = {
-        name: document.getElementById('edit-name').value,
-        niy: document.getElementById('edit-niy').value,
-        gender: document.getElementById('edit-gender').value,
-        dob: document.getElementById('edit-dob').value,
-        role_detail: document.getElementById('edit-role-detail').value,
-        phone: document.getElementById('edit-phone').value,
-        address: document.getElementById('edit-address').value,
-    };
-
-    // Check if we have a photo or new seed
-    if (capturedPhotoParams) {
-        updates.photoBase64 = capturedPhotoParams;
-        updates.avatar_seed = null; // Clear seed
-    } else if (tempAvatarSeed) {
-        updates.avatar_seed = tempAvatarSeed;
-        updates.photoBase64 = null; // Clear photo
-    }
-
-    try {
-        await update(ref(db, `teachers/${currentUser.uid}`), updates);
-        showToast("✅ Profil berhasil diperbarui!");
-        closeProfileModal();
-    } catch (error) {
-        console.error(error);
-        showToast("❌ Gagal menyimpan profil.", true);
-    }
-};
-
-// --- Attendance Logic ---
-window.loadStudentsForAttendance = async () => {
-    const classSelect = document.getElementById('attendance-class-select');
-    const selectedClass = classSelect.value;
-    const tbody = document.getElementById('attendance-table-body');
-
-    if (!selectedClass) {
-        tbody.innerHTML = `<tr><td colspan="4" class="px-6 py-8 text-center text-gray-500 italic">Silakan pilih kelas terlebih dahulu.</td></tr>`;
-        return;
-    }
-
-    tbody.innerHTML = `<tr><td colspan="4" class="px-6 py-8 text-center text-gray-500">Memuat data siswa...</td></tr>`;
-
-    const studentsRef = ref(db, 'students');
-    const snapshot = await get(studentsRef);
-
-    if (snapshot.exists()) {
-        const students = snapshot.val();
-        let studentList = [];
-
-        Object.entries(students).forEach(([uid, s]) => {
-            const studentClass = s.kelas || s.class;
-            if (studentClass === selectedClass) {
-                const displayName = s.name || s.nama || "Tanpa Nama";
-                studentList.push({ uid, name: displayName, ...s });
-            }
-        });
-
-        if (studentList.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="4" class="px-6 py-8 text-center text-gray-500">Tidak ada siswa di kelas ini.</td></tr>`;
-            return;
-        }
-
-        studentList.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
-
-        tbody.innerHTML = "";
-        studentList.forEach((s, index) => {
-            const row = document.createElement('tr');
-            row.className = "hover:bg-blue-50 transition-colors border-b border-gray-100";
-            const groupName = `attend-${s.uid}`;
-
-            row.innerHTML = `
-                <td class="px-6 py-4 text-gray-600">${index + 1}</td>
-                <td class="px-6 py-4 font-medium text-gray-800">${s.name}</td>
-                <td class="px-6 py-4 text-center">
-                    <div class="inline-flex bg-gray-100 rounded-lg p-1 space-x-1">
-                        <label class="cursor-pointer" onclick="updateAttendanceRow('${s.uid}', 'H')">
-                            <input type="radio" name="${groupName}" value="H" class="peer sr-only" checked>
-                            <span class="px-3 py-1 rounded-md text-gray-500 text-xs font-bold peer-checked:bg-green-500 peer-checked:text-white hover:bg-gray-200 transition">H</span>
-                        </label>
-                        <label class="cursor-pointer" onclick="updateAttendanceRow('${s.uid}', 'S')">
-                            <input type="radio" name="${groupName}" value="S" class="peer sr-only">
-                            <span class="px-3 py-1 rounded-md text-gray-500 text-xs font-bold peer-checked:bg-yellow-400 peer-checked:text-white hover:bg-gray-200 transition">S</span>
-                        </label>
-                        <label class="cursor-pointer" onclick="updateAttendanceRow('${s.uid}', 'I')">
-                            <input type="radio" name="${groupName}" value="I" class="peer sr-only">
-                            <span class="px-3 py-1 rounded-md text-gray-500 text-xs font-bold peer-checked:bg-blue-400 peer-checked:text-white hover:bg-gray-200 transition">I</span>
-                        </label>
-                        <label class="cursor-pointer" onclick="updateAttendanceRow('${s.uid}', 'A')">
-                            <input type="radio" name="${groupName}" value="A" class="peer sr-only">
-                            <span class="px-3 py-1 rounded-md text-gray-500 text-xs font-bold peer-checked:bg-red-500 peer-checked:text-white hover:bg-gray-200 transition">A</span>
-                        </label>
-                    </div>
-                </td>
-                <td class="px-6 py-4" id="msg-cell-${s.uid}">
-                     <span class="text-xs text-green-600 font-semibold">✨ Rajin pangkal pandai! (+XP)</span>
-                     <input type="hidden" name="note-${s.uid}" value="Hadir">
-                </td>
-            `;
-            tbody.appendChild(row);
-        });
-    } else {
-        tbody.innerHTML = `<tr><td colspan="4" class="px-6 py-8 text-center text-gray-500">Data siswa tidak ditemukan.</td></tr>`;
-    }
-};
-
-window.updateAttendanceRow = (uid, status) => {
-    const cell = document.getElementById(`msg-cell-${uid}`);
-    if (!cell) return;
-
-    let content = '';
-    if (status === 'H') {
-        content = `
-            <span class="text-xs text-green-600 font-semibold">✨ Rajin pangkal pandai! (+XP)</span>
-            <input type="hidden" name="note-${uid}" value="Hadir">
-        `;
-    } else if (status === 'A') {
-        content = `
-            <span class="text-xs text-red-500 font-bold">⚠️ Bolos mengurangi kesehatan! (-HP)</span>
-            <input type="hidden" name="note-${uid}" value="Alpha">
-        `;
-    } else if (status === 'S') {
-        content = `
-            <input type="text" name="note-${uid}" placeholder="Keterangan Sakit..." class="w-full text-xs px-2 py-1 border border-yellow-300 rounded focus:outline-none focus:border-yellow-500 bg-yellow-50 animate-pulse">
-        `;
-    } else if (status === 'I') {
-        content = `
-            <input type="text" name="note-${uid}" placeholder="Keterangan Izin..." class="w-full text-xs px-2 py-1 border border-blue-300 rounded focus:outline-none focus:border-blue-500 bg-blue-50 animate-pulse">
-        `;
-    }
-    cell.innerHTML = content;
-};
-
-window.saveAttendance = async () => {
-    const classSelect = document.getElementById('attendance-class-select');
-    const dateInput = document.getElementById('attendance-date');
-    const selectedClass = classSelect.value;
-    const selectedDate = dateInput.value;
-
-    if (!selectedClass || !selectedDate) {
-        showToast("⚠️ Pilih kelas dan tanggal dulu!", true);
-        return;
-    }
-
-    const rows = document.getElementById('attendance-table-body').querySelectorAll('tr');
-    let attendanceData = {};
-    let count = 0;
-    const updates = {}; // For multi-path updates
-
-    // Iterate rows to build updates
-    for (const row of rows) {
-        const radioChecked = row.querySelector('input[type="radio"]:checked');
-        if (radioChecked) {
-            const uid = radioChecked.name.replace('attend-', '');
-            const status = radioChecked.value;
-            // Handle flexible note input (text or hidden)
-            const noteInput = row.querySelector(`input[name="note-${uid}"]`);
-            const note = noteInput ? noteInput.value : "";
-
-            attendanceData[uid] = {
-                status: status,
-                note: note,
-                timestamp: new Date().toISOString()
-            };
-
-            // RPG Effects Logic
-            // H: +10 XP, +5 Coin (Positive Reinforcement)
-            // A: -10 HP (Negative Consequence)
-            // S/I: No effect
-
-            const studentRef = ref(db, `students/${uid}`);
-
-            try {
-                const sSnap = await get(studentRef);
-                if (sSnap.exists()) {
-                    let sData = sSnap.val();
-                    let sUpdates = {};
-
-                    if (status === 'H') {
-                        sUpdates.xp = (sData.xp || 0) + 10;
-                        sUpdates.coin = (sData.coin || 0) + 5;
-                    } else if (status === 'A') {
-                        sUpdates.hp = Math.max(0, (sData.hp || 100) - 10);
-                    }
-
-                    if (Object.keys(sUpdates).length > 0) {
-                        updates[`students/${uid}`] = { ...sData, ...sUpdates };
-                    }
-                }
-            } catch (e) { console.error("Error reading student for stats:", uid, e); }
-
-            count++;
-        }
-    }
-
-    if (count === 0) {
-        showToast("⚠️ Tidak ada data siswa.", true);
-        return;
-    }
-
-    try {
-        // Double check: save attendance record
-        updates[`attendance/${selectedDate}/${selectedClass}`] = attendanceData;
-
-        await update(ref(db), updates);
-        showToast(`✅ Absensi disimpan! Reward & Punishment diterapkan.`);
-
-        // Also award teacher XP
-        await window.submitGrind('presence');
-
-    } catch (err) {
-        console.error("Save attendance error:", err);
-        showToast("❌ Gagal menyimpan absensi.", true);
-    }
-};
-
-// Populate Class Dropdown on Load
-async function populateClassDropdown() {
-    const classSelect = document.getElementById('attendance-class-select');
-    if (!classSelect) return;
-
-    const studentsRef = ref(db, 'students');
-    const snapshot = await get(studentsRef);
-    if (snapshot.exists()) {
-        const students = snapshot.val();
-        const classes = new Set();
-        Object.values(students).forEach(s => {
-            if (s.kelas) classes.add(s.kelas);
-            if (s.class) classes.add(s.class);
-        });
-
-        // Clear options except first
-        classSelect.innerHTML = '<option value="">Pilih Kelas...</option>';
-        Array.from(classes).sort().forEach(cls => {
-            const opt = document.createElement('option');
-            opt.value = cls;
-            opt.textContent = cls;
-            classSelect.appendChild(opt);
-        });
-    }
-}
-
-function updateBar(id, current, max, textId) {
-    const percentage = Math.min(100, Math.max(0, (current / max) * 100));
-    const bar = document.getElementById(id);
-    const text = document.getElementById(textId);
-
-    bar.style.width = `${percentage}%`;
-    bar.textContent = `${Math.floor(percentage)}%`;
-    text.textContent = `${current}/${max}`;
-}
-
-function toggleSpellLock(id, isUnlocked) {
-    const el = document.getElementById(id);
-    if (isUnlocked) {
-        el.classList.add('hidden');
-    } else {
-        el.classList.remove('hidden');
-    }
-}
-
-// --- The Grind Mechanics ---
-// --- The Grind Mechanics ---
-window.submitGrind = async (type) => {
-    if (!teacherData) return;
-
-    let xpGain = 0;
-    let coinGain = 0;
-
-    // Validation
-    const journalInput = document.getElementById('journal-input');
-    if (type === 'journal') {
-        if (!journalInput || journalInput.value.length < 5) {
-            alert("⚠️ Jurnal terlalu pendek! Harap isi kegiatan mengajar dengan lengkap.");
-            if (window.sounds) window.sounds.error();
-            return;
-        }
-    }
-
-    // Set Rewards
-    if (type === 'journal') { xpGain = 10; coinGain = 5; }
-    if (type === 'grades') { xpGain = 15; coinGain = 8; }
-    if (type === 'presence') { xpGain = 5; coinGain = 2; }
-
-    // Logic Calculation
-    let newXp = (teacherData.xp || 0) + xpGain;
-    let newCoin = (teacherData.coin || 0) + coinGain;
-    let newLevel = teacherData.level || 1;
-    let maxXp = teacherData.max_xp || 1000;
-
-    // Level Up Logic
-    if (newXp >= maxXp) {
-        newXp = newXp - maxXp;
-        newLevel++;
-        maxXp = Math.floor(maxXp * 1.2);
-        alert(`🎉 LEVELED UP! Selamat, Anda naik ke Level ${newLevel}!`);
-        if (window.sounds) window.sounds.spell();
-    }
-
-    try {
-        // Update DB
-        const updates = {};
-        updates[`teachers/${currentUser.uid}/xp`] = newXp;
-        updates[`teachers/${currentUser.uid}/coin`] = newCoin;
-        updates[`teachers/${currentUser.uid}/level`] = newLevel;
-        updates[`teachers/${currentUser.uid}/max_xp`] = maxXp;
-
-        await update(ref(db), updates);
-
-        // Feedback
-        // alert(`✅ Berhasil! +${xpGain} XP | +${coinGain} Koin`);
-        showToast(`Misi Selesai: +${xpGain} XP | +${coinGain} Koin`);
-
-        if (window.sounds) window.sounds.xp();
-
-        // Clear inputs
-        if (type === 'journal' && journalInput) journalInput.value = '';
-
-    } catch (error) {
-        console.error("Grind Error:", error);
-        alert("Gagal menyimpan progress: " + error.message);
-    }
-};
-
-// Expose sounds globally (mock, or link to audio player)
-window.sounds = {
-    coin: () => console.log("Sound: Coin"),
-    xp: () => console.log("Sound: XP"),
-    error: () => console.log("Sound: Error"),
-    spell: () => console.log("Sound: Spell")
-};
-
-
-// --- Magic Spells ---
-window.castSpell = async (spellName) => {
-    if (!teacherData) return;
-
-    let mpCost = 0;
-    let minLevel = 1;
-
-    if (spellName === 'noise') { mpCost = 20; minLevel = 5; }
-    if (spellName === 'chat') { mpCost = 5; minLevel = 3; }
-
-    // Checks
-    if (teacherData.level < minLevel) {
-        showToast(`Level ${minLevel} required!`, true);
-        sounds.error();
-        return;
-    }
-    if (teacherData.mp < mpCost) {
-        showToast("Not enough Mana! Do some work/rest.", true);
-        sounds.error();
-        return;
-    }
-
-    // Deduct MP
-    await update(ref(db, `teachers/${currentUser.uid}`), { mp: teacherData.mp - mpCost });
-
-    // Activate Effect
-    if (spellName === 'noise') activateNoiseDetector();
-    if (spellName === 'chat') activateChat();
-
-    sounds.spell();
-};
-
-window.toggleBuff = async () => {
-    const isChecked = document.getElementById('schedule-toggle').checked;
-    await update(ref(db, `teachers/${currentUser.uid}`), { schedule_buff_active: isChecked });
-    document.getElementById('buff-status').classList.toggle('hidden', !isChecked);
-    if (isChecked) showToast("Curriculum Buff Activated!");
-};
-
-// --- Spell Effects ---
-function activateNoiseDetector() {
-    const container = document.getElementById('noise-visualizer');
-    container.classList.remove('hidden');
-    showToast("Microphone Arcane Activated...");
-
-    // Mock Visualizer Logic
-    const bars = document.getElementById('visualizer-bars').children;
-    const interval = setInterval(() => {
-        for (let bar of bars) {
-            bar.style.height = `${Math.random() * 2 + 0.5}rem`;
-        }
-    }, 100);
-
-    // Auto turn off after 10s to save "magic" (mock)
-    setTimeout(() => {
-        clearInterval(interval);
-        container.classList.add('hidden');
-        showToast("Spell duration ended.");
-    }, 10000);
-}
-
-function activateChat() {
-    // Mock
-    const msg = prompt("Send telepathic message to students:");
-    if (msg) {
-        showToast("Message sent via Pigeon Post!");
-        // Ideally write to 'messages' node
-    }
-}
-
-// --- Dashboard Stats Logic ---
-async function fetchDashboardStats() {
-    try {
-        // Try to fetch from 'students' node first for detailed stats
-        const studentsRef = ref(db, 'students');
-        const studentSnap = await get(studentsRef);
-
-        let studentCount = 0;
-        let troubleCount = 0;
-        let classSet = new Set();
-
-        if (studentSnap.exists()) {
-            const students = studentSnap.val();
-            Object.values(students).forEach(student => {
-                studentCount++;
-                if (student.kelas) classSet.add(student.kelas);
-                if (student.class) classSet.add(student.class);
-                if (student.hp && student.hp < 50) troubleCount++;
-            });
-        } else {
-            // Fallback to 'users' if 'students' node is empty (for count only)
-            const usersRef = ref(db, 'users');
-            const usersSnap = await get(usersRef);
-            if (usersSnap.exists()) {
-                Object.values(usersSnap.val()).forEach(user => {
-                    if (user.role === 'student' || user.role === 'siswa') {
-                        studentCount++;
-                    }
-                });
-            }
-        }
-
-        // Update UI IDs matching teacher.html
-        const elStudent = document.getElementById('stat-student-count');
-        const elClass = document.getElementById('stat-class-count');
-        const elTrouble = document.getElementById('stat-trouble-count');
-
-        if (elStudent) elStudent.innerText = studentCount;
-        if (elClass) elClass.innerText = classSet.size > 0 ? `${classSet.size} Kelas` : "0 Kelas";
-        if (elTrouble) elTrouble.innerText = troubleCount;
-
-    } catch (error) {
-        console.error("Error fetching stats:", error);
-    }
-}
-
-// --- Utils ---
-function showToast(msg, isError = false) {
-    const toast = document.getElementById('toast');
-    const msgElement = document.getElementById('toast-message');
-
-    if (!toast || !msgElement) return;
-
-    msgElement.textContent = msg;
-
-    // Reset classes
-    toast.className = `fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg flex items-center space-x-3 transition-opacity duration-300 z-50 ${isError ? 'bg-red-800 text-white' : 'bg-gray-800 text-white'}`;
-
-    toast.classList.remove('hidden');
-    // Small timeout to allow removing 'hidden' to take effect before opacity transition
-    requestAnimationFrame(() => {
-        toast.classList.remove('opacity-0');
-    });
-
-    setTimeout(() => {
-        toast.classList.add('opacity-0');
-        setTimeout(() => {
-            toast.classList.add('hidden');
-        }, 300);
-    }, 3000);
-}
+// --- Components ---
+
+appVue.component('stat-card', {
+    props: ['label', 'icon', 'color', 'value', 'max', 'unit'],
+    template: `
+    <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex flex-col justify-between transition-all hover:shadow-md">
+        <div class="flex justify-between items-start mb-2">
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{{ label }}</span>
+            <div :class="\`w-8 h-8 rounded-full bg-\${color}-50 text-\${color}-500 flex items-center justify-center\`">
+                <i :class="\`fas fa-\${icon}\`"></i>
+            </div>
+        </div>
+        <div>
+            <div class="text-xl font-bold text-slate-800">{{ value }} <span class="text-xs text-slate-400 font-normal">/ {{ max }} {{ unit }}</span></div>
+            <div class="w-full bg-slate-100 rounded-full h-1.5 mt-2 overflow-hidden">
+                <div :class="\`bg-\${color}-500 h-full rounded-full transition-all duration-1000\`" :style="\`width: \${(value/max)*100}%\`"></div>
+            </div>
+        </div>
+    </div>
+    `
+});
+
+appVue.component('quest-card', {
+    props: ['title', 'reward', 'color', 'icon'],
+    template: `
+    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100 hover:border-blue-300 transition-colors">
+        <div class="flex justify-between items-start mb-4">
+            <div class="flex items-center gap-3">
+                <div :class="\`p-2 rounded-lg bg-\${color}-50 text-\${color}-600\`">
+                    <i :class="\`fas fa-\${icon}\`"></i>
+                </div>
+                <h3 class="font-bold text-slate-800">{{ title }}</h3>
+            </div>
+            <span :class="\`text-xs font-bold px-2 py-1 rounded-full bg-\${color}-100 text-\${color}-700\`">{{ reward }}</span>
+        </div>
+        <div class="mt-4">
+            <slot name="action"></slot>
+        </div>
+    </div>
+    `
+});
+
+appVue.component('spell-card', {
+    props: ['name', 'desc', 'color', 'locked'],
+    template: `
+    <div class="relative overflow-hidden p-5 rounded-xl border border-slate-100 transition-all bg-white hover:shadow-md">
+        <div class="flex justify-between items-center relative z-10">
+            <div>
+                <h4 class="font-bold text-slate-800">{{ name }}</h4>
+                <p class="text-xs text-slate-500">{{ desc }}</p>
+            </div>
+            <button @click="$emit('cast')" :disabled="locked" 
+                    :class="locked ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : \`bg-\${color}-600 hover:bg-\${color}-700 text-white shadow-lg shadow-\${color}-500/30\`"
+                    class="px-4 py-2 rounded-lg text-xs font-bold transition-all">
+                {{ locked ? 'Locked' : 'Cast Spell' }}
+            </button>
+        </div>
+    </div>
+    `
+});
+
+appVue.mount('#app');
