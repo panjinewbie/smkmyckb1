@@ -4402,15 +4402,15 @@ function setupAdminDashboard() {
         attendancePage.classList.toggle('hidden', pageId !== 'attendance');
         magicControlsPage.classList.toggle('hidden', pageId !== 'magic');
 
-        document.getElementById('journal-page').classList.toggle('hidden', pageId !== 'journal'); // New line
+        const teachersPage = document.getElementById('teachers-page');
+        if (teachersPage) teachersPage.classList.toggle('hidden', pageId !== 'teachers');
         if (pageId === 'quests') {
             setupQuestsPage();
-            // Mungkin panggil fungsi lain yang relevan dengan halaman quest di sini
         }
         if (pageId === 'attendance') setupAttendancePage();
         if (pageId === 'shop') setupShopPage();
         if (pageId === 'magic') setupMagicControlsPage();
-        if (pageId === 'journal') setupJournalPage(); // New line
+        if (pageId === 'teachers') setupTeachersPage();
     });
     // --- TAMBAHKAN BLOK KODE INI DI DALAM setupMagicControlsPage() ---
     // --- FUNGSI DATA SISWA (ADMIN) ---
@@ -8796,10 +8796,77 @@ function initNotificationPanel() {
 }
 
 // =======================================================
-//          MANAJEMEN GURU (Fitur Baru)
+//          MANAJEMEN GURU (Fitur Baru & Lengkap)
 // =======================================================
+
+function setupTeachersPage() {
+    // Dipanggil saat tab #teachers dibuka
+    // Pastikan listener realtime hanya dipasang sekali atau di-manage
+    if (window.teachersListenerActive) return;
+
+    const tableBody = document.getElementById('teacher-list-body');
+    const magicSelect = document.getElementById('magic-teacher-select');
+
+    // Load Teachers (Realtime)
+    onValue(ref(db, 'teachers'), (snap) => {
+        if (tableBody) tableBody.innerHTML = '';
+        if (magicSelect) magicSelect.innerHTML = '<option value="">Pilih Guru...</option>';
+
+        if (!snap.exists()) {
+            if (tableBody) tableBody.innerHTML = '<tr><td colspan="4" class="text-center p-4">Belum ada data guru.</td></tr>';
+            return;
+        }
+
+        const teachers = snap.val();
+        Object.entries(teachers).forEach(([uid, t]) => {
+            if (tableBody) {
+                const tr = document.createElement('tr');
+                tr.className = 'bg-white border-b hover:bg-gray-50';
+                tr.innerHTML = `
+                    <td class="px-6 py-4 font-medium text-gray-900">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold">
+                                ${t.name ? t.name.charAt(0) : '?'}
+                            </div>
+                            <div>
+                                <div>${t.name}</div>
+                                <div class="text-xs text-gray-500">${t.email}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <span class="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded">Lv. ${t.level || 1}</span>
+                        <div class="text-xs text-gray-500 mt-1">${t.xp || 0} XP</div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="text-xs space-y-1">
+                           <div>❤️ ${t.hp || 100} | 💧 ${t.mp || 100} | 💰 ${t.coin || 0}</div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <button class="text-red-600 hover:text-red-900 text-xs font-bold" onclick="deleteTeacher('${uid}')">HAPUS</button>
+                    </td>
+                `;
+                tableBody.appendChild(tr);
+            }
+
+            // Add to Select
+            if (magicSelect) {
+                const opt = document.createElement('option');
+                opt.value = uid;
+                opt.textContent = `${t.name} (Lv.${t.level || 1})`;
+                magicSelect.appendChild(opt);
+            }
+        });
+    });
+
+    window.teachersListenerActive = true;
+}
+
+// Global Init for Modals and Buttons
 document.addEventListener('DOMContentLoaded', () => {
-    const addTeacherBtn = document.getElementById('add-teacher-button');
+    // Add Teacher Logic
+    const addTeacherBtn = document.getElementById('add-teacher-btn'); // Fixed ID
     const addTeacherModal = document.getElementById('add-teacher-modal');
     const closeTeacherModalBtn = document.getElementById('close-add-teacher-modal');
     const saveTeacherForm = document.getElementById('add-teacher-form');
@@ -8819,76 +8886,109 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (closeTeacherModalBtn) closeTeacherModalBtn.addEventListener('click', closeModal);
 
+        const cancelBtn = document.getElementById('cancel-add-teacher-modal');
+        if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
+
         if (saveTeacherForm) saveTeacherForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+
             const name = document.getElementById('teacher-name-input').value;
             const email = document.getElementById('teacher-email-input').value;
             const password = document.getElementById('teacher-password-input').value;
-            const btn = document.getElementById('btn-save-teacher');
-            const loader = document.getElementById('btn-save-teacher-loader');
-            const btnText = document.getElementById('btn-save-teacher-text');
 
-            // UI Loading
+            const btn = document.getElementById('btn-save-teacher');
+            const btnText = document.getElementById('btn-save-teacher-text');
+            const loader = document.getElementById('btn-save-teacher-loader');
+
             btn.disabled = true;
             loader.classList.remove('hidden');
             btnText.textContent = 'Menyimpan...';
 
+            let secondaryApp = null;
+
             try {
-                // Initialize Secondary App
-                const secondaryApp = initializeApp(firebaseConfig, "SecondaryApp" + Date.now());
+                // Initialize Secondary App to avoid logging out admin
+                // Note: requires firebaseConfig to be globally available
+                if (typeof firebaseConfig === 'undefined') throw new Error("Firebase Config missing");
+
+                secondaryApp = initializeApp(firebaseConfig, "SecondaryApp");
                 const secondaryAuth = getAuth(secondaryApp);
 
                 const userCredential = await createUserWithEmailAndPassword(secondaryAuth, email, password);
                 const uid = userCredential.user.uid;
 
-                // Save Role
-                await set(ref(db, `roles/${uid}`), {
-                    email: email,
-                    role: 'teacher',
-                    isAdmin: false
-                });
-
                 // Save Teacher Data
                 await set(ref(db, `teachers/${uid}`), {
                     name: name,
                     email: email,
-                    level: 1,
-                    xp: 0,
-                    max_xp: 1000,
-                    hp: 100,
-                    max_hp: 100,
-                    mp: 50,
-                    max_mp: 50,
-                    coin: 0,
-                    last_login: new Date().toISOString(),
-                    schedule_buff_active: false
+                    role: 'teacher',
+                    level: 1, xp: 0, coin: 0, hp: 100, mp: 100,
+                    max_hp: 100, max_mp: 100, max_xp: 1000,
+                    createdAt: Date.now()
                 });
 
-                // Sign out from secondary app
-                await signOut(secondaryAuth);
-                await deleteApp(secondaryApp); // Clean up
+                // Save Role
+                await set(ref(db, `roles/${uid}`), { isTeacher: true });
 
-                alert('Guru berhasil ditambahkan!');
+                // Sign out secondary
+                await signOut(secondaryAuth);
+
+                showToast('Guru berhasil ditambahkan!');
                 if (window.audioPlayer) audioPlayer.success();
                 closeModal();
                 saveTeacherForm.reset();
 
             } catch (error) {
                 console.error("Error creating teacher:", error);
-
-                // --- MANTRA BARU: Tangani Error Email Sudah Terdaftar ---
                 if (error.code === 'auth/email-already-in-use') {
-                    alert('Gagal: Email ini sudah digunakan oleh pengguna lain. Silakan gunakan email berbeda.');
+                    alert('Email sudah terdaftar!');
                 } else {
-                    alert('Gagal membuat akun guru: ' + error.message);
+                    alert('Gagal: ' + error.message);
                 }
-
                 if (window.audioPlayer) audioPlayer.error();
             } finally {
+                if (secondaryApp) deleteApp(secondaryApp); // Clean up
+
                 btn.disabled = false;
                 loader.classList.add('hidden');
                 btnText.textContent = 'Simpan Guru';
             }
         });
     }
+
+    // Magic Tools Logic
+    const addStatBtn = document.getElementById('teacher-add-stat');
+    const subStatBtn = document.getElementById('teacher-sub-stat');
+
+    if (addStatBtn) addStatBtn.onclick = () => modifyTeacherStat(1);
+    if (subStatBtn) subStatBtn.onclick = () => modifyTeacherStat(-1);
 });
+
+// Helper Functions
+window.deleteTeacher = async (uid) => {
+    if (confirm('Hapus data guru ini? (Akun Auth tidak terhapus otomatis)')) {
+        await remove(ref(db, `teachers/${uid}`));
+        await remove(ref(db, `roles/${uid}`));
+        showToast('Data guru dihapus.');
+    }
+};
+
+window.modifyTeacherStat = async (multiplier) => {
+    const uid = document.getElementById('magic-teacher-select').value;
+    const type = document.getElementById('teacher-stat-type').value;
+    const inputVal = document.getElementById('teacher-stat-val').value;
+    const val = parseInt(inputVal) || 0;
+
+    if (!uid) return alert('Pilih guru dulu!');
+
+    const teacherRef = ref(db, `teachers/${uid}`);
+    const snap = await get(teacherRef);
+    if (!snap.exists()) return;
+
+    const currentVal = snap.val()[type] || 0;
+    let updates = {};
+    updates[type] = currentVal + (val * multiplier);
+
+    await update(teacherRef, updates);
+    showToast(`Stat ${type} updated!`);
+};
