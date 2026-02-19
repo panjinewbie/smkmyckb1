@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 // --- Impor dan Konfigurasi Firebase ---
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
 import { getDatabase, ref, set, get, onValue, push, update, remove, query, orderByChild, equalTo, onDisconnect, serverTimestamp, onChildChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
 
@@ -172,20 +172,34 @@ onAuthStateChanged(auth, async (user) => {
     const isLoginPage = path.endsWith('/') || path.endsWith('index.html');
     const isAdminPage = path.endsWith('admin.html');
     const isStudentPage = path.endsWith('student.html');
+    const isTeacherPage = path.endsWith('teacher.html');
 
     if (user) {
         // Jika PENGGUNA SUDAH LOGIN
         const roleRef = ref(db, `roles/${user.uid}`);
         const roleSnap = await get(roleRef);
-        const isAdmin = roleSnap.exists() && roleSnap.val().isAdmin;
+
+        let isAdmin = false;
+        let isTeacher = false;
+
+        if (roleSnap.exists()) {
+            isAdmin = roleSnap.val().isAdmin;
+            isTeacher = roleSnap.val().role === 'teacher';
+        }
 
         if (isAdmin) {
             // Jika dia ADMIN
-            if (isLoginPage || isStudentPage) {
+            if (isLoginPage || isStudentPage || isTeacherPage) {
                 window.location.replace('admin.html'); // Paksa ke dasbor admin
             } else if (isAdminPage) {
                 setupAdminDashboard(); // Jalankan fungsi admin
             }
+        } else if (isTeacher) {
+            // Jika dia GURU
+            if (isLoginPage || isStudentPage || isAdminPage) {
+                window.location.replace('teacher.html'); // Paksa ke dasbor guru
+            }
+            // teacher.js akan menangani inisialisasi di teacher.html
         } else {
             // Jika dia SISWA
             const urlParams = new URLSearchParams(window.location.search);
@@ -8735,6 +8749,7 @@ function initNotificationPanel() {
         const unreadCount = notifications.filter(n => !n.read).length;
         if (unreadCount > 0) {
             notificationBadge.classList.remove('hidden');
+            notificationBadge.textContent = unreadCount > 9 ? '9+' : unreadCount;
         } else {
             notificationBadge.classList.add('hidden');
         }
@@ -8743,29 +8758,137 @@ function initNotificationPanel() {
         notificationList.innerHTML = '';
         notifications.slice(0, 20).forEach(notif => {
             const notifDiv = document.createElement('div');
-            notifDiv.className = `p-4 border-b hover:bg-gray-50 cursor-pointer ${notif.read ? 'opacity-60' : 'bg-blue-50'}`;
+            notifDiv.className = `p-4 border-b hover:bg-gray-50 cursor-pointer transition-colors ${notif.read ? 'opacity-60 bg-white' : 'bg-blue-50'}`;
 
             const typeIcon = notif.type === 'profanity_chat' ? '🚨' :
-                notif.type === 'abusive_chat' ? '⚠️' : '📢';
+                notif.type === 'abusive_chat' ? '⚠️' :
+                    notif.type === 'skill_usage' ? '🧙‍♂️' :
+                        notif.type === 'login' ? '👋' : '📢';
 
             notifDiv.innerHTML = `
                 <div class="flex items-start gap-3">
-                    <span class="text-2xl">${typeIcon}</span>
+                    <span class="text-2xl filter drop-shadow-sm">${typeIcon}</span>
                     <div class="flex-1">
-                        <div class="text-sm text-gray-800">${notif.message}</div>
-                        <div class="text-xs text-gray-500 mt-1">
-                            ${new Date(notif.timestamp).toLocaleString('id-ID')}
+                        <div class="text-sm text-gray-800 font-medium leading-normal">${notif.message}</div>
+                        <div class="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                            <i data-lucide="clock" class="w-3 h-3"></i>
+                            ${new Date(notif.timestamp).toLocaleString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
                         </div>
                     </div>
+                     ${!notif.read ? '<span class="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 mt-2"></span>' : ''}
                 </div>
             `;
 
             // Mark as read on click
             notifDiv.addEventListener('click', () => {
                 update(ref(db, `notifications/${notif.id}`), { read: true });
+                // Optional: Scroll to specific element or open modal based on notification type
             });
 
             notificationList.appendChild(notifDiv);
         });
+
+        // Re-render Lucide icons for new elements
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
     });
 }
+
+// =======================================================
+//          MANAJEMEN GURU (Fitur Baru)
+// =======================================================
+document.addEventListener('DOMContentLoaded', () => {
+    const addTeacherBtn = document.getElementById('add-teacher-button');
+    const addTeacherModal = document.getElementById('add-teacher-modal');
+    const closeTeacherModalBtn = document.getElementById('close-add-teacher-modal');
+    const saveTeacherForm = document.getElementById('add-teacher-form');
+
+    if (addTeacherBtn && addTeacherModal) {
+        addTeacherBtn.addEventListener('click', () => {
+            if (window.audioPlayer) audioPlayer.openModal();
+            addTeacherModal.classList.remove('hidden');
+            setTimeout(() => addTeacherModal.classList.remove('opacity-0'), 10);
+        });
+
+        const closeModal = () => {
+            if (window.audioPlayer) audioPlayer.closeModal();
+            addTeacherModal.classList.add('opacity-0');
+            setTimeout(() => addTeacherModal.classList.add('hidden'), 300);
+        };
+
+        if (closeTeacherModalBtn) closeTeacherModalBtn.addEventListener('click', closeModal);
+
+        if (saveTeacherForm) saveTeacherForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('teacher-name-input').value;
+            const email = document.getElementById('teacher-email-input').value;
+            const password = document.getElementById('teacher-password-input').value;
+            const btn = document.getElementById('btn-save-teacher');
+            const loader = document.getElementById('btn-save-teacher-loader');
+            const btnText = document.getElementById('btn-save-teacher-text');
+
+            // UI Loading
+            btn.disabled = true;
+            loader.classList.remove('hidden');
+            btnText.textContent = 'Menyimpan...';
+
+            try {
+                // Initialize Secondary App
+                const secondaryApp = initializeApp(firebaseConfig, "SecondaryApp" + Date.now());
+                const secondaryAuth = getAuth(secondaryApp);
+
+                const userCredential = await createUserWithEmailAndPassword(secondaryAuth, email, password);
+                const uid = userCredential.user.uid;
+
+                // Save Role
+                await set(ref(db, `roles/${uid}`), {
+                    email: email,
+                    role: 'teacher',
+                    isAdmin: false
+                });
+
+                // Save Teacher Data
+                await set(ref(db, `teachers/${uid}`), {
+                    name: name,
+                    email: email,
+                    level: 1,
+                    xp: 0,
+                    max_xp: 1000,
+                    hp: 100,
+                    max_hp: 100,
+                    mp: 50,
+                    max_mp: 50,
+                    coin: 0,
+                    last_login: new Date().toISOString(),
+                    schedule_buff_active: false
+                });
+
+                // Sign out from secondary app
+                await signOut(secondaryAuth);
+                await deleteApp(secondaryApp); // Clean up
+
+                alert('Guru berhasil ditambahkan!');
+                if (window.audioPlayer) audioPlayer.success();
+                closeModal();
+                saveTeacherForm.reset();
+
+            } catch (error) {
+                console.error("Error creating teacher:", error);
+
+                // --- MANTRA BARU: Tangani Error Email Sudah Terdaftar ---
+                if (error.code === 'auth/email-already-in-use') {
+                    alert('Gagal: Email ini sudah digunakan oleh pengguna lain. Silakan gunakan email berbeda.');
+                } else {
+                    alert('Gagal membuat akun guru: ' + error.message);
+                }
+
+                if (window.audioPlayer) audioPlayer.error();
+            } finally {
+                btn.disabled = false;
+                loader.classList.add('hidden');
+                btnText.textContent = 'Simpan Guru';
+            }
+        });
+    }
+});
