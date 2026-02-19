@@ -533,9 +533,9 @@
                         <a href="#magic"
                             class="nav-link text-gray-500 hover:text-blue-600 flex items-center px-2 py-4 text-sm font-semibold border-b-2 border-transparent"><i
                                 data-lucide="wand-2" class="w-4 h-4 mr-2"></i>Magic Controls</a>
-                        <a href="#journal"
+                        <a href="#teachers"
                             class="nav-link text-gray-500 hover:text-blue-600 flex items-center px-2 py-4 text-sm font-semibold border-b-2 border-transparent"><i
-                                data-lucide="book-heart" class="w-4 h-4 mr-2"></i>Jurnal Refleksi</a>
+                                data-lucide="graduation-cap" class="w-4 h-4 mr-2"></i>Data Guru</a>
                     </div>
                 </div>
             </nav>
@@ -598,10 +598,6 @@
                             <button id="add-student-button"
                                 class="flex-1 md:flex-none bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center text-sm md:text-base">
                                 <i data-lucide="user-plus" class="w-4 h-4 mr-2"></i>Tambah Siswa
-                            </button>
-                            <button id="add-teacher-button"
-                                class="flex-1 md:flex-none bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center text-sm md:text-base">
-                                <i data-lucide="graduation-cap" class="w-4 h-4 mr-2"></i>Tambah Guru
                             </button>
                         </div>
                     </div>
@@ -1172,9 +1168,86 @@
                                 <p class="loading-text">Memuat data siswa...</p>
                             </div>
                         </div>
+
                     </div>
                 </div>
             </div>
+            <!-- ===== TEACHERS PAGE ===== -->
+            <div id="teachers-page" class="hidden">
+                <!-- Header -->
+                <div class="bg-white/90 backdrop-blur-sm rounded-lg shadow-md p-6">
+                    <div class="mb-6">
+                
+                        <h2 class="text-2xl font-bold text-gray-800">Data Guru</h2>
+                        <p class="text-sm text-gray-500">Kelola akun dan data guru</p>
+                    
+                    <button id="add-teacher-btn"
+                        class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-colors shadow-sm">
+                        <i data-lucide="user-plus" class="w-4 h-4"></i>
+                        Tambah Guru
+                    </button>
+                </div>
+
+                <!-- Teacher Table -->
+                <div class="bg-white rounded-xl shadow-md overflow-hidden mb-6">
+                    <table class="w-full text-sm text-left">
+                        <thead class="bg-gray-50 text-gray-600 uppercase text-xs">
+                            <tr>
+                                <th class="px-6 py-3">Guru</th>
+                                <th class="px-6 py-3">Level / XP</th>
+                                <th class="px-6 py-3">Stats</th>
+                                <th class="px-6 py-3">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="teacher-list-body">
+                            <tr>
+                                <td colspan="4" class="text-center p-8 text-gray-400">Memuat data...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Magic Controls for Teachers -->
+                <div class="bg-white rounded-xl shadow-md p-6">
+                    <h3 class="font-bold text-gray-800 mb-4 flex items-center gap-2">
+                        <i data-lucide="wand-2" class="w-5 h-5 text-purple-600"></i>
+                        Magic Controls – Guru
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1">Pilih Guru</label>
+                            <select id="magic-teacher-select"
+                                class="w-full p-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
+                                <option value="">Pilih Guru...</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1">Stat</label>
+                            <select id="teacher-stat-type"
+                                class="w-full p-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
+                                <option value="xp">XP</option>
+                                <option value="coin">Coin</option>
+                                <option value="hp">HP</option>
+                                <option value="mp">MP</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1">Nilai</label>
+                            <input type="number" id="teacher-stat-val" value="10"
+                                class="w-full p-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
+                        </div>
+                        <div class="flex gap-2">
+                            <button id="teacher-add-stat"
+                                class="flex-1 py-2 px-3 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm font-bold transition-colors">+
+                                Tambah</button>
+                            <button id="teacher-sub-stat"
+                                class="flex-1 py-2 px-3 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-bold transition-colors">-
+                                Kurang</button>
+                        </div>
+                    </div>
+                </div>
+            </div></div>
+
             <footer class="text-center py-4 mt-8">
                 <p class="text-xs text-black-400">Dibuat oleh © <a style="text-decoration:none"
                         href="https://sites.google.com/view/smk-myckb/halaman-muka" target="_blank">
@@ -1954,6 +2027,55 @@
                     </button>
                 </form>
             </div>
+        </div>
+    </div>
+
+    <div id="add-teacher-modal"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm hidden opacity-0 transition-opacity duration-300">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                    <i data-lucide="user-plus" class="w-5 h-5 text-blue-600"></i>
+                    Tambah Guru Baru
+                </h3>
+                <button id="close-add-teacher-modal" class="text-gray-400 hover:text-gray-600 transition-colors">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <form id="add-teacher-form" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Nama Lengkap</label>
+                    <input type="text" id="teacher-name-input" required placeholder="Contoh: Dr. Ahmad"
+                        class="w-full p-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                    <input type="email" id="teacher-email-input" required placeholder="guru@smk.sch.id"
+                        class="w-full p-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                    <input type="password" id="teacher-password-input" required placeholder="Min. 6 karakter"
+                        class="w-full p-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div class="flex gap-3 pt-2">
+                    <button type="button" id="cancel-add-teacher-modal"
+                        class="flex-1 py-2.5 border border-gray-300 rounded-lg text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors">
+                        Batal
+                    </button>
+                    <button type="submit" id="btn-save-teacher"
+                        class="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-bold transition-colors flex items-center justify-center gap-2">
+                        <svg id="btn-save-teacher-loader" class="hidden animate-spin h-4 w-4"
+                            xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
+                            </circle>
+                            <path class="opacity-75" fill="currentColor"
+                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                        </svg>
+                        <span id="btn-save-teacher-text">Simpan Guru</span>
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 
