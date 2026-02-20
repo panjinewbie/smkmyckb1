@@ -941,16 +941,21 @@ const appVue = createApp({
                             if (bounty) normalizedSubmission.bountyTitle = bounty.title;
                         }
 
-                        // Generate locationText if missing
-                        if (!normalizedSubmission.locationText && (val.lat || (val.location && val.location.lat))) {
-                            const lat = parseFloat(val.lat || (val.location && val.location.lat));
-                            const lng = parseFloat(val.long || val.lng || (val.location && (val.location.long || val.location.lng)));
+                        // Ensure locationURL and locationText exist if coordinates are available
+                        const rawLat = val.lat || (val.location && val.location.lat);
+                        const rawLng = val.long || val.lng || (val.location && (val.location.long || val.location.lng));
+
+                        if (rawLat && rawLng && (!normalizedSubmission.locationURL || !normalizedSubmission.locationText)) {
+                            const lat = parseFloat(rawLat);
+                            const lng = parseFloat(rawLng);
 
                             if (!isNaN(lat) && !isNaN(lng)) {
-                                normalizedSubmission.locationText = `Lat: ${lat.toFixed(5)}, Lng: ${lng.toFixed(5)}`;
-                                normalizedSubmission.locationURL = `https://www.google.com/maps?q=${lat},${lng}`;
-                            } else {
-                                normalizedSubmission.locationText = 'Lokasi tidak terekam';
+                                if (!normalizedSubmission.locationText) {
+                                    normalizedSubmission.locationText = `Lat: ${lat.toFixed(5)}, Lng: ${lng.toFixed(5)}`;
+                                }
+                                if (!normalizedSubmission.locationURL) {
+                                    normalizedSubmission.locationURL = `https://www.google.com/maps?q=${lat},${lng}`;
+                                }
                             }
                         }
 
@@ -1041,7 +1046,7 @@ const appVue = createApp({
             if (reason === null) return; // Cancelled
 
             try {
-                const studentUid = submission.studentUid || submission.studentId;
+                const sUid = submission.studentUid || submission.studentId;
 
                 // 1. Update submission status
                 await update(dbRef(db, `bountySubmissions/${submission.id}`), {
@@ -1050,20 +1055,22 @@ const appVue = createApp({
                 });
 
                 // 2. Update Bounty Taker status
-                if (submission.bountyId && studentUid) {
-                    await update(dbRef(db, `bounties/${submission.bountyId}/takers/${studentUid}`), {
+                if (submission.bountyId && sUid) {
+                    await update(dbRef(db, `bounties/${submission.bountyId}/takers/${sUid}`), {
                         status: 'rejected'
                     });
                 }
 
-                // 3. Notify Student
-                if (studentUid) {
-                    addNotification(
-                        `Laporan misimu "<strong>${submission.bountyTitle || 'Misi'}</strong>" ditolak. Alasan: ${reason || 'Tidak memenuhi kriteria.'}`,
-                        'bounty_rejected',
-                        { bountyId: submission.bountyId },
-                        studentUid
-                    );
+                // 3. Notify Student (Direct Firebase push)
+                if (sUid) {
+                    const notifRef = push(dbRef(db, `studentNotifications/${sUid}`));
+                    await set(notifRef, {
+                        title: "Misi Ditolak",
+                        message: `Laporan misimu "${submission.bountyTitle || 'Misi'}" ditolak. Alasan: ${reason || 'Tidak memenuhi kriteria.'}`,
+                        timestamp: Date.now(),
+                        read: false,
+                        type: 'bounty_rejected'
+                    });
                 }
 
                 isSubmissionModalOpen.value = false;
@@ -1073,6 +1080,102 @@ const appVue = createApp({
                 alert("Gagal menolak submission: " + e.message);
             }
         };
+
+        const exportToPDF = (submission) => {
+            if (!submission) return;
+
+            const element = document.createElement('div');
+            element.style.padding = '40px';
+            element.style.backgroundColor = 'white';
+            element.style.fontFamily = "'Inter', sans-serif";
+
+            // Build the PDF content
+            element.innerHTML = `
+                <div style="border: 1px solid #e2e8f0; padding: 30px; border-radius: 20px; background: white;">
+                    <div style="display: flex; justify-content: space-between; align-items: start; border-bottom: 2px solid #f1f5f9; padding-bottom: 20px; margin-bottom: 30px;">
+                        <div style="flex: 1;">
+                            <h1 style="font-size: 26px; font-weight: 800; color: #1e293b; margin: 0; letter-spacing: -0.5px;">LAPORAN BUKTI MISI</h1>
+                            <p style="font-size: 14px; color: #64748b; margin: 5px 0 0 0; font-weight: 500;">Bounty Board System - SMKMYCKB</p>
+                        </div>
+                        <div style="text-align: right;">
+                            <img src="${submission.studentPhoto || `https://api.dicebear.com/7.x/avataaars/svg?seed=${submission.studentName}`}" 
+                                 style="width: 80px; height: 80px; border-radius: 20px; border: 4px solid #f1f5f9; object-fit: cover; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);">
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 30px;">
+                        <div style="background: #f8fafc; padding: 15px; border-radius: 12px;">
+                            <label style="display: block; font-size: 10px; font-weight: 800; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.5px;">Nama Siswa</label>
+                            <p style="font-size: 16px; font-weight: 700; color: #0f172a; margin: 0;">${submission.studentName}</p>
+                        </div>
+                        <div style="background: #f8fafc; padding: 15px; border-radius: 12px;">
+                            <label style="display: block; font-size: 10px; font-weight: 800; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.5px;">Kelas</label>
+                            <p style="font-size: 16px; font-weight: 700; color: #0f172a; margin: 0;">${submission.studentClass}</p>
+                        </div>
+                    </div>
+
+                    <div style="background: #eff6ff; padding: 20px; border-radius: 12px; margin-bottom: 30px; border-left: 6px solid #3b82f6;">
+                        <label style="display: block; font-size: 10px; font-weight: 800; color: #3b82f6; text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.5px;">Judul Kegiatan / Misi</label>
+                        <p style="font-size: 20px; font-weight: 800; color: #1e40af; margin: 0; line-height: 1.2;">${submission.bountyTitle}</p>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 30px;">
+                        <div>
+                            <label style="display: block; font-size: 10px; font-weight: 800; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.5px;">Waktu Pengumpulan</label>
+                            <p style="font-size: 14px; color: #334155; font-weight: 600; margin: 0;">${submission.submitDate || ''}, ${submission.submitTime || ''}</p>
+                            <p style="font-size: 12px; color: #94a3b8; margin: 2px 0 0 0;">${formatTime(submission.timestamp)}</p>
+                        </div>
+                        <div>
+                            <label style="display: block; font-size: 10px; font-weight: 800; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.5px;">Kordinat Lokasi</label>
+                            <p style="font-size: 14px; color: #3b82f6; font-weight: 600; margin: 0;">${submission.locationText || '-'}</p>
+                            <a href="${submission.locationURL}" style="font-size: 11px; color: #2563eb; text-decoration: none; font-weight: 500;">Buka di Google Maps →</a>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 30px;">
+                        <label style="display: block; font-size: 10px; font-weight: 800; color: #94a3b8; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.5px;">Deskripsi Dari Siswa</label>
+                        <div style="background-color: #fffaf0; padding: 20px; border-radius: 12px; border: 1px dashed #fcd34d; font-style: italic; color: #451a03; line-height: 1.6; font-size: 14px;">
+                            "${submission.description}"
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 10px;">
+                        <label style="display: block; font-size: 10px; font-weight: 800; color: #94a3b8; text-transform: uppercase; margin-bottom: 12px; letter-spacing: 0.5px;">Foto Bukti Kegiatan</label>
+                        <div style="background: #0f172a; border-radius: 16px; padding: 10px; display: flex; justify-content: center; align-items: center;">
+                            <img src="${submission.photoURL}" style="max-width: 100%; border-radius: 8px; max-height: 500px; display: block;">
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 50px; padding-top: 20px; border-top: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center;">
+                        <div style="font-size: 10px; color: #94a3b8;">
+                            Generated by SMKMYCKB Gamification System<br>
+                            ${new Date().toLocaleString('id-ID')}
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="width: 120px; height: 1px; background: #e2e8f0; margin-bottom: 60px;"></div>
+                            <p style="font-size: 11px; font-weight: 700; color: #475569; margin: 0;">Petugas Verifikasi</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            const opt = {
+                margin: 0,
+                filename: `Laporan_Misi_${submission.studentName.replace(/\s+/g, '_')}.pdf`,
+                image: { type: 'jpeg', quality: 1.0 },
+                html2canvas: { scale: 2, useCORS: true, logging: false, letterRendering: true },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            // Using try-catch because html2pdf can fail on image loading
+            try {
+                html2pdf().from(element).set(opt).save();
+            } catch (err) {
+                console.error("PDF Export Error:", err);
+                alert("Gagal mencetak PDF. Pastikan koneksi internet stabil.");
+            }
+        };
+
         const openCreateBountyModal = () => {
             isCreateBountyModalOpen.value = true;
         };
@@ -1106,7 +1209,7 @@ const appVue = createApp({
             createBounty, deleteBounty, pendingSubmissionsCount,
             viewSubmissionImage, isSubmissionModalOpen, selectedSubmission,
             approveSubmission, rejectSubmission, openCreateBountyModal,
-            handleBountyImageUpload
+            handleBountyImageUpload, exportToPDF
         };
     }
 });
