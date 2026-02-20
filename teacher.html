@@ -814,7 +814,137 @@
                         </div>
 
                         <!-- OTHER PLACEHOLDERS -->
-                        <div v-if="['jadwal', 'nilai', 'materi'].includes(currentTab)" key="placeholder"
+
+                        <!-- QUIZ (QUEST) PAGE (Formerly Jadwal) -->
+                        <div v-if="currentTab === 'jadwal'" key="bounty"
+                            class="flex flex-col h-full rounded-2xl bg-white p-6 shadow-sm border border-slate-100">
+                            <div class="flex justify-between items-center mb-6">
+                                <div>
+                                    <h2 class="text-xl font-bold text-slate-800">Papan Misi (Bounty Board)</h2>
+                                    <p class="text-sm text-slate-500">Buat misi untuk siswa dan berikan hadiah.</p>
+                                </div>
+                                <button @click="openCreateBountyModal"
+                                    class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-lg shadow-blue-500/20 transition-all flex items-center gap-2">
+                                    <i class="fas fa-plus"></i> Buat Misi Baru
+                                </button>
+                            </div>
+
+                            <!-- Tabs for Bounty: Active vs Submissions -->
+                            <div class="flex gap-4 border-b border-slate-100 mb-6">
+                                <button @click="bountyTab = 'active'"
+                                    class="pb-2 px-1 text-sm font-medium transition-colors border-b-2"
+                                    :class="bountyTab === 'active' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700'">
+                                    Misi Aktif
+                                </button>
+                                <button @click="bountyTab = 'submissions'"
+                                    class="pb-2 px-1 text-sm font-medium transition-colors border-b-2"
+                                    :class="bountyTab === 'submissions' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700'">
+                                    Submission Masuk <span v-if="pendingSubmissionsCount > 0"
+                                        class="ml-1 bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">{{
+                                        pendingSubmissionsCount }}</span>
+                                </button>
+                            </div>
+
+                            <!-- Content: Active Bounties -->
+                            <div v-if="bountyTab === 'active'"
+                                class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 overflow-y-auto pb-4">
+                                <div v-if="bounties.length === 0"
+                                    class="col-span-full text-center py-12 text-slate-400">
+                                    <i class="fas fa-clipboard-list text-4xl mb-3 opacity-20"></i>
+                                    <p>Belum ada misi yang dibuat.</p>
+                                </div>
+                                <div v-for="bounty in bounties" :key="bounty.id"
+                                    class="bg-white border border-slate-200 rounded-xl p-5 hover:shadow-md transition-shadow relative overflow-hidden group">
+                                    <div
+                                        class="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-blue-500/10 to-transparent rounded-bl-3xl -mr-4 -mt-4">
+                                    </div>
+
+                                    <h3 class="font-bold text-slate-800 text-lg mb-2 pr-8">{{ bounty.title }}</h3>
+                                    <p class="text-sm text-slate-500 mb-4 line-clamp-2 min-h-[40px]">{{
+                                        bounty.description }}</p>
+
+                                    <div
+                                        class="bg-slate-50 rounded-lg p-3 mb-4 flex justify-between items-center text-xs">
+                                        <div class="text-center flex-1 border-r border-slate-200">
+                                            <div class="text-slate-400 mb-1">XP</div>
+                                            <div class="font-bold text-blue-600">+{{ bounty.rewardXP }}</div>
+                                        </div>
+                                        <div class="text-center flex-1">
+                                            <div class="text-slate-400 mb-1">Koin</div>
+                                            <div class="font-bold text-yellow-600">+{{ bounty.rewardCoin }}</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="text-xs text-slate-400 mb-4 flex justify-between items-center">
+                                        <span><i class="fas fa-users mr-1"></i> {{ (bounty.takers || []).length || 0 }}
+                                            / {{ bounty.maxTakers }} Pengambil</span>
+                                        <span :class="bounty.status === 'active' ? 'text-green-500' : 'text-red-500'">{{
+                                            bounty.status === 'active' ? 'Aktif' : 'Selesai' }}</span>
+                                    </div>
+
+                                    <button @click="deleteBounty(bounty.id)"
+                                        class="w-full text-red-500 hover:bg-red-50 py-2 rounded-lg text-xs font-bold transition-colors">
+                                        Hapus Misi
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Content: Submissions -->
+                            <div v-if="bountyTab === 'submissions'" class="overflow-y-auto pb-4">
+                                <div v-if="submissions.length === 0" class="text-center py-12 text-slate-400">
+                                    <i class="fas fa-check-circle text-4xl mb-3 opacity-20"></i>
+                                    <p>Belum ada pengumpulan bukti misi.</p>
+                                </div>
+                                <div class="grid grid-cols-1 gap-4">
+                                    <div v-for="submission in submissions" :key="submission.id"
+                                        class="bg-white border border-slate-200 rounded-xl p-4 flex flex-col md:flex-row gap-4 items-start md:items-center">
+                                        <div class="w-full md:w-32 h-32 bg-slate-100 rounded-lg overflow-hidden flex-shrink-0 cursor-pointer"
+                                            @click="viewSubmissionImage(submission)">
+                                            <img :src="submission.photoURL" class="w-full h-full object-cover">
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <div class="flex flex-wrap justify-between items-start mb-1">
+                                                <h3 class="font-bold text-slate-800">{{ submission.bountyTitle }}</h3>
+                                                <span class="text-xs text-slate-500">{{ formatTime(submission.timestamp)
+                                                    }}</span>
+                                            </div>
+                                            <p class="text-sm text-slate-600 mb-2">Oleh: <span
+                                                    class="font-semibold text-blue-600">{{ submission.studentName
+                                                    }}</span></p>
+                                            <div class="flex items-center gap-2 mb-2">
+                                                <span
+                                                    class="text-xs bg-slate-100 px-2 py-1 rounded text-slate-600 truncate max-w-[200px]"
+                                                    :title="submission.locationText">
+                                                    <i class="fas fa-map-marker-alt text-red-500 mr-1"></i> {{
+                                                    submission.locationText || 'Lokasi tidak tersedia' }}
+                                                </span>
+                                            </div>
+                                            <p v-if="submission.status === 'pending'"
+                                                class="text-sm text-yellow-600 font-medium bg-yellow-50 px-2 py-1 rounded inline-block">
+                                                <i class="fas fa-clock mr-1"></i> Menunggu Konfirmasi
+                                            </p>
+                                            <p v-else-if="submission.status === 'approved'"
+                                                class="text-sm text-green-600 font-medium bg-green-50 px-2 py-1 rounded inline-block">
+                                                <i class="fas fa-check mr-1"></i> Disetujui
+                                            </p>
+                                            <p v-else
+                                                class="text-sm text-red-600 font-medium bg-red-50 px-2 py-1 rounded inline-block">
+                                                <i class="fas fa-times mr-1"></i> Ditolak
+                                            </p>
+                                        </div>
+                                        <div v-if="submission.status === 'pending'" class="flex gap-2 w-full md:w-auto">
+                                            <button @click="rejectSubmission(submission)"
+                                                class="flex-1 md:flex-none px-4 py-2 bg-red-100 text-red-600 rounded-lg text-sm font-bold hover:bg-red-200 transition">Tolak</button>
+                                            <button @click="approveSubmission(submission)"
+                                                class="flex-1 md:flex-none px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-bold hover:bg-green-700 shadow-lg shadow-green-500/20 transition">Setujui</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- OTHER PLACEHOLDERS -->
+                        <div v-if="['nilai', 'materi'].includes(currentTab)" key="placeholder-others"
                             class="flex flex-col items-center justify-center h-96 text-center">
                             <div class="bg-slate-100 p-6 rounded-full mb-4">
                                 <i class="fas fa-hammer text-4xl text-slate-300"></i>
@@ -1109,6 +1239,188 @@
                             <button @click="savePhoto"
                                 class="px-6 py-2 bg-blue-600 text-white rounded-full font-bold hover:bg-blue-500 shadow-lg shadow-blue-500/50">Gunakan
                                 Foto</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </transition>
+
+        <!-- Create Bounty Modal -->
+        <transition name="fade">
+            <div v-if="isCreateBountyModalOpen"
+                class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+                <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden transform transition-all">
+                    <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                        <h3 class="font-bold text-lg text-slate-800">Buat Misi Baru</h3>
+                        <button @click="isCreateBountyModalOpen = false"
+                            class="text-slate-400 hover:text-slate-600 transition">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="p-6 max-h-[70vh] overflow-y-auto">
+                        <div class="grid grid-cols-1 gap-4">
+                            <!-- Image Upload -->
+                            <div class="mb-2">
+                                <label class="block text-xs font-bold text-slate-500 mb-1">Gambar Misi</label>
+                                <div class="flex items-center gap-4">
+                                    <div v-if="newBounty.imageUrl"
+                                        class="relative w-24 h-16 rounded-lg overflow-hidden border border-slate-200 group">
+                                        <img :src="newBounty.imageUrl" class="w-full h-full object-cover">
+                                        <button @click="newBounty.imageUrl = null"
+                                            class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition"><i
+                                                class="fas fa-times"></i></button>
+                                    </div>
+                                    <div class="flex-1">
+                                        <input type="file" @change="handleBountyImageUpload" accept="image/*"
+                                            class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 transition" />
+                                        <p class="text-[10px] text-slate-400 mt-1">Format: JPG, PNG. Max 2MB.</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 mb-1">Judul Misi</label>
+                                <input v-model="newBounty.title" type="text"
+                                    placeholder="Contoh: Shalat Subuh Berjamaah"
+                                    class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 mb-1">Tipe Misi</label>
+                                <select v-model="newBounty.type"
+                                    class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="general">Umum</option>
+                                    <option value="pesantren_ekologi">Pesantren Ekologi</option>
+                                    <option value="academic">Akademik</option>
+                                    <option value="social">Sosial</option>
+                                </select>
+                            </div>
+                            <div v-if="newBounty.type === 'pesantren_ekologi'">
+                                <label class="block text-xs font-bold text-slate-500 mb-1">Kategori Kegiatan</label>
+                                <select v-model="newBounty.category"
+                                    class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="shalat_subuh">Shalat Subuh</option>
+                                    <option value="tahajud">Shalat Tahajud</option>
+                                    <option value="duha">Shalat Duha</option>
+                                    <option value="kebersihan">Kebersihan Lingkungan</option>
+                                    <option value="kajian">Kajian Islam</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 mb-1">Deskripsi</label>
+                                <textarea v-model="newBounty.description" rows="3" placeholder="Jelaskan detail misi..."
+                                    class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500"></textarea>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 mb-1">Hadiah XP</label>
+                                    <input v-model.number="newBounty.rewardXP" type="number"
+                                        class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 mb-1">Hadiah Koin</label>
+                                    <input v-model.number="newBounty.rewardCoin" type="number"
+                                        class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 mb-1">Batas Peserta</label>
+                                    <input v-model.number="newBounty.maxTakers" type="number"
+                                        class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 mb-1">Batas Waktu</label>
+                                    <input v-model="newBounty.deadline" type="date"
+                                        class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
+                        <button @click="isCreateBountyModalOpen = false"
+                            class="px-4 py-2 text-sm font-medium text-slate-500 hover:text-slate-700 hover:bg-slate-200 rounded-lg transition">Batal</button>
+                        <button @click="createBounty"
+                            class="px-4 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-lg shadow-blue-500/30 transition">Buat
+                            Misi</button>
+                    </div>
+                </div>
+            </div>
+        </transition>
+
+        <!-- View Submission Modal -->
+        <transition name="fade">
+            <div v-if="isSubmissionModalOpen && selectedSubmission"
+                class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+                <div
+                    class="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden transform transition-all flex flex-col md:flex-row h-[80vh] md:h-auto">
+
+                    <div class="w-full md:w-1/2 bg-black flex items-center justify-center relative">
+                        <img :src="selectedSubmission.photoURL"
+                            class="max-h-[50vh] md:max-h-[80vh] w-full object-contain">
+                        <div class="absolute top-4 left-4">
+                            <span class="bg-black/50 text-white px-2 py-1 rounded text-xs backdrop-blur-sm">
+                                <i class="fas fa-camera mr-1"></i> Bukti Foto
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="w-full md:w-1/2 flex flex-col h-full bg-white">
+                        <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                            <h3 class="font-bold text-lg text-slate-800">Detail Submission</h3>
+                            <button @click="isSubmissionModalOpen = false"
+                                class="text-slate-400 hover:text-slate-600 transition">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+
+                        <div class="p-6 flex-1 overflow-y-auto">
+                            <div class="mb-6">
+                                <div class="flex items-center gap-3 mb-2">
+                                    <img :src="selectedSubmission.studentPhoto || `https://api.dicebear.com/7.x/avataaars/svg?seed=${selectedSubmission.studentName}`"
+                                        class="w-10 h-10 rounded-full border border-slate-200">
+                                    <div>
+                                        <div class="font-bold text-slate-800">{{ selectedSubmission.studentName }}</div>
+                                        <div class="text-xs text-slate-500">{{ formatTime(selectedSubmission.timestamp)
+                                            }}</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="block text-xs font-bold text-slate-500 mb-1">Misi</label>
+                                <p class="text-sm font-semibold text-slate-800">{{ selectedSubmission.bountyTitle }}</p>
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="block text-xs font-bold text-slate-500 mb-1">Lokasi</label>
+                                <a :href="selectedSubmission.locationURL" target="_blank"
+                                    class="text-blue-600 text-sm hover:underline flex items-center gap-1 bg-blue-50 p-2 rounded-lg border border-blue-100">
+                                    <i class="fas fa-map-marker-alt text-red-500"></i>
+                                    {{ selectedSubmission.locationText || 'Lihat di Peta' }}
+                                    <i class="fas fa-external-link-alt text-xs ml-auto"></i>
+                                </a>
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="block text-xs font-bold text-slate-500 mb-1">Deskripsi Kegiatan</label>
+                                <div
+                                    class="bg-slate-50 p-3 rounded-lg border border-slate-100 text-sm text-slate-700 italic">
+                                    "{{ selectedSubmission.description }}"
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="p-4 bg-slate-50 border-t border-slate-100 flex gap-3"
+                            v-if="selectedSubmission.status === 'pending'">
+                            <button @click="rejectSubmission(selectedSubmission)"
+                                class="flex-1 px-4 py-2 bg-red-100 text-red-600 rounded-lg text-sm font-bold hover:bg-red-200 transition">Tolak</button>
+                            <button @click="approveSubmission(selectedSubmission)"
+                                class="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-bold hover:bg-green-700 shadow-lg shadow-green-500/20 transition">Setujui</button>
+                        </div>
+                        <div class="p-4 bg-slate-50 border-t border-slate-100 text-center font-bold" v-else>
+                            <span :class="selectedSubmission.status === 'approved' ? 'text-green-600' : 'text-red-600'">
+                                {{ selectedSubmission.status === 'approved' ? 'Sudah Disetujui' : 'Sudah Ditolak' }}
+                            </span>
                         </div>
                     </div>
                 </div>
