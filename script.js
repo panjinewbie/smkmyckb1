@@ -18,6 +18,7 @@ document.addEventListener('DOMContentLoaded', function () {
 import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
 import { getDatabase, ref, set, get, onValue, push, update, remove, query, orderByChild, equalTo, onDisconnect, serverTimestamp, onChildChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
+import { getStorage, ref as sRef, uploadString, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-storage.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyCA2Dwl7FPBDcbAtS5iTyTADx0YY5byxo8",
@@ -33,6 +34,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 const auth = getAuth(app);
+const storage = getStorage(app);
 
 // --- MANTRA BARU: Loader HTML ---
 const LOADER_HTML = `
@@ -2771,197 +2773,8 @@ async function depositItemToGuild(uid, studentData, itemIndex, itemData, closeMo
 // =======================================================
 //                  LOGIKA BOUNTY BOARD (SISWA)
 // =======================================================
-function setupBountyBoardPage(uid) {
-    const bountyListContainer = document.getElementById('bounty-list-container');
-    const createBountyButton = document.getElementById('create-bounty-button');
-    const createBountyModal = document.getElementById('create-bounty-modal');
-    const createBountyForm = document.getElementById('create-bounty-form');
-    const closeCreateBountyModalButton = document.getElementById('close-create-bounty-modal-button');
-    const cancelCreateBountyButton = document.getElementById('cancel-create-bounty-button');
-    const bountyImageInput = document.getElementById('bounty-image');
-    const bountyImagePreview = document.getElementById('bounty-image-preview');
-
-    // Fungsi untuk membuka/menutup modal
-    const openCreateModal = () => {
-        audioPlayer.openModal();
-        createBountyForm.reset();
-        bountyImagePreview.classList.add('hidden');
-        createBountyModal.classList.remove('hidden');
-        setTimeout(() => createBountyModal.classList.remove('opacity-0'), 10);
-    };
-    const closeCreateModal = () => {
-        audioPlayer.closeModal();
-        createBountyModal.classList.add('opacity-0');
-        setTimeout(() => createBountyModal.classList.add('hidden'), 300);
-    };
-
-    // Event listener untuk tombol-tombol modal
-    createBountyButton.onclick = openCreateModal;
-    closeCreateBountyModalButton.onclick = closeCreateModal;
-    cancelCreateBountyButton.onclick = closeCreateModal;
-
-    bountyImageInput.onchange = async function () {
-        if (this.files && this.files[0]) {
-            const base64 = await processImageToBase64(this.files[0]);
-            const resized = await resizeImage(base64, 300, 200);
-            bountyImagePreview.src = resized;
-            bountyImagePreview.classList.remove('hidden');
-        }
-    };
-
-    // Logika saat form submit
-    createBountyForm.onsubmit = async (e) => {
-        e.preventDefault();
-        const submitButton = createBountyForm.querySelector('button[type="submit"]');
-        submitButton.disabled = true;
-        submitButton.textContent = 'Memproses...';
-
-        const title = document.getElementById('bounty-title').value;
-        const description = document.getElementById('bounty-description').value;
-        const takerLimit = parseInt(document.getElementById('bounty-taker-limit').value);
-        const rewardCoin = parseInt(document.getElementById('bounty-reward-coin').value);
-        // --- MANTRA BARU: Validasi Upah Minimum ---
-        if (rewardCoin < 10) {
-            throw new Error("Hadiah minimal untuk misi adalah 10 Koin!");
-        }
-        try {
-            const studentRef = ref(db, `students/${uid}`);
-            const studentSnap = await get(studentRef);
-            if (!studentSnap.exists()) throw new Error("Data kamu tidak ditemukan!");
-
-            const studentData = studentSnap.val();
-
-            // --- MANTRA BARU: Validasi Kata Kasar ---
-            const combinedText = (title + " " + description).toLowerCase();
-            // Gunakan regex agar 'masuk' tidak terdeteksi sebagai 'asu'
-            const badWordRegex = new RegExp('\\b(' + BAD_WORDS.join('|') + ')\\b', 'i');
-            const match = combinedText.match(badWordRegex);
-
-            if (match) {
-                const foundBadWord = match[0];
-                // Kirim notifikasi ke admin
-                addNotification(
-                    `<strong>${studentData.nama}</strong> mencoba membuat bounty dengan kata kasar: "<i>${foundBadWord}</i>"`,
-                    'warning',
-                    { studentId: uid, detectedWord: foundBadWord }
-                );
-                audioPlayer.error();
-                throw new Error("Kata kasar terdeteksi! Jaga ucapanmu.");
-            }
-
-            if ((studentData.coin || 0) < rewardCoin) throw new Error("Koin kamu tidak cukup untuk dijadikan hadiah!");
-
-            const bountyData = {
-                creatorId: uid,
-                creatorName: studentData.nama,
-                creatorAvatar: studentData.fotoProfilBase64 || null,
-                title,
-                description,
-                takerLimit,
-                rewardCoin,
-                rewardPerTaker: Math.floor(rewardCoin / takerLimit),
-                status: 'open',
-                createdAt: new Date().toISOString(),
-                takers: {},
-                imageUrl: bountyImagePreview.src.startsWith('data:image') ? bountyImagePreview.src : null,
-            };
-
-            const newBountyRef = push(ref(db, 'bounties'));
-            const newCoin = studentData.coin - rewardCoin;
-
-            const updates = {};
-            updates[`/bounties/${newBountyRef.key}`] = bountyData;
-            updates[`/students/${uid}/coin`] = newCoin;
-
-            await update(ref(db), updates);
-            showToast('Misi bounty berhasil dipublikasikan!');
-            closeCreateModal();
-
-        } catch (error) {
-            showToast(error.message, true);
-        } finally {
-            submitButton.disabled = false;
-            submitButton.textContent = 'Publikasikan Misi';
-        }
-    };
-
-    // --- PERUBAHAN BESAR: Memuat bounty dengan data siswa untuk cek buff ---
-    const bountiesRef = ref(db, 'bounties');
-    const studentRef = ref(db, `students/${uid}`);
-
-    onValue(bountiesRef, async (snapshot) => { // Jadikan callback ini async
-        const studentSnap = await get(studentRef); // Ambil data siswa TERBARU setiap kali bounty berubah
-        const studentData = studentSnap.exists() ? studentSnap.val() : null;
-        bountyListContainer.innerHTML = '';
-        if (!snapshot.exists()) {
-            bountyListContainer.innerHTML = '<p class="text-center text-gray-400 col-span-full">Belum ada misi di papan bounty.</p>';
-            return;
-        }
-
-        const bountiesData = snapshot.val();
-        // --- PERUBAHAN: Filter untuk hanya menampilkan misi yang masih 'open' ---
-        const openBounties = Object.entries(bountiesData).filter(([_, bounty]) => bounty.status === 'open');
-
-        if (openBounties.length === 0) {
-            bountyListContainer.innerHTML = '<p class="text-center text-gray-400 col-span-full">Tidak ada misi yang aktif saat ini.</p>';
-            return;
-        }
-
-        openBounties.forEach(([bountyId, bounty]) => {
-            const takersCount = bounty.takers ? Object.keys(bounty.takers).length : 0;
-            const isTakenByCurrentUser = bounty.takers && bounty.takers[uid];
-            const isFull = takersCount >= bounty.takerLimit;
-            const isCreator = bounty.creatorId === uid;
-            // --- MANTRA BARU: Cek apakah siswa punya kunci admin ---
-            const now = Date.now();
-            const hasAdminKey = studentData?.statusEffects?.buff_admin_key && studentData.statusEffects.buff_admin_key.expires > now;
-            let rewardHtml = '';
-            if (bounty.isAdminBounty) {
-                rewardHtml = `
-                    <span class="font-semibold text-blue-600 flex items-center" title="Hadiah XP"><i data-lucide="star" class="w-4 h-4 mr-1"></i>${bounty.rewardXp || 0}</span>
-                    <span class="font-semibold text-yellow-600 flex items-center" title="Hadiah Koin"><i data-lucide="coins" class="w-4 h-4 mr-1"></i>${bounty.rewardCoin || 0}</span>
-                `;
-            } else {
-                rewardHtml = `<span class="font-semibold text-yellow-600 flex items-center"><i data-lucide="coins" class="w-4 h-4 mr-1"></i>${bounty.rewardPerTaker} / orang</span>`;
-            }
-
-
-            let buttonHtml = '';
-            if (bounty.isAdminBounty) {
-                if (hasAdminKey) {
-                    if (isTakenByCurrentUser) buttonHtml = `<button disabled class="w-full p-2 rounded-lg text-white font-bold text-sm bg-blue-400 cursor-not-allowed">Sudah Diambil</button>`;
-                    else if (isFull) buttonHtml = `<button disabled class="w-full p-2 rounded-lg text-white font-bold text-sm bg-red-400 cursor-not-allowed">Penuh</button>`;
-                    else buttonHtml = `<button data-id="${bountyId}" class="take-bounty-btn w-full p-2 rounded-lg text-white font-bold text-sm bg-green-500 hover:bg-green-600">Ambil Misi</button>`;
-                } else {
-                    buttonHtml = `<button disabled class="w-full p-2 rounded-lg text-white font-bold text-sm bg-gray-400 cursor-not-allowed flex items-center justify-center"><i data-lucide="lock" class="w-4 h-4 mr-2"></i>Butuh Kunci Admin</button>`;
-                }
-            } else {
-                if (isCreator) buttonHtml = `<button data-id="${bountyId}" class="manage-bounty-btn w-full p-2 rounded-lg text-white font-bold text-sm bg-purple-600 hover:bg-purple-700">Kelola Misi</button>`;
-                else if (isTakenByCurrentUser) buttonHtml = `<button disabled class="w-full p-2 rounded-lg text-white font-bold text-sm bg-blue-400 cursor-not-allowed">Sudah Diambil</button>`;
-                else if (isFull) buttonHtml = `<button disabled class="w-full p-2 rounded-lg text-white font-bold text-sm bg-red-400 cursor-not-allowed">Penuh</button>`;
-                else buttonHtml = `<button data-id="${bountyId}" class="take-bounty-btn w-full p-2 rounded-lg text-white font-bold text-sm bg-green-500 hover:bg-green-600">Ambil Misi</button>`;
-            }
-
-            const card = document.createElement('div');
-            // --- MANTRA BARU: Beri border khusus untuk misi admin ---
-            const cardClasses = bounty.isAdminBounty ? 'border-2 border-indigo-400' : '';
-            card.className = `bg-white/90 backdrop-blur-sm p-4 rounded-lg shadow-lg flex flex-col ${cardClasses}`;
-            card.innerHTML = `
-                <img src="${bounty.imageUrl || 'https://placehold.co/300x200/e2e8f0/3d4852?text=Misi'}" class="w-full h-32 object-cover rounded-md mb-4">
-                <h4 class="text-lg font-bold font-sans">${bounty.title}</h4>
-                <p class="text-xs text-gray-500 mb-2 font-sans">Oleh: ${bounty.creatorName}</p>
-                <p class="text-sm py-2 font-mono text-gray-600 flex-grow mb-2">${bounty.description}</p>
-                <div class="flex justify-between items-center mt-2 text-sm">
-                    <div class="flex items-center gap-3">${rewardHtml}</div>
-                    <span class="text-gray-500 text-xs">Slot: ${takersCount} / ${bounty.takerLimit}</span>
-                </div>
-                <div class="mt-auto pt-4">${buttonHtml}</div>
-            `;
-            bountyListContainer.appendChild(card);
-        });
-        createLucideIcons();
-    });
-}
+// [REMOVED LEGACY BOUNTY BOARD IMPLEMENTATION]
+// The correct implementation is at the end of this file.
 
 
 // Letakkan ini sebelum bagian LOGIKA DASBOR ADMIN
@@ -9168,3 +8981,407 @@ function initNotificationPanel() {
 // =======================================================
 
 
+
+// =======================================================
+//          LOGIKA BOUNTY BOARD (SISWA)
+// =======================================================
+let bountyCameraStream = null;
+let currentBountyIdToTake = null;
+let currentBountyTitleToTake = null;
+
+async function setupBountyBoardPage(uid) {
+    const bountyListContainer = document.getElementById('bounty-list-container');
+    if (!bountyListContainer) return;
+
+    bountyListContainer.innerHTML = LOADER_HTML;
+
+    // Listener untuk Bounties
+    const bountiesRef = ref(db, 'bounties');
+    // Listener untuk Submissions siswa ini (agar tahu status)
+    const mySubmissionsRef = query(ref(db, 'bountySubmissions'), orderByChild('studentId'), equalTo(uid));
+
+    // Kita pakai Promise.all untuk fetch awal, tapi idealnya pakai onValue untuk realtime
+    // Untuk kesederhanaan dan realtime, kita nesting onValue atau gabungkan data manual.
+
+    onValue(bountiesRef, async (bountiesSnap) => {
+        const bounties = bountiesSnap.val() || {};
+
+        // Ambil data submission siswa ini
+        let mySubmissions = {};
+        try {
+            const submissionsSnap = await get(mySubmissionsRef);
+            mySubmissions = submissionsSnap.val() || {};
+        } catch (error) {
+            console.warn("Gagal mengambil data submission (mungkin izin ditolak):", error);
+            // Fallback: Jika gagal baca submission, kita bisa mencoba infer status dari bounties.takers
+            // Tapi status 'rejected' tidak akan terlihat.
+        }
+
+        // Mapping status submission per bounty
+        const bountyStatus = {}; // bountyId -> status ('pending', 'approved', 'rejected')
+        Object.values(mySubmissions).forEach(sub => {
+            bountyStatus[sub.bountyId] = sub.status;
+        });
+
+        renderBountyList(uid, bounties, bountyStatus);
+    });
+}
+
+function renderBountyList(uid, bounties, bountyStatus) {
+    const container = document.getElementById('bounty-list-container');
+    container.innerHTML = '';
+
+    const bountyIds = Object.keys(bounties).reverse(); // Terbaru di atas
+
+    if (bountyIds.length === 0) {
+        container.innerHTML = '<p class="text-center text-gray-500 col-span-full">Belum ada misi tersedia saat ini.</p>';
+        return;
+    }
+
+    bountyIds.forEach(bountyId => {
+        const bounty = bounties[bountyId];
+        const status = bountyStatus[bountyId]; // undefined, pending, approved, rejected
+
+        // Cek apakah kuota penuh
+        const takersCount = bounty.takers ? Object.keys(bounty.takers).length : 0;
+        const isFull = takersCount >= (bounty.maxTakers || 100);
+        const isExpired = false; // Implementasi expired logic jika ada field expiredAt
+
+        let actionButtonHTML = '';
+        let cardOpacity = '';
+
+        if (status === 'approved') {
+            actionButtonHTML = `<button disabled class="w-full py-2 rounded-lg bg-green-100 text-green-700 font-bold text-sm cursor-not-allowed"><i data-lucide="check-circle" class="w-4 h-4 inline mr-1"></i>Selesai</button>`;
+            cardOpacity = 'opacity-75';
+        } else if (status === 'pending') {
+            actionButtonHTML = `<button disabled class="w-full py-2 rounded-lg bg-yellow-100 text-yellow-700 font-bold text-sm cursor-not-allowed"><i data-lucide="clock" class="w-4 h-4 inline mr-1"></i>Menunggu Review</button>`;
+        } else if (isFull && !status) { // Penuh dan belum ambil
+            actionButtonHTML = `<button disabled class="w-full py-2 rounded-lg bg-gray-200 text-gray-500 font-bold text-sm cursor-not-allowed">Kuota Penuh</button>`;
+            cardOpacity = 'opacity-75';
+        } else {
+            // Belum ambil atau Rejected (Boleh ambil lagi kalau rejected?)
+            // Asumsi: Rejected boleh coba lagi atau permanen? Untuk skearang boleh coba lagi.
+            const btnText = status === 'rejected' ? 'Coba Lagi' : 'Ambil Misi';
+            const btnColor = status === 'rejected' ? 'bg-red-500 hover:bg-red-600' : 'bg-blue-600 hover:bg-blue-700';
+
+            actionButtonHTML = `<button onclick="openTakeBountyModal('${bountyId}', '${escapeHtml(bounty.title)}')" class="w-full py-2 rounded-lg ${btnColor} text-white font-bold text-sm transition shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 relative overflow-hidden group">
+                <span class="relative z-10 flex justify-center items-center gap-2">
+                    <i data-lucide="sword" class="w-4 h-4"></i>${btnText}
+                </span>
+            </button>`;
+        }
+
+        const typeColors = {
+            'general': 'text-gray-500 bg-gray-100',
+            'pesantren_ekologi': 'text-green-600 bg-green-50',
+            'academic': 'text-blue-600 bg-blue-50',
+            'social': 'text-purple-600 bg-purple-50'
+        };
+        const typeLabel = (bounty.type || 'general').replace('_', ' ').toUpperCase();
+        const typeClass = typeColors[bounty.type] || typeColors['general'];
+
+        const div = document.createElement('div');
+        div.className = `bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-md transition-all ${cardOpacity} flex flex-col h-full`;
+        div.innerHTML = `
+            <div class="h-32 bg-gray-200 relative overflow-hidden group">
+                 <img src="${bounty.imageUrl || 'https://placehold.co/600x400/e2e8f0/64748b?text=Misi'}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
+                 <div class="absolute top-2 right-2 px-2 py-1 rounded-md text-xs font-bold ${typeClass}">
+                    ${typeLabel}
+                 </div>
+            </div>
+            <div class="p-5 flex flex-col flex-grow">
+                <h3 class="font-bold text-lg text-slate-800 mb-1 leading-tight line-clamp-2" title="${bounty.title}">${bounty.title}</h3>
+                <p class="text-xs text-slate-500 mb-3 flex items-center gap-1">
+                    <i data-lucide="user" class="w-3 h-3"></i> Oleh: ${bounty.authorName || 'Guru'}
+                </p>
+                <div class="text-slate-600 text-sm mb-4 line-clamp-3 flex-grow">
+                    ${bounty.description}
+                </div>
+                
+                <div class="flex items-center justify-between text-xs text-slate-500 border-t border-slate-50 pt-3 mb-4">
+                     <span class="flex items-center gap-1"><i data-lucide="users" class="w-3 h-3"></i> ${takersCount}/${bounty.maxTakers || 'âˆž'}</span>
+                     <span class="flex items-center gap-1 font-bold text-yellow-600"><i data-lucide="coins" class="w-3 h-3"></i> ${bounty.rewardCoin} Koin</span>
+                </div>
+
+                <div class="mt-auto">
+                    ${status === 'rejected' ? `<p class="text-xs text-red-500 mb-2 text-center">Misi sebelumnya ditolak. Silakan perbaiki dan kirim ulang!</p>` : ''}
+                    ${actionButtonHTML}
+                </div>
+            </div>
+        `;
+        container.appendChild(div);
+    });
+    createLucideIcons();
+}
+
+// Helper to escape HTML to prevent XSS in onclick
+function escapeHtml(text) {
+    if (!text) return "";
+    return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+
+// --- MODAL & CAMERA LOGIC ---
+
+window.openTakeBountyModal = async function (bountyId, bountyTitle) {
+    currentBountyIdToTake = bountyId;
+    currentBountyTitleToTake = bountyTitle;
+    const modal = document.getElementById('take-bounty-modal');
+    const titleEl = document.getElementById('take-bounty-title');
+    const locationStatus = document.getElementById('take-bounty-location-status');
+
+    if (!modal) return;
+
+    titleEl.textContent = bountyTitle;
+    modal.classList.remove('hidden');
+    setTimeout(() => modal.classList.remove('opacity-0'), 10);
+    audioPlayer.openModal();
+
+    // Reset Form
+    document.getElementById('take-bounty-description').value = '';
+    locationStatus.textContent = "Mencari lokasi...";
+    locationStatus.className = "text-gray-500 animate-pulse";
+    resetCameraUI();
+
+    // 1. Start Camera
+    startBountyCamera();
+
+    // 2. Gunakan lokasi terakhir yang terekam di database sebagai fallback/awal
+    try {
+        const uid = auth.currentUser.uid;
+        const studentSnap = await get(ref(db, `students/${uid}/location`));
+        if (studentSnap.exists()) {
+            const loc = studentSnap.val();
+            document.getElementById('take-bounty-lat').value = loc.lat;
+            document.getElementById('take-bounty-long').value = loc.lng;
+
+            locationStatus.innerHTML = `<span class="text-blue-600 font-bold">Lokasi terekam:</span> <span class="text-xs">(${loc.lat.toFixed(5)}, ${loc.lng.toFixed(5)})</span><br><span class="text-[10px] text-gray-400 italic">Sedang memperbarui koordinat presisi...</span>`;
+        }
+    } catch (e) {
+        console.warn("Gagal ambil lokasi dari database:", e);
+    }
+
+    // 3. Ambil Lokasi Live (GPS)
+    if ("geolocation" in navigator) {
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const lat = position.coords.latitude;
+                const long = position.coords.longitude;
+                document.getElementById('take-bounty-lat').value = lat;
+                document.getElementById('take-bounty-long').value = long;
+
+                locationStatus.innerHTML = `<span class="text-green-600 font-bold">Lokasi terkunci!</span> <span class="text-xs">(${lat.toFixed(5)}, ${long.toFixed(5)})</span>`;
+                locationStatus.classList.remove('animate-pulse');
+            },
+            (error) => {
+                // Jika sudah ada lokasi dari DB, jangan ganti status jadi error merah mencolok
+                if (!document.getElementById('take-bounty-lat').value) {
+                    locationStatus.innerHTML = `<span class="text-red-500 font-bold">Gagal ambil lokasi live!</span> <span class="text-xs">(Pastikan GPS aktif)</span>`;
+                    locationStatus.classList.remove('animate-pulse');
+                } else {
+                    console.warn("Gagal ambil lokasi GPS live, menggunakan lokasi terakhir di database.");
+                    // Biarkan status tetap menunjukkan lokasi terekam
+                }
+            },
+            { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+        );
+    } else {
+        if (!document.getElementById('take-bounty-lat').value) {
+            locationStatus.textContent = "Geolocation tidak didukung browser ini.";
+        }
+    }
+};
+
+window.closeTakeBountyModal = function () {
+    const modal = document.getElementById('take-bounty-modal');
+    audioPlayer.closeModal();
+    modal.classList.add('opacity-0');
+    setTimeout(() => modal.classList.add('hidden'), 300);
+
+    stopBountyCamera();
+    currentBountyIdToTake = null;
+};
+
+// --- Camera Functions ---
+
+async function startBountyCamera() {
+    const video = document.getElementById('take-bounty-video');
+    try {
+        bountyCameraStream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: "environment" }, // Prefer back camera
+            audio: false
+        });
+        video.srcObject = bountyCameraStream;
+    } catch (err) {
+        console.error("Camera Error:", err);
+        showToast("Gagal akses kamera: " + err.message, true);
+    }
+}
+
+function stopBountyCamera() {
+    if (bountyCameraStream) {
+        bountyCameraStream.getTracks().forEach(track => track.stop());
+        bountyCameraStream = null;
+    }
+}
+
+// UI Handlers for Camera
+document.getElementById('take-bounty-capture-btn')?.addEventListener('click', async () => {
+    const video = document.getElementById('take-bounty-video');
+    const canvas = document.getElementById('take-bounty-canvas');
+    const preview = document.getElementById('take-bounty-preview');
+    const captureBtn = document.getElementById('take-bounty-capture-btn');
+    const retakeBtn = document.getElementById('take-bounty-retake-btn');
+
+    if (!bountyCameraStream) return;
+
+    // Set canvas dimensions to match video
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    // Draw
+    const context = canvas.getContext('2d');
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    // Convert to image and resize for optimization
+    let dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+
+    try {
+        // Resize to max 1024px to save storage/bandwidth
+        dataUrl = await resizeImage(dataUrl, 1024, 1024);
+    } catch (e) {
+        console.warn("Resize failed, using original:", e);
+    }
+
+    preview.src = dataUrl;
+
+    // Toggle UI
+    preview.classList.remove('hidden');
+    video.classList.add('hidden');
+    captureBtn.classList.add('hidden');
+    retakeBtn.classList.remove('hidden');
+
+    // Stop stream to save battery
+    // stopBountyCamera(); // Optional: keep running or stop? Better stop and restart on retake.
+    // Let's keep running for instant retake? No, standard is freeze.
+    // Actually, if we hide video element, we can pause playback.
+    video.pause();
+});
+
+document.getElementById('take-bounty-retake-btn')?.addEventListener('click', () => {
+    resetCameraUI();
+    const video = document.getElementById('take-bounty-video');
+    video.play();
+});
+
+function resetCameraUI() {
+    const video = document.getElementById('take-bounty-video');
+    const preview = document.getElementById('take-bounty-preview');
+    const captureBtn = document.getElementById('take-bounty-capture-btn');
+    const retakeBtn = document.getElementById('take-bounty-retake-btn');
+
+    preview.classList.add('hidden');
+    video.classList.remove('hidden');
+    captureBtn.classList.remove('hidden');
+    retakeBtn.classList.add('hidden');
+}
+
+
+
+// --- Submission Logic ---
+
+document.getElementById('submit-take-bounty-button')?.addEventListener('click', async function () {
+    if (!currentBountyIdToTake) return;
+
+    const btn = this;
+    const description = document.getElementById('take-bounty-description').value;
+    const lat = document.getElementById('take-bounty-lat').value;
+    const long = document.getElementById('take-bounty-long').value;
+    const preview = document.getElementById('take-bounty-preview');
+
+    // Validation
+    if (preview.classList.contains('hidden')) {
+        showToast("Harap ambil foto bukti terlebih dahulu!", true);
+        return;
+    }
+    if (!description.trim()) {
+        showToast("Harap isi deskripsi kegiatan!", true);
+        return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Mengirim...';
+
+    try {
+        const uid = auth.currentUser.uid;
+        const studentSnap = await get(ref(db, `students/${uid}`));
+        const studentData = studentSnap.val();
+
+        // 1. Upload to Firebase Storage
+        const timestamp = Date.now();
+        const fileName = `bounty_submissions/${uid}_${timestamp}.jpg`;
+        const storageReference = sRef(storage, fileName);
+
+        // Use preview.src (Base64) for upload to Storage
+        await uploadString(storageReference, preview.src, 'data_url');
+        const photoURL = await getDownloadURL(storageReference);
+
+        // 2. Prepare Data Schema
+        const now = new Date();
+        const latVal = parseFloat(lat) || 0;
+        const longVal = parseFloat(long) || 0;
+
+        const submissionData = {
+            bountyId: currentBountyIdToTake,
+            bountyTitle: currentBountyTitleToTake || '-',
+            studentId: uid,
+            studentUid: uid, // Consistency with teacher.js
+            studentName: studentData.nama || studentData.name || 'Siswa',
+            studentClass: studentData.kelas || studentData.class || '-',
+            studentPhoto: studentData.photoURL || studentData.fotoProfilBase64 || null,
+            timestamp: timestamp,
+            submitDate: now.toLocaleDateString('id-ID'),
+            submitTime: now.toLocaleTimeString('id-ID'),
+            photoURL: photoURL,
+            photo: photoURL, // Legacy/Alternative field
+            location: { lat: latVal, long: longVal },
+            lat: latVal, // Root-level for easier access
+            long: longVal,
+            locationText: latVal !== 0 ? `Lat: ${latVal.toFixed(5)}, Lng: ${longVal.toFixed(5)}` : 'Lokasi tidak terekam',
+            locationURL: latVal !== 0 ? `https://www.google.com/maps?q=${latVal},${longVal}` : null,
+            description: description,
+            status: 'pending'
+        };
+
+        // 3. Push to bountySubmissions
+        const newSubRef = push(ref(db, 'bountySubmissions'));
+        await set(newSubRef, submissionData);
+
+        // 4. Update Bounty Takers list
+        await update(ref(db, `bounties/${currentBountyIdToTake}/takers/${uid}`), {
+            timestamp: Date.now(),
+            status: 'submitted'
+        });
+
+        showToast("Laporan Misi berhasil dikirim! Menunggu konfirmasi guru.");
+        audioPlayer.success();
+        window.closeTakeBountyModal();
+
+    } catch (error) {
+        console.error("Submission Error:", error);
+        showToast("Gagal mengirim laporan: " + error.message, true);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i data-lucide="send" class="w-4 h-4 inline mr-2"></i>Kirim Laporan';
+        createLucideIcons();
+    }
+});
+
+// Close modal handlers
+document.getElementById('close-take-bounty-modal-button')?.addEventListener('click', closeTakeBountyModal);
+document.getElementById('cancel-take-bounty-button')?.addEventListener('click', closeTakeBountyModal);
