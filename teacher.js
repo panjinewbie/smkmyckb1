@@ -103,7 +103,25 @@ const appVue = createApp({
             onValue(teacherRef, (snapshot) => {
                 const data = snapshot.val();
                 if (data) {
-                    Object.assign(teacherData, data);
+                    // Map Firebase data to local state
+                    teacherData.name = data.nama || data.name || 'Guru';
+                    teacherData.photoBase64 = data.fotoProfilBase64 || data.photoBase64 || null;
+                    teacherData.level = data.level || 1;
+                    teacherData.xp = data.xp || 0;
+                    teacherData.max_xp = data.max_xp || 1000;
+                    teacherData.hp = data.hp || 100;
+                    teacherData.max_hp = data.max_hp || 100;
+                    teacherData.mp = data.mp || 50;
+                    teacherData.max_mp = data.max_mp || 50;
+                    teacherData.coin = data.coin || 0;
+
+                    // Format Role Detail from Subjects
+                    if (data.subjects && Array.isArray(data.subjects)) {
+                        teacherData.role_detail = data.subjects.map(s => `${s.subject} (${s.class})`).join(', ');
+                    } else {
+                        teacherData.role_detail = data.role_detail || 'Guru Mapel';
+                    }
+
                     loading.value = false;
                 }
             });
@@ -714,7 +732,20 @@ const appVue = createApp({
 
         const saveProfile = async () => {
             try {
-                await update(dbRef(db, `teachers/${user.value.uid}`), editForm);
+                // Map local state back to Firebase schema
+                const updates = {
+                    nama: editForm.name,
+                    fotoProfilBase64: editForm.photoBase64,
+                    niy: editForm.niy || '',
+                    gender: editForm.gender || '',
+                    dob: editForm.dob || '',
+                    role_detail: editForm.role_detail || '',
+                    phone: editForm.phone || '',
+                    address: editForm.address || '',
+                    avatar_seed: editForm.avatar_seed || null
+                };
+
+                await update(dbRef(db, `teachers/${user.value.uid}`), updates);
                 // Object.assign(teacherData, editForm); // Listener will auto-update
                 isProfileModalOpen.value = false;
                 alert("Profil berhasil diperbarui!");
