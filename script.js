@@ -972,12 +972,13 @@ function setupStudentDashboard(uid) {
         const studentData = snapshot.val();
         const maxHp = (studentData.level || 1) * 100;
         const maxMp = 50 + ((studentData.level - 1) * 5); // Rumus Max MP baru
-        document.getElementById('student-name').textContent = studentData.nama;
-        document.getElementById('student-class-role').textContent = `${studentData.kelas} | ${studentData.peran} | Guild ${studentData.guild || ''}`;
+        document.getElementById('student-name').textContent = studentData.nama || 'Siswa';
+        document.getElementById('student-class-role').textContent = `${studentData.kelas || '-'} | ${studentData.peran || '-'} | Guild ${studentData.guild || ''}`;
 
         currentStudentData = studentData; // Simpan data terbaru
 
-        document.getElementById('student-avatar').src = studentData.fotoProfilBase64 || `https://placehold.co/128x128/e2e8f0/3d4852?text=${studentData.nama.charAt(0)}`;
+        const initial = (studentData.nama && studentData.nama.length > 0) ? studentData.nama.charAt(0) : '?';
+        document.getElementById('student-avatar').src = studentData.fotoProfilBase64 || `https://placehold.co/128x128/e2e8f0/3d4852?text=${initial}`;
         document.getElementById('hp-value').textContent = `${studentData.hp} / ${maxHp}`;
         document.getElementById('hp-bar').style.width = `${(studentData.hp / maxHp) * 100}%`;
         document.getElementById('mp-value').textContent = `${studentData.mp} / ${maxMp}`;
@@ -4234,6 +4235,373 @@ async function setupSalesAnalytics() {
     }
 }
 
+// =======================================================
+//          MANAJEMEN GURU (SETUP & LOGIC)
+// =======================================================
+const SUBJECT_LIST = [
+    "Pendidikan Agama Kristen", "Pendidikan Agama Islam", "Pendidikan Agama Katolik",
+    "Pendidikan Kewarganegaraan", "Bahasa Indonesia", "Matematika", "Sejarah Indonesia",
+    "Bahasa Inggris", "Seni Budaya", "Penjasorkes", "Bahasa Sunda", "IPAS", "Informatika",
+    "RPL", "DPB", "KKA", "PBO", "Basis Data", "Prog Web", "Produk Kreatif Kewirausahaan", "PPLG"
+];
+
+const CLASS_LIST = [
+    "X RPL", "XI RPL", "XII RPL",
+    "X DPB", "XI DPB", "XII DPB"
+];
+
+async function setupTeachersPage() {
+    if (window.isTeachersPageSetup) return;
+    window.isTeachersPageSetup = true;
+
+    const teachersPage = document.getElementById('teachers-page');
+    const addTeacherBtn = document.getElementById('add-teacher-btn');
+    const teacherModal = document.getElementById('add-teacher-modal');
+    const closeTeacherModalBtn = document.getElementById('close-add-teacher-modal');
+    const cancelTeacherModalBtn = document.getElementById('cancel-add-teacher-modal');
+    const teacherForm = document.getElementById('add-teacher-form');
+    const addSubjectBtn = document.getElementById('add-subject-btn');
+    const subjectsContainer = document.getElementById('teacher-subjects-container');
+    const photoInput = document.getElementById('teacher-photo-file');
+    const photoPreview = document.getElementById('teacher-photo-preview');
+    const openCameraBtn = document.getElementById('teacher-photo-camera');
+
+    // Camera Modal Elements
+    const cameraModal = document.getElementById('photo-capture-modal');
+    const closeCameraBtn = document.getElementById('close-camera-modal');
+    const captureBtn = document.getElementById('capture-photo-btn');
+    const videoEl = document.getElementById('camera-preview');
+    const canvasEl = document.getElementById('camera-canvas');
+    let cameraStream = null;
+
+    // --- Helper: Render Teachers ---
+    function renderTeachers() {
+        const tableBody = document.getElementById('teacher-list-body');
+        if (!tableBody) return;
+
+        tableBody.innerHTML = '<tr><td colspan="4" class="text-center p-4">Memuat data...</td></tr>';
+
+        const teachersRef = ref(db, 'teachers');
+        onValue(teachersRef, (snapshot) => {
+            if (!snapshot.exists()) {
+                tableBody.innerHTML = '<tr><td colspan="4" class="text-center p-4">Belum ada data guru.</td></tr>';
+                return;
+            }
+
+            const teachers = snapshot.val();
+            tableBody.innerHTML = '';
+
+            Object.values(teachers).sort((a, b) => (a.nama || '').localeCompare(b.nama || '')).forEach(teacher => {
+                const tr = document.createElement('tr');
+                tr.className = 'border-b hover:bg-gray-50';
+
+                const subjectBadges = (teacher.subjects || []).map(s =>
+                    `<span class="text-[10px] bg-blue-100 text-blue-800 px-1 py-0.5 rounded mr-1">${s.subject} (${s.class})</span>`
+                ).join('');
+
+                tr.innerHTML = `
+                    <td class="px-6 py-4 flex items-center gap-3">
+                        <img src="${teacher.fotoProfilBase64 || 'https://placehold.co/40x40/e2e8f0/3d4852?text=' + (teacher.nama ? teacher.nama.charAt(0) : '?')}" class="w-10 h-10 rounded-full object-cover border border-gray-200">
+                        <div>
+                            <div class="font-bold text-gray-800 text-sm">${teacher.nama}</div>
+                            <div class="text-[10px] text-gray-500">${teacher.email}</div>
+                            <div class="mt-1 flex flex-wrap gap-1 max-w-[200px]">${subjectBadges}</div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="text-xs font-semibold">Lvl ${teacher.level || 1}</div>
+                        <div class="text-[10px] text-gray-500">${teacher.xp || 0} XP</div>
+                    </td>
+                    <td class="px-6 py-4 text-[10px] space-y-0.5">
+                        <div class="text-red-500 font-semibold">HP: ${teacher.hp || 100}</div>
+                        <div class="text-blue-500 font-semibold">MP: ${teacher.mp || 50}</div>
+                        <div class="text-yellow-600 font-semibold">Coin: ${teacher.coin || 0}</div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="flex gap-2">
+                            <button class="edit-teacher-btn text-blue-600 hover:text-blue-800 transition-colors bg-blue-50 p-1.5 rounded-md" data-uid="${teacher.uid}" title="Edit Guru">
+                                <i data-lucide="edit" class="w-4 h-4"></i>
+                            </button>
+                            <button class="delete-teacher-btn text-red-600 hover:text-red-800 transition-colors bg-red-50 p-1.5 rounded-md" data-uid="${teacher.uid}" title="Hapus Guru">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </td>
+                `;
+                tableBody.appendChild(tr);
+            });
+            createLucideIcons();
+
+            // Add Listeners
+            document.querySelectorAll('.edit-teacher-btn').forEach(btn => {
+                btn.onclick = () => {
+                    const uid = btn.dataset.uid;
+                    const teacher = Object.values(teachers).find(t => t.uid === uid);
+                    openTeacherModal(true, teacher);
+                };
+            });
+
+            document.querySelectorAll('.delete-teacher-btn').forEach(btn => {
+                btn.onclick = async () => {
+                    const uid = btn.dataset.uid;
+                    if (confirm("Yakin ingin menghapus guru ini? Data tidak bisa kembali.")) {
+                        try {
+                            await remove(ref(db, `teachers/${uid}`));
+                            await remove(ref(db, `roles/${uid}`));
+                            showToast("Guru berhasil dihapus.");
+                        } catch (e) {
+                            console.error(e);
+                            showToast("Gagal menghapus guru.", true);
+                        }
+                    }
+                };
+            });
+        });
+    }
+
+    // --- Function to Open Modal ---
+    function openTeacherModal(isEdit = false, teacherData = null) {
+        teacherForm.reset();
+        subjectsContainer.innerHTML = '';
+        photoPreview.src = 'https://placehold.co/150x150/e2e8f0/3d4852?text=Foto';
+        document.getElementById('teacher-id-input').value = '';
+        document.getElementById('teacher-modal-title').textContent = 'Tambah Guru Baru';
+        document.getElementById('btn-save-teacher-text').textContent = 'Simpan Guru';
+
+        teacherModal.classList.remove('hidden');
+        setTimeout(() => teacherModal.classList.remove('opacity-0'), 10);
+
+        if (isEdit && teacherData) {
+            document.getElementById('teacher-modal-title').textContent = 'Edit Data Guru';
+            document.getElementById('btn-save-teacher-text').textContent = 'Update Guru';
+            document.getElementById('teacher-id-input').value = teacherData.uid;
+            document.getElementById('teacher-name-input').value = teacherData.nama;
+            document.getElementById('teacher-email-input').value = teacherData.email;
+            document.getElementById('teacher-description-input').value = teacherData.deskripsi || '';
+
+            document.getElementById('teacher-password-input').placeholder = "Kosongkan jika tidak diubah";
+            document.getElementById('teacher-password-input').required = false;
+
+            if (teacherData.fotoProfilBase64) {
+                photoPreview.src = teacherData.fotoProfilBase64;
+            }
+
+            if (teacherData.subjects && Array.isArray(teacherData.subjects)) {
+                teacherData.subjects.forEach(subj => addSubjectRow(subj.subject, subj.class));
+            } else {
+                addSubjectRow();
+            }
+        } else {
+            addSubjectRow();
+            document.getElementById('teacher-password-input').required = true;
+            document.getElementById('teacher-password-input').placeholder = "Min. 6 karakter";
+        }
+    }
+
+    // --- Function to Close Modal ---
+    function closeTeacherModal() {
+        teacherModal.classList.add('opacity-0');
+        setTimeout(() => teacherModal.classList.add('hidden'), 300);
+    }
+
+    // --- Function to Add Subject Row ---
+    function addSubjectRow(selectedSubject = '', selectedClass = '') {
+        const row = document.createElement('div');
+        row.className = 'flex gap-2 items-center bg-gray-50 p-2 rounded border animate-fade-in-up mb-2';
+
+        const subjectSelect = document.createElement('select');
+        subjectSelect.className = 'flex-1 p-2 border border-gray-300 rounded text-sm bg-white focus:outline-none focus:ring-1 focus:ring-blue-500';
+        subjectSelect.required = true;
+        subjectSelect.innerHTML = `<option value="">Pilih Mapel...</option>`;
+        SUBJECT_LIST.forEach(subj => {
+            const opt = document.createElement('option');
+            opt.value = subj;
+            opt.textContent = subj;
+            if (subj === selectedSubject) opt.selected = true;
+            subjectSelect.appendChild(opt);
+        });
+
+        const classSelect = document.createElement('select');
+        classSelect.className = 'w-32 p-2 border border-gray-300 rounded text-sm bg-white focus:outline-none focus:ring-1 focus:ring-blue-500';
+        classSelect.required = true;
+        classSelect.innerHTML = `<option value="">Kelas...</option>`;
+        CLASS_LIST.forEach(cls => {
+            const opt = document.createElement('option');
+            opt.value = cls;
+            opt.textContent = cls;
+            if (cls === selectedClass) opt.selected = true;
+            classSelect.appendChild(opt);
+        });
+
+        const delBtn = document.createElement('button');
+        delBtn.type = 'button';
+        delBtn.className = 'text-red-500 hover:text-red-700 p-1 ml-auto bg-white rounded border border-gray-200 hover:bg-red-50';
+        delBtn.innerHTML = '<i data-lucide="trash-2" class="w-4 h-4"></i>';
+        delBtn.onclick = () => row.remove();
+
+        row.appendChild(subjectSelect);
+        row.appendChild(classSelect);
+        row.appendChild(delBtn);
+        subjectsContainer.appendChild(row);
+        createLucideIcons();
+    }
+
+    // --- Init Render ---
+    renderTeachers();
+
+    // --- Event Listeners Setup ---
+    if (addTeacherBtn) addTeacherBtn.onclick = () => openTeacherModal();
+    if (closeTeacherModalBtn) closeTeacherModalBtn.onclick = closeTeacherModal;
+    if (cancelTeacherModalBtn) cancelTeacherModalBtn.onclick = closeTeacherModal;
+    if (addSubjectBtn) addSubjectBtn.onclick = () => addSubjectRow();
+
+    if (photoInput) {
+        photoInput.onchange = (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    photoPreview.src = ev.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        };
+    }
+
+    // --- Camera Logic ---
+    if (openCameraBtn) {
+        openCameraBtn.onclick = async () => {
+            cameraModal.classList.remove('hidden');
+            setTimeout(() => cameraModal.classList.remove('opacity-0'), 10);
+            try {
+                cameraStream = await navigator.mediaDevices.getUserMedia({ video: true });
+                videoEl.srcObject = cameraStream;
+            } catch (err) {
+                console.error("Gagal akses kamera:", err);
+                showToast("Gagal mengakses kamera.", true);
+                closeCamera();
+            }
+        };
+    }
+
+    if (closeCameraBtn) closeCameraBtn.onclick = closeCamera;
+
+    if (captureBtn) {
+        captureBtn.onclick = () => {
+            if (!cameraStream) return;
+            const context = canvasEl.getContext('2d');
+            canvasEl.width = videoEl.videoWidth;
+            canvasEl.height = videoEl.videoHeight;
+            context.drawImage(videoEl, 0, 0, canvasEl.width, canvasEl.height);
+            const dataUrl = canvasEl.toDataURL('image/png');
+            photoPreview.src = dataUrl;
+            closeCamera();
+        };
+    }
+
+    function closeCamera() {
+        if (cameraStream) {
+            cameraStream.getTracks().forEach(track => track.stop());
+            cameraStream = null;
+        }
+        cameraModal.classList.add('opacity-0');
+        setTimeout(() => cameraModal.classList.add('hidden'), 300);
+    }
+
+    // --- Form Submit Handler ---
+    if (teacherForm) {
+        teacherForm.onsubmit = async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('btn-save-teacher');
+            const loader = document.getElementById('btn-save-teacher-loader');
+            const text = document.getElementById('btn-save-teacher-text');
+
+            btn.disabled = true;
+            loader.classList.remove('hidden');
+            text.textContent = 'Menyimpan...';
+
+            try {
+                const uid = document.getElementById('teacher-id-input').value;
+                const name = document.getElementById('teacher-name-input').value;
+                const email = document.getElementById('teacher-email-input').value;
+                const password = document.getElementById('teacher-password-input').value;
+                const description = document.getElementById('teacher-description-input').value;
+                const photoSrc = photoPreview.src;
+
+                const subjects = [];
+                const rows = subjectsContainer.querySelectorAll('div.flex');
+                rows.forEach(row => {
+                    const selects = row.querySelectorAll('select');
+                    if (selects.length >= 2 && selects[0].value && selects[1].value) {
+                        subjects.push({
+                            subject: selects[0].value,
+                            class: selects[1].value
+                        });
+                    }
+                });
+
+                let teacherData = {
+                    nama: name,
+                    email: email,
+                    deskripsi: description,
+                    subjects: subjects,
+                    role: 'teacher',
+                    updatedAt: Date.now()
+                };
+
+                if (!photoSrc.includes('placehold.co')) {
+                    teacherData.fotoProfilBase64 = photoSrc;
+                }
+
+                if (uid) {
+                    await update(ref(db, `teachers/${uid}`), teacherData);
+                    if (password) {
+                        showToast("Info: Password tidak berubah (perlu admin SDK).", false);
+                    }
+                    showToast("Data guru berhasil diperbarui!");
+                } else {
+                    if (!password) throw new Error("Password wajib diisi!");
+
+                    // Gunakan Secondary App untuk membuat user tanpa logout admin
+                    const secondaryApp = initializeApp(firebaseConfig, "SecondaryApp");
+                    const secondaryAuth = getAuth(secondaryApp);
+
+                    try {
+                        const userCredential = await createUserWithEmailAndPassword(secondaryAuth, email, password);
+                        const newUid = userCredential.user.uid;
+
+                        teacherData.uid = newUid;
+                        teacherData.level = 1;
+                        teacherData.xp = 0;
+                        teacherData.hp = 100;
+                        teacherData.mp = 50;
+                        teacherData.coin = 0;
+
+                        await set(ref(db, `teachers/${newUid}`), teacherData);
+                        await set(ref(db, `roles/${newUid}`), { role: 'teacher', isAdmin: false });
+
+                        await signOut(secondaryAuth);
+                        showToast("Guru berhasil dibuat!", false);
+                    } catch (err) {
+                        throw err;
+                    } finally {
+                        await deleteApp(secondaryApp);
+                    }
+                }
+
+                closeTeacherModal();
+
+            } catch (error) {
+                console.error(error);
+                showToast(error.message, true);
+            } finally {
+                btn.disabled = false;
+                loader.classList.add('hidden');
+                text.textContent = uid ? 'Update Guru' : 'Simpan Guru';
+            }
+        };
+    }
+}
 // =======================================================
 //                  LOGIKA DASBOR ADMIN
 // =======================================================
@@ -8799,196 +9167,4 @@ function initNotificationPanel() {
 //          MANAJEMEN GURU (Fitur Baru & Lengkap)
 // =======================================================
 
-function setupTeachersPage() {
-    // Dipanggil saat tab #teachers dibuka
-    // Pastikan listener realtime hanya dipasang sekali atau di-manage
-    if (window.teachersListenerActive) return;
 
-    const tableBody = document.getElementById('teacher-list-body');
-    const magicSelect = document.getElementById('magic-teacher-select');
-
-    // Load Teachers (Realtime)
-    onValue(ref(db, 'teachers'), (snap) => {
-        if (tableBody) tableBody.innerHTML = '';
-        if (magicSelect) magicSelect.innerHTML = '<option value="">Pilih Guru...</option>';
-
-        if (!snap.exists()) {
-            if (tableBody) tableBody.innerHTML = '<tr><td colspan="4" class="text-center p-4">Belum ada data guru.</td></tr>';
-            return;
-        }
-
-        const teachers = snap.val();
-        Object.entries(teachers).forEach(([uid, t]) => {
-            if (tableBody) {
-                const tr = document.createElement('tr');
-                tr.className = 'bg-white border-b hover:bg-gray-50';
-                tr.innerHTML = `
-                    <td class="px-6 py-4 font-medium text-gray-900">
-                        <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold">
-                                ${t.name ? t.name.charAt(0) : '?'}
-                            </div>
-                            <div>
-                                <div>${t.name}</div>
-                                <div class="text-xs text-gray-500">${t.email}</div>
-                            </div>
-                        </div>
-                    </td>
-                    <td class="px-6 py-4">
-                        <span class="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded">Lv. ${t.level || 1}</span>
-                        <div class="text-xs text-gray-500 mt-1">${t.xp || 0} XP</div>
-                    </td>
-                    <td class="px-6 py-4">
-                        <div class="text-xs space-y-1">
-                           <div>❤️ ${t.hp || 100} | 💧 ${t.mp || 100} | 💰 ${t.coin || 0}</div>
-                        </div>
-                    </td>
-                    <td class="px-6 py-4">
-                        <button class="text-red-600 hover:text-red-900 text-xs font-bold" onclick="deleteTeacher('${uid}')">HAPUS</button>
-                    </td>
-                `;
-                tableBody.appendChild(tr);
-            }
-
-            // Add to Select
-            if (magicSelect) {
-                const opt = document.createElement('option');
-                opt.value = uid;
-                opt.textContent = `${t.name} (Lv.${t.level || 1})`;
-                magicSelect.appendChild(opt);
-            }
-        });
-    });
-
-    window.teachersListenerActive = true;
-}
-
-// Global Init for Modals and Buttons
-document.addEventListener('DOMContentLoaded', () => {
-    // Add Teacher Logic
-    const addTeacherBtn = document.getElementById('add-teacher-btn'); // Fixed ID
-    const addTeacherModal = document.getElementById('add-teacher-modal');
-    const closeTeacherModalBtn = document.getElementById('close-add-teacher-modal');
-    const saveTeacherForm = document.getElementById('add-teacher-form');
-
-    if (addTeacherBtn && addTeacherModal) {
-        addTeacherBtn.addEventListener('click', () => {
-            if (window.audioPlayer) audioPlayer.openModal();
-            addTeacherModal.classList.remove('hidden');
-            setTimeout(() => addTeacherModal.classList.remove('opacity-0'), 10);
-        });
-
-        const closeModal = () => {
-            if (window.audioPlayer) audioPlayer.closeModal();
-            addTeacherModal.classList.add('opacity-0');
-            setTimeout(() => addTeacherModal.classList.add('hidden'), 300);
-        };
-
-        if (closeTeacherModalBtn) closeTeacherModalBtn.addEventListener('click', closeModal);
-
-        const cancelBtn = document.getElementById('cancel-add-teacher-modal');
-        if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
-
-        if (saveTeacherForm) saveTeacherForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-
-            const name = document.getElementById('teacher-name-input').value;
-            const email = document.getElementById('teacher-email-input').value;
-            const password = document.getElementById('teacher-password-input').value;
-
-            const btn = document.getElementById('btn-save-teacher');
-            const btnText = document.getElementById('btn-save-teacher-text');
-            const loader = document.getElementById('btn-save-teacher-loader');
-
-            btn.disabled = true;
-            loader.classList.remove('hidden');
-            btnText.textContent = 'Menyimpan...';
-
-            let secondaryApp = null;
-
-            try {
-                // Initialize Secondary App to avoid logging out admin
-                // Note: requires firebaseConfig to be globally available
-                if (typeof firebaseConfig === 'undefined') throw new Error("Firebase Config missing");
-
-                secondaryApp = initializeApp(firebaseConfig, "SecondaryApp");
-                const secondaryAuth = getAuth(secondaryApp);
-
-                const userCredential = await createUserWithEmailAndPassword(secondaryAuth, email, password);
-                const uid = userCredential.user.uid;
-
-                // Save Teacher Data
-                await set(ref(db, `teachers/${uid}`), {
-                    name: name,
-                    email: email,
-                    role: 'teacher',
-                    level: 1, xp: 0, coin: 0, hp: 100, mp: 100,
-                    max_hp: 100, max_mp: 100, max_xp: 1000,
-                    createdAt: Date.now()
-                });
-
-                // Save Role
-                await set(ref(db, `roles/${uid}`), { isTeacher: true });
-
-                // Sign out secondary
-                await signOut(secondaryAuth);
-
-                showToast('Guru berhasil ditambahkan!');
-                if (window.audioPlayer) audioPlayer.success();
-                closeModal();
-                saveTeacherForm.reset();
-
-            } catch (error) {
-                console.error("Error creating teacher:", error);
-                if (error.code === 'auth/email-already-in-use') {
-                    alert('Email sudah terdaftar!');
-                } else {
-                    alert('Gagal: ' + error.message);
-                }
-                if (window.audioPlayer) audioPlayer.error();
-            } finally {
-                if (secondaryApp) deleteApp(secondaryApp); // Clean up
-
-                btn.disabled = false;
-                loader.classList.add('hidden');
-                btnText.textContent = 'Simpan Guru';
-            }
-        });
-    }
-
-    // Magic Tools Logic
-    const addStatBtn = document.getElementById('teacher-add-stat');
-    const subStatBtn = document.getElementById('teacher-sub-stat');
-
-    if (addStatBtn) addStatBtn.onclick = () => modifyTeacherStat(1);
-    if (subStatBtn) subStatBtn.onclick = () => modifyTeacherStat(-1);
-});
-
-// Helper Functions
-window.deleteTeacher = async (uid) => {
-    if (confirm('Hapus data guru ini? (Akun Auth tidak terhapus otomatis)')) {
-        await remove(ref(db, `teachers/${uid}`));
-        await remove(ref(db, `roles/${uid}`));
-        showToast('Data guru dihapus.');
-    }
-};
-
-window.modifyTeacherStat = async (multiplier) => {
-    const uid = document.getElementById('magic-teacher-select').value;
-    const type = document.getElementById('teacher-stat-type').value;
-    const inputVal = document.getElementById('teacher-stat-val').value;
-    const val = parseInt(inputVal) || 0;
-
-    if (!uid) return alert('Pilih guru dulu!');
-
-    const teacherRef = ref(db, `teachers/${uid}`);
-    const snap = await get(teacherRef);
-    if (!snap.exists()) return;
-
-    const currentVal = snap.val()[type] || 0;
-    let updates = {};
-    updates[type] = currentVal + (val * multiplier);
-
-    await update(teacherRef, updates);
-    showToast(`Stat ${type} updated!`);
-};
