@@ -44,7 +44,7 @@ const appVue = createApp({
         const navItems = [
             { id: 'dashboard', label: 'Dashboard', icon: 'fas fa-chart-pie' },
             { id: 'grind', label: 'The Daily Grind', icon: 'fas fa-fire' },
-            { id: 'jadwal', label: 'Jadwal', icon: 'fas fa-calendar-alt' },
+            { id: 'jadwal', label: 'Bonty Board', icon: 'fas fa-calendar-alt' },
             { id: 'absensi', label: 'Absensi', icon: 'fas fa-user-check' },
             { id: 'nilai', label: 'Input Nilai', icon: 'fas fa-pen-fancy' },
             { id: 'materi', label: 'Materi', icon: 'fas fa-book-open' },
@@ -131,6 +131,8 @@ const appVue = createApp({
             fetchInventoryAndEffects(uid);
             fetchShopItems();
             fetchChatRecipients();
+            fetchBounties();
+            fetchSubmissions();
         };
 
         const loadClassList = async () => {
@@ -416,7 +418,7 @@ const appVue = createApp({
         const castSkillOnStudent = async (studentUid) => {
             if (!selectedSkill.value) return;
             const skill = selectedSkill.value;
-            const studentRef = dbRef(db, `users/${studentUid}`);
+            const studentRef = dbRef(db, `students/${studentUid}`); // FIXED: Use students node
 
             try {
                 const snapshot = await get(studentRef);
@@ -593,6 +595,9 @@ const appVue = createApp({
             if (!timestamp) return '';
             const date = new Date(timestamp);
             const now = new Date();
+            // If valid date
+            if (isNaN(date.getTime())) return '';
+
             if (date.toDateString() === now.toDateString()) {
                 return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             }
@@ -810,6 +815,268 @@ const appVue = createApp({
             }
         };
 
+        // --- Bounty Board Logic ---
+        const bounties = ref([]);
+        const submissions = ref([]);
+        const bountyTab = ref('active');
+        const isCreateBountyModalOpen = ref(false);
+        const isSubmissionModalOpen = ref(false);
+        const selectedSubmission = ref(null);
+
+        const newBounty = reactive({
+            title: '',
+            type: 'general',
+            category: '',
+            description: '',
+            rewardXP: 100,
+            rewardCoin: 50,
+            maxTakers: 30,
+            deadline: '',
+            imageUrl: null // New field for image
+        });
+
+        const handleBountyImageUpload = (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const max = 600; // Max dimension
+                    let w = img.width;
+                    let h = img.height;
+
+                    if (w > h) {
+                        if (w > max) { h *= max / w; w = max; }
+                    } else {
+                        if (h > max) { w *= max / h; h = max; }
+                    }
+
+                    canvas.width = w;
+                    canvas.height = h;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, w, h);
+                    newBounty.imageUrl = canvas.toDataURL('image/jpeg', 0.8);
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        };
+
+        const fetchBounties = () => {
+            onValue(dbRef(db, 'bounties'), (snap) => {
+                if (snap.exists()) {
+                    // Filter bounties created by this teacher or all?
+                    // Let's show all active bounties for now, or maybe only ones created by THIS teacher if that's the requirement.
+                    // The requirement implies "Guru bisa menambahkan", so likely they manage their own. 
+                    // But shared bounty board is cool too. Let's show all but maybe highlight own.
+                    // For simplicity, showing all.
+                    const arr = Object.entries(snap.val()).map(([id, val]) => ({ id, ...val }));
+                    bounties.value = arr.sort((a, b) => b.createdAt - a.createdAt);
+                } else {
+                    bounties.value = [];
+                }
+            });
+        };
+
+        const createBounty = async () => {
+            if (!newBounty.title || !newBounty.description) {
+                alert("Judul dan Deskripsi wajib diisi!"); return;
+            }
+
+            try {
+                const bountyData = {
+                    ...newBounty,
+                    authorId: user.value.uid,
+                    authorName: teacherData.name || 'Guru',
+                    createdAt: Date.now(),
+                    status: 'active',
+                    imageUrl: newBounty.imageUrl || null, // Include image
+                    takers: [] // List of student UIDs who took it (not used yet in this simple version, but good for future)
+                };
+
+                await push(dbRef(db, 'bounties'), bountyData);
+
+                // Reset Form
+                newBounty.title = '';
+                newBounty.description = '';
+                newBounty.category = '';
+                newBounty.imageUrl = null; // Reset image
+                isCreateBountyModalOpen.value = false;
+                alert("Misi berhasil dibuat!");
+            } catch (e) {
+                console.error(e);
+                alert("Gagal membuat misi.");
+            }
+        };
+
+        const deleteBounty = async (bountyId) => {
+            if (!confirm("Hapus misi ini?")) return;
+            try {
+                // Also optionally delete associated submissions? For now just the bounty.
+                await remove(dbRef(db, `bounties/${bountyId}`));
+            } catch (e) {
+                console.error(e);
+                alert("Gagal menghapus misi.");
+            }
+        };
+
+        const fetchSubmissions = () => {
+            onValue(dbRef(db, 'bountySubmissions'), (snap) => {
+                if (snap.exists()) {
+                    const arr = Object.entries(snap.val()).map(([id, val]) => {
+                        const normalizedSubmission = {
+                            id,
+                            ...val,
+                            studentUid: val.studentUid || val.studentId, // Ensure studentUid exists
+                            // Normalize photo URL
+                            photoURL: val.photoURL || val.photo || val.photoBase64 || val.imageUrl || 'https://placehold.co/600x400/e2e8f0/64748b?text=Bukti+Tidak+Ada'
+                        };
+
+                        // Fallback for bountyTitle if missing
+                        if (!normalizedSubmission.bountyTitle && normalizedSubmission.bountyId) {
+                            const bounty = bounties.value.find(b => b.id === normalizedSubmission.bountyId);
+                            if (bounty) normalizedSubmission.bountyTitle = bounty.title;
+                        }
+
+                        // Generate locationText if missing
+                        if (!normalizedSubmission.locationText && (val.lat || (val.location && val.location.lat))) {
+                            const lat = parseFloat(val.lat || (val.location && val.location.lat));
+                            const lng = parseFloat(val.long || val.lng || (val.location && (val.location.long || val.location.lng)));
+
+                            if (!isNaN(lat) && !isNaN(lng)) {
+                                normalizedSubmission.locationText = `Lat: ${lat.toFixed(5)}, Lng: ${lng.toFixed(5)}`;
+                                normalizedSubmission.locationURL = `https://www.google.com/maps?q=${lat},${lng}`;
+                            } else {
+                                normalizedSubmission.locationText = 'Lokasi tidak terekam';
+                            }
+                        }
+
+                        return normalizedSubmission;
+                    });
+                    submissions.value = arr.sort((a, b) => b.timestamp - a.timestamp);
+                } else {
+                    submissions.value = [];
+                }
+            });
+        };
+
+        const pendingSubmissionsCount = computed(() => {
+            return submissions.value.filter(s => s.status === 'pending').length;
+        });
+
+        const viewSubmissionImage = (submission) => {
+            selectedSubmission.value = submission;
+            isSubmissionModalOpen.value = true;
+        };
+
+        const approveSubmission = async (submission) => {
+            if (!confirm("Setujui Submission ini? Siswa akan dapat hadiah.")) return;
+            try {
+                // 1. Update status
+                await update(dbRef(db, `bountySubmissions/${submission.id}`), { status: 'approved' });
+
+                // 2. Award Rewards to Student
+                // Need to fetch bounty details first to know rewards, OR rely on what's in submission if we stored it there.
+                // Better to fetch bounty to be safe/secure, or just trust the bounty snapshot if we have it in memory.
+                // Let's look up the bounty from our local state `bounties`.
+                const bounty = bounties.value.find(b => b.id === submission.bountyId);
+
+                if (bounty) {
+                    const sUid = submission.studentUid || submission.studentId;
+                    const studentRef = dbRef(db, `students/${sUid}`);
+
+                    const studentSnap = await get(studentRef);
+                    if (studentSnap.exists()) {
+                        const sData = studentSnap.val();
+                        const currentXP = sData.xp || 0;
+                        const currentCoin = sData.coin || 0;
+                        const currentLevel = sData.level || 1;
+                        const maxXP = sData.max_xp || 1000;
+
+                        let newXP = currentXP + (bounty.rewardXP || 0);
+                        let newCoin = currentCoin + (bounty.rewardCoin || 0);
+                        let newLevel = currentLevel;
+                        let newMaxXP = maxXP;
+
+                        // Level Up Logic (Simple version)
+                        if (newXP >= maxXP) {
+                            newLevel++;
+                            newXP = newXP - maxXP;
+                            newMaxXP = Math.floor(maxXP * 1.2);
+                        }
+
+                        await update(studentRef, {
+                            xp: newXP,
+                            coin: newCoin,
+                            level: newLevel,
+                            max_xp: newMaxXP
+                        });
+
+                        // Notification for student
+                        const notifRef = push(dbRef(db, `studentNotifications/${sUid}`));
+                        await set(notifRef, {
+                            title: "Misi Disetujui!",
+                            message: `Selamat! Misi "${bounty.title}" telah disetujui. Kamu mendapatkan ${bounty.rewardXP} XP dan ${bounty.rewardCoin} Koin.`,
+                            timestamp: Date.now(),
+                            read: false,
+                            type: 'bounty_approval'
+                        });
+                    }
+                }
+
+                isSubmissionModalOpen.value = false;
+                alert("Submission disetujui!");
+
+            } catch (e) {
+                console.error(e);
+                alert("Gagal menyetujui submission.");
+            }
+        };
+
+        const rejectSubmission = async (submission) => {
+            const reason = prompt("Masukkan alasan penolakan (opsional):");
+            if (reason === null) return; // Cancelled
+
+            try {
+                const studentUid = submission.studentUid || submission.studentId;
+
+                // 1. Update submission status
+                await update(dbRef(db, `bountySubmissions/${submission.id}`), {
+                    status: 'rejected',
+                    feedback: reason || 'Tidak ada alasan.'
+                });
+
+                // 2. Update Bounty Taker status
+                if (submission.bountyId && studentUid) {
+                    await update(dbRef(db, `bounties/${submission.bountyId}/takers/${studentUid}`), {
+                        status: 'rejected'
+                    });
+                }
+
+                // 3. Notify Student
+                if (studentUid) {
+                    addNotification(
+                        `Laporan misimu "<strong>${submission.bountyTitle || 'Misi'}</strong>" ditolak. Alasan: ${reason || 'Tidak memenuhi kriteria.'}`,
+                        'bounty_rejected',
+                        { bountyId: submission.bountyId },
+                        studentUid
+                    );
+                }
+
+                isSubmissionModalOpen.value = false;
+                alert("Submission ditolak.");
+            } catch (e) {
+                console.error(e);
+                alert("Gagal menolak submission: " + e.message);
+            }
+        };
+        const openCreateBountyModal = () => {
+            isCreateBountyModalOpen.value = true;
+        };
+
         return {
             user, teacherData, currentTab, navItems,
             isMobile, isSidebarOpen, isDreamyOpen,
@@ -833,7 +1100,13 @@ const appVue = createApp({
             // Chat
             isTeacherChatOpen, toggleTeacherChat, chatRecipients, chatSearchQuery,
             filteredChatRecipients, totalUnreadChats, selectChatRecipient,
-            currentChatRecipient, currentChatMessages, chatInput, sendChatMessage, formatTime
+            currentChatRecipient, currentChatMessages, chatInput, sendChatMessage, formatTime,
+            // Bounty
+            bounties, submissions, bountyTab, isCreateBountyModalOpen, newBounty,
+            createBounty, deleteBounty, pendingSubmissionsCount,
+            viewSubmissionImage, isSubmissionModalOpen, selectedSubmission,
+            approveSubmission, rejectSubmission, openCreateBountyModal,
+            handleBountyImageUpload
         };
     }
 });
