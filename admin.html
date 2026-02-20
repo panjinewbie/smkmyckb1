@@ -1177,76 +1177,77 @@
                 <!-- Header -->
                 <div class="bg-white/90 backdrop-blur-sm rounded-lg shadow-md p-6">
                     <div class="mb-6">
-                
+
                         <h2 class="text-2xl font-bold text-gray-800">Data Guru</h2>
                         <p class="text-sm text-gray-500">Kelola akun dan data guru</p>
-                    
-                    <button id="add-teacher-btn"
-                        class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-colors shadow-sm">
-                        <i data-lucide="user-plus" class="w-4 h-4"></i>
-                        Tambah Guru
-                    </button>
-                </div>
 
-                <!-- Teacher Table -->
-                <div class="bg-white rounded-xl shadow-md overflow-hidden mb-6">
-                    <table class="w-full text-sm text-left">
-                        <thead class="bg-gray-50 text-gray-600 uppercase text-xs">
-                            <tr>
-                                <th class="px-6 py-3">Guru</th>
-                                <th class="px-6 py-3">Level / XP</th>
-                                <th class="px-6 py-3">Stats</th>
-                                <th class="px-6 py-3">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody id="teacher-list-body">
-                            <tr>
-                                <td colspan="4" class="text-center p-8 text-gray-400">Memuat data...</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+                        <button id="add-teacher-btn"
+                            class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-colors shadow-sm">
+                            <i data-lucide="user-plus" class="w-4 h-4"></i>
+                            Tambah Guru
+                        </button>
+                    </div>
 
-                <!-- Magic Controls for Teachers -->
-                <div class="bg-white rounded-xl shadow-md p-6">
-                    <h3 class="font-bold text-gray-800 mb-4 flex items-center gap-2">
-                        <i data-lucide="wand-2" class="w-5 h-5 text-purple-600"></i>
-                        Magic Controls – Guru
-                    </h3>
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-                        <div>
-                            <label class="block text-xs font-semibold text-gray-600 mb-1">Pilih Guru</label>
-                            <select id="magic-teacher-select"
-                                class="w-full p-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
-                                <option value="">Pilih Guru...</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold text-gray-600 mb-1">Stat</label>
-                            <select id="teacher-stat-type"
-                                class="w-full p-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
-                                <option value="xp">XP</option>
-                                <option value="coin">Coin</option>
-                                <option value="hp">HP</option>
-                                <option value="mp">MP</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold text-gray-600 mb-1">Nilai</label>
-                            <input type="number" id="teacher-stat-val" value="10"
-                                class="w-full p-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
-                        </div>
-                        <div class="flex gap-2">
-                            <button id="teacher-add-stat"
-                                class="flex-1 py-2 px-3 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm font-bold transition-colors">+
-                                Tambah</button>
-                            <button id="teacher-sub-stat"
-                                class="flex-1 py-2 px-3 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-bold transition-colors">-
-                                Kurang</button>
+                    <!-- Teacher Table -->
+                    <div class="bg-white rounded-xl shadow-md overflow-hidden mb-6">
+                        <table class="w-full text-sm text-left">
+                            <thead class="bg-gray-50 text-gray-600 uppercase text-xs">
+                                <tr>
+                                    <th class="px-6 py-3">Guru</th>
+                                    <th class="px-6 py-3">Level / XP</th>
+                                    <th class="px-6 py-3">Stats</th>
+                                    <th class="px-6 py-3">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="teacher-list-body">
+                                <tr>
+                                    <td colspan="4" class="text-center p-8 text-gray-400">Memuat data...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Magic Controls for Teachers -->
+                    <div class="bg-white rounded-xl shadow-md p-6">
+                        <h3 class="font-bold text-gray-800 mb-4 flex items-center gap-2">
+                            <i data-lucide="wand-2" class="w-5 h-5 text-purple-600"></i>
+                            Magic Controls – Guru
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 mb-1">Pilih Guru</label>
+                                <select id="magic-teacher-select"
+                                    class="w-full p-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
+                                    <option value="">Pilih Guru...</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 mb-1">Stat</label>
+                                <select id="teacher-stat-type"
+                                    class="w-full p-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
+                                    <option value="xp">XP</option>
+                                    <option value="coin">Coin</option>
+                                    <option value="hp">HP</option>
+                                    <option value="mp">MP</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 mb-1">Nilai</label>
+                                <input type="number" id="teacher-stat-val" value="10"
+                                    class="w-full p-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
+                            </div>
+                            <div class="flex gap-2">
+                                <button id="teacher-add-stat"
+                                    class="flex-1 py-2 px-3 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm font-bold transition-colors">+
+                                    Tambah</button>
+                                <button id="teacher-sub-stat"
+                                    class="flex-1 py-2 px-3 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-bold transition-colors">-
+                                    Kurang</button>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div></div>
+            </div>
 
             <footer class="text-center py-4 mt-8">
                 <p class="text-xs text-black-400">Dibuat oleh © <a style="text-decoration:none"
@@ -2032,33 +2033,86 @@
 
     <div id="add-teacher-modal"
         class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm hidden opacity-0 transition-opacity duration-300">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
-                    <i data-lucide="user-plus" class="w-5 h-5 text-blue-600"></i>
-                    Tambah Guru Baru
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-4 p-6 max-h-[90vh] flex flex-col">
+            <div class="flex justify-between items-center mb-4 border-b pb-4">
+                <h3 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                    <i data-lucide="user-plus" class="w-6 h-6 text-blue-600"></i>
+                    <span id="teacher-modal-title">Tambah Guru Baru</span>
                 </h3>
                 <button id="close-add-teacher-modal" class="text-gray-400 hover:text-gray-600 transition-colors">
-                    <i data-lucide="x" class="w-5 h-5"></i>
+                    <i data-lucide="x" class="w-6 h-6"></i>
                 </button>
             </div>
-            <form id="add-teacher-form" class="space-y-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Nama Lengkap</label>
-                    <input type="text" id="teacher-name-input" required placeholder="Contoh: Dr. Ahmad"
-                        class="w-full p-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+
+            <form id="add-teacher-form" class="space-y-4 overflow-y-auto pr-2 custom-scrollbar">
+                <input type="hidden" id="teacher-id-input">
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Kolom Kiri: Info Dasar -->
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Nama Lengkap</label>
+                            <input type="text" id="teacher-name-input" required placeholder="Contoh: Dr. Ahmad"
+                                class="w-full p-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                            <input type="email" id="teacher-email-input" required placeholder="guru@smk.sch.id"
+                                class="w-full p-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                            <input type="password" id="teacher-password-input"
+                                placeholder="Min. 6 karakter (Kosongkan jika edit)"
+                                class="w-full p-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+
+                    <!-- Kolom Kanan: Foto -->
+                    <div class="space-y-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Foto Profil</label>
+                        <div
+                            class="flex flex-col items-center gap-3 p-4 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50">
+                            <img id="teacher-photo-preview" src="https://placehold.co/150x150/e2e8f0/3d4852?text=Foto"
+                                class="w-32 h-32 rounded-full object-cover border shadow-sm">
+                            <div class="flex gap-2 w-full justify-center">
+                                <label for="teacher-photo-file"
+                                    class="cursor-pointer bg-white border border-gray-300 text-gray-700 font-medium py-1.5 px-3 rounded text-xs hover:bg-gray-50 transition">
+                                    Upload
+                                    <input type="file" id="teacher-photo-file" accept="image/*" class="hidden">
+                                </label>
+                                <button type="button" id="teacher-photo-camera"
+                                    class="bg-blue-600 text-white font-medium py-1.5 px-3 rounded text-xs hover:bg-blue-700 transition flex items-center gap-1">
+                                    <i data-lucide="camera" class="w-3 h-3"></i> Kamera
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
+
+                <!-- Bagian Mata Pelajaran -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                    <input type="email" id="teacher-email-input" required placeholder="guru@smk.sch.id"
-                        class="w-full p-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="block text-sm font-medium text-gray-700">Mata Pelajaran & Kelas</label>
+                        <button type="button" id="add-subject-btn"
+                            class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded hover:bg-green-200 font-medium flex items-center gap-1">
+                            <i data-lucide="plus" class="w-3 h-3"></i> Tambah
+                        </button>
+                    </div>
+                    <div id="teacher-subjects-container" class="space-y-2 max-h-40 overflow-y-auto p-1">
+                        <!-- Dynamic Rows here -->
+                    </div>
                 </div>
+
+                <!-- Deskripsi -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
-                    <input type="password" id="teacher-password-input" required placeholder="Min. 6 karakter"
-                        class="w-full p-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Deskripsi Guru</label>
+                    <textarea id="teacher-description-input" rows="3"
+                        placeholder="Deskripsi singkat, motto, atau pesan untuk siswa..."
+                        class="w-full p-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
                 </div>
-                <div class="flex gap-3 pt-2">
+
+                <div class="flex gap-3 pt-4 border-t">
                     <button type="button" id="cancel-add-teacher-modal"
                         class="flex-1 py-2.5 border border-gray-300 rounded-lg text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors">
                         Batal
@@ -2076,6 +2130,26 @@
                     </button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Photo Capture Modal -->
+    <div id="photo-capture-modal"
+        class="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm hidden opacity-0 transition-opacity duration-300">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 p-4 flex flex-col items-center">
+            <h3 class="text-lg font-bold mb-4">Ambil Foto</h3>
+            <div class="relative w-full aspect-video bg-black rounded-lg overflow-hidden mb-4">
+                <video id="camera-preview" autoplay playsinline class="w-full h-full object-cover"></video>
+                <canvas id="camera-canvas" class="hidden"></canvas>
+            </div>
+            <div class="flex gap-4 w-full">
+                <button id="close-camera-modal"
+                    class="flex-1 py-2 bg-gray-200 text-gray-800 rounded-lg font-semibold hover:bg-gray-300">Batal</button>
+                <button id="capture-photo-btn"
+                    class="flex-1 py-2 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700">
+                    <i data-lucide="camera" class="w-4 h-4 inline mr-1"></i> Jepret
+                </button>
+            </div>
         </div>
     </div>
 
@@ -2109,60 +2183,7 @@
     <script type="module" src="script.js"></script>
     <script src="print-functionality.js"></script>
     <script src="excel-export.js"></script>
-    <!-- Add Teacher Modal -->
-    <div id="add-teacher-modal"
-        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden opacity-0 transition-opacity duration-300">
-        <div
-            class="bg-white/90 backdrop-blur-sm rounded-lg shadow-xl w-full max-w-md m-4 transform scale-95 transition-transform duration-300">
-            <div class="flex justify-between items-center p-6 border-b border-gray-200">
-                <h3 class="text-xl font-bold text-amber-800 flex items-center gap-2">
-                    <i data-lucide="graduation-cap" class="w-6 h-6"></i> Tambah Guru Baru
-                </h3>
-                <button type="button" class="text-gray-400 hover:text-gray-600 focus:outline-none"
-                    id="close-add-teacher-modal">
-                    <span class="sr-only">Close</span>
-                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
-            </div>
-            <form id="add-teacher-form" class="p-6 space-y-4">
-                <div>
-                    <label for="teacher-name-input" class="block text-sm font-medium text-gray-700 mb-1">Nama
-                        Lengkap</label>
-                    <input type="text" id="teacher-name-input" required
-                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
-                </div>
-                <div>
-                    <label for="teacher-email-input" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                    <input type="email" id="teacher-email-input" required
-                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
-                </div>
-                <div>
-                    <label for="teacher-password-input"
-                        class="block text-sm font-medium text-gray-700 mb-1">Password</label>
-                    <input type="password" id="teacher-password-input" required minlength="6"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
-                    <p class="text-xs text-gray-500 mt-1">Minimal 6 karakter.</p>
-                </div>
-                <div
-                    class="bg-blue-50 p-3 rounded-lg border border-blue-200 text-sm text-blue-800 flex items-start gap-2">
-                    <i data-lucide="info" class="w-4 h-4 mt-0.5 flex-shrink-0"></i>
-                    <p>Akun guru akan dibuat dengan Level 1 dan status Default.</p>
-                </div>
-                <div class="flex justify-end pt-4">
-                    <button type="submit" id="btn-save-teacher"
-                        class="bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 px-6 rounded-lg transition shadow-md flex items-center justify-center min-w-[120px]">
-                        <span id="btn-save-teacher-text">Simpan Guru</span>
-                        <div id="btn-save-teacher-loader"
-                            class="ml-2 hidden w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin">
-                        </div>
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
+
 
 </body>
 
