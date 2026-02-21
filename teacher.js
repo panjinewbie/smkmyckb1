@@ -818,6 +818,19 @@ const appVue = createApp({
         // --- Bounty Board Logic ---
         const bounties = ref([]);
         const submissions = ref([]);
+        const submissionFilter = reactive({
+            search: '',
+            status: 'all'
+        });
+        const printSettings = reactive({
+            showPhoto: true,
+            showName: true,
+            showClass: true,
+            showTitle: true,
+            showDate: true,
+            showLocation: true,
+            showDescription: true
+        });
         const bountyTab = ref('active');
         const isCreateBountyModalOpen = ref(false);
         const isSubmissionModalOpen = ref(false);
@@ -959,6 +972,17 @@ const appVue = createApp({
                             }
                         }
 
+                        // Try to join student class if missing
+                        if (!normalizedSubmission.studentClass) {
+                            // We can use the 'students' state if it has the student, 
+                            // but 'students' state only contains students for ONE selected class.
+                            // Better to fetch all students once or rely on submission data.
+                            // Let's assume for now submissions SHOULD have studentClass.
+                            // However, let's add a check against the local 'students' ref just in case.
+                            const student = students.value.find(st => st.uid === normalizedSubmission.studentUid);
+                            if (student) normalizedSubmission.studentClass = student.kelas || student.class;
+                        }
+
                         return normalizedSubmission;
                     });
                     submissions.value = arr.sort((a, b) => b.timestamp - a.timestamp);
@@ -970,6 +994,20 @@ const appVue = createApp({
 
         const pendingSubmissionsCount = computed(() => {
             return submissions.value.filter(s => s.status === 'pending').length;
+        });
+
+        const filteredSubmissions = computed(() => {
+            return submissions.value.filter(s => {
+                const searchLower = submissionFilter.search.toLowerCase();
+                const matchesSearch = !submissionFilter.search ||
+                    (s.studentName && s.studentName.toLowerCase().includes(searchLower)) ||
+                    (s.bountyTitle && s.bountyTitle.toLowerCase().includes(searchLower)) ||
+                    (s.studentClass && s.studentClass.toLowerCase().includes(searchLower));
+
+                const matchesStatus = submissionFilter.status === 'all' || s.status === submissionFilter.status;
+
+                return matchesSearch && matchesStatus;
+            });
         });
 
         const viewSubmissionImage = (submission) => {
@@ -1081,103 +1119,200 @@ const appVue = createApp({
             }
         };
 
+        const toBase64 = url => fetch(url)
+            .then(response => response.blob())
+            .then(blob => new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(blob);
+            }));
+
+        // Ganti fungsi exportToPDF di teacher.js
+
         const exportToPDF = (submission) => {
             if (!submission) return;
+
+            const printWindow = window.open('', '_blank');
+            if (!printWindow) {
+                alert("Popup terblokir! Harap izinkan popup untuk mencetak laporan.");
+                return;
+            }
+
+            const css = `
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+        body { font-family: 'Inter', sans-serif; padding: 20px; color: #1e293b; line-height: 1.5; }
+        .container { max-width: 800px; margin: 0 auto; border: 2px solid #f1f5f9; padding: 40px; border-radius: 24px; position: relative; }
+        .header { display: flex; justify-content: space-between; align-items: start; border-bottom: 2px solid #f1f5f9; padding-bottom: 30px; margin-bottom: 30px; }
+        .badge { display: flex; align-items: center; gap: 8px; color: #2563eb; font-size: 12px; font-weight: 800; text-transform: uppercase; margin-bottom: 10px; }
+        .student-photo { width: 100px; height: 100px; border-radius: 24px; object-fit: cover; border: 4px solid #f1f5f9; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+        .info-box { background: #f8fafc; padding: 15px; border-radius: 16px; border: 1px solid #f1f5f9; }
+        .label { font-size: 10px; font-weight: 800; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px; }
+        .value { font-weight: 700; font-size: 14px; }
+        .mission-box { background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); padding: 20px; border-radius: 20px; border: 1px solid #bfdbfe; margin-bottom: 20px; }
+        .proof-img { width: 80%; border-radius: 15px; margin-top: 10px; border: 1px solid #e2e8f0; }
+        .footer { margin-top: 30px; display: flex; justify-content: space-between; font-size: 11px; color: #94a3b8; }
+        .signature { text-align: center; width: 200px; }
+        @media print {
+            body { padding: 0; }
+            .container { border: none; }
+            .no-print { display: none; }
+        }
+    `;
+
+            const html = `
+    <html>
+        <head>
+            <title>Laporan_Misi_${submission.studentName}</title>
+            <style>${css}</style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <div>
+                        <div class="badge">Verified Submission</div>
+                        <h1 style="margin:0; font-size: 20px; font-weight: 900;">LAPORAN BUKTI MISI</h1>
+                        <p style="margin:5px 0; color: #64748b;">Bounty Board • SMKMYCKB Gamification</p>
+                    </div>
+                    ${printSettings.showPhoto ? `<img src="${submission.studentPhoto || `https://api.dicebear.com/7.x/avataaars/svg?seed=${submission.studentName}`}" class="student-photo">` : ''}
+                </div>
+
+                <div class="grid">
+                    ${printSettings.showName ? `<div class="info-box"><div class="label">Nama Siswa</div><div class="value">${submission.studentName}</div></div>` : ''}
+                    ${printSettings.showClass ? `<div class="info-box"><div class="label">Kelas</div><div class="value">${submission.studentClass}</div></div>` : ''}
+                </div>
+
+                ${printSettings.showTitle ? `<div class="mission-box"><div class="label" style="color:#3b82f6">Misi Yang Diselesaikan</div><div class="value" style="color:#1e40af; font-size: 14px;">${submission.bountyTitle}</div></div>` : ''}
+
+                <div class="grid">
+                    ${printSettings.showDate ? `<div><div class="label">Waktu Pengumpulan</div><div class="value">${submission.submitDate || ''} ${submission.submitTime || ''}</div></div>` : ''}
+                    ${printSettings.showLocation ? `<div><div class="label">Lokasi</div><div class="value" style="color: #2563eb;">${submission.locationText || 'Kordinat Terlampir'}</div></div>` : ''}
+                </div>
+
+                
+<div class="grid">
+                <div style="margin-top: 20px;">
+                    <div class="label">Foto Dokumentasi</div>
+                    <img src="${submission.photoURL}" class="proof-img">
+                </div>
+${printSettings.showDescription ? `
+                <div style="margin-top: 20px;">
+                    <div class="label">Deskripsi Siswa</div>
+                    <div style="padding: 15px; background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px; font-style: italic;">"${submission.description || '-'}"</div>
+                </div>` : ''}
+                </div>
+                <div class="footer">
+                    <div>
+                        <p>ID: ${submission.id.toUpperCase()}</p>
+                        <p>Dicetak pada: ${new Date().toLocaleString('id-ID')}</p>
+                    </div>
+                    <div class="signature">
+                        <p style="margin-bottom: 60px;">Guru Pembimbing</p>
+                        <p style="font-weight: 800; border-bottom: 1px solid #1e293b; display: inline-block; min-width: 150px;">${teacherData.name}</p>
+                    </div>
+                </div>
+            </div>
+            <script>
+                window.onload = () => {
+                    setTimeout(() => {
+                        window.print();
+                        // window.close(); // Aktifkan jika ingin tab otomatis tertutup setelah print
+                    }, 800);
+                };
+            <\/script>
+        </body>
+    </html>
+    `;
+
+            printWindow.document.write(html);
+            printWindow.document.close();
+        };
+
+        const openCreateBountyModal = () => {
+            isCreateBountyModalOpen.value = true;
+        };
+
+        const isPrintSettingsModalOpen = ref(false);
+        const openPrintSettings = (submission) => {
+            selectedSubmission.value = submission;
+            isPrintSettingsModalOpen.value = true;
+        };
+
+        const printFilteredSubmissions = () => {
+            if (filteredSubmissions.value.length === 0) {
+                alert("Tidak ada data untuk dicetak.");
+                return;
+            }
 
             const element = document.createElement('div');
             element.style.padding = '40px';
             element.style.backgroundColor = 'white';
             element.style.fontFamily = "'Inter', sans-serif";
 
-            // Build the PDF content
+            let tableRows = filteredSubmissions.value.map((s, idx) => `
+                <tr style="border-bottom: 1px solid #f1f5f9;">
+                    <td style="padding: 12px; font-size: 13px; color: #64748b;">${idx + 1}</td>
+                    <td style="padding: 12px; font-size: 13px; font-weight: 700; color: #1e293b;">${s.studentName}</td>
+                    <td style="padding: 12px; font-size: 13px; color: #64748b;">${s.studentClass || '-'}</td>
+                    <td style="padding: 12px; font-size: 13px; font-weight: 600; color: #2563eb;">${s.bountyTitle}</td>
+                    <td style="padding: 12px; font-size: 13px; color: #64748b;">${s.submitDate || ''}</td>
+                    <td style="padding: 12px; text-align: center;">
+                        <span style="padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; ${s.status === 'approved' ? 'background: #dcfce7; color: #166534;' :
+                    s.status === 'rejected' ? 'background: #fee2e2; color: #991b1b;' :
+                        'background: #fef9c3; color: #854d0e;'
+                }">
+                            ${s.status === 'approved' ? 'Disetujui' : s.status === 'rejected' ? 'Ditolak' : 'Menunggu'}
+                        </span>
+                    </td>
+                </tr>
+            `).join('');
+
             element.innerHTML = `
-                <div style="border: 1px solid #e2e8f0; padding: 30px; border-radius: 20px; background: white;">
-                    <div style="display: flex; justify-content: space-between; align-items: start; border-bottom: 2px solid #f1f5f9; padding-bottom: 20px; margin-bottom: 30px;">
-                        <div style="flex: 1;">
-                            <h1 style="font-size: 26px; font-weight: 800; color: #1e293b; margin: 0; letter-spacing: -0.5px;">LAPORAN BUKTI MISI</h1>
-                            <p style="font-size: 14px; color: #64748b; margin: 5px 0 0 0; font-weight: 500;">Bounty Board System - SMKMYCKB</p>
-                        </div>
-                        <div style="text-align: right;">
-                            <img src="${submission.studentPhoto || `https://api.dicebear.com/7.x/avataaars/svg?seed=${submission.studentName}`}" 
-                                 style="width: 80px; height: 80px; border-radius: 20px; border: 4px solid #f1f5f9; object-fit: cover; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);">
-                        </div>
-                    </div>
-
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 30px;">
-                        <div style="background: #f8fafc; padding: 15px; border-radius: 12px;">
-                            <label style="display: block; font-size: 10px; font-weight: 800; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.5px;">Nama Siswa</label>
-                            <p style="font-size: 16px; font-weight: 700; color: #0f172a; margin: 0;">${submission.studentName}</p>
-                        </div>
-                        <div style="background: #f8fafc; padding: 15px; border-radius: 12px;">
-                            <label style="display: block; font-size: 10px; font-weight: 800; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.5px;">Kelas</label>
-                            <p style="font-size: 16px; font-weight: 700; color: #0f172a; margin: 0;">${submission.studentClass}</p>
-                        </div>
-                    </div>
-
-                    <div style="background: #eff6ff; padding: 20px; border-radius: 12px; margin-bottom: 30px; border-left: 6px solid #3b82f6;">
-                        <label style="display: block; font-size: 10px; font-weight: 800; color: #3b82f6; text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.5px;">Judul Kegiatan / Misi</label>
-                        <p style="font-size: 20px; font-weight: 800; color: #1e40af; margin: 0; line-height: 1.2;">${submission.bountyTitle}</p>
-                    </div>
-
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 30px;">
+                <div style="padding: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 2px solid #f1f5f9; padding-bottom: 20px;">
                         <div>
-                            <label style="display: block; font-size: 10px; font-weight: 800; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.5px;">Waktu Pengumpulan</label>
-                            <p style="font-size: 14px; color: #334155; font-weight: 600; margin: 0;">${submission.submitDate || ''}, ${submission.submitTime || ''}</p>
-                            <p style="font-size: 12px; color: #94a3b8; margin: 2px 0 0 0;">${formatTime(submission.timestamp)}</p>
+                            <h1 style="font-size: 24px; font-weight: 900; color: #0f172a; margin: 0;">REKAPITULASI BUKTI MISI</h1>
+                            <p style="font-size: 14px; color: #64748b; margin: 5px 0 0 0;">Filter: ${submissionFilter.search || 'Semua'} | Status: ${submissionFilter.status}</p>
                         </div>
-                        <div>
-                            <label style="display: block; font-size: 10px; font-weight: 800; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.5px;">Kordinat Lokasi</label>
-                            <p style="font-size: 14px; color: #3b82f6; font-weight: 600; margin: 0;">${submission.locationText || '-'}</p>
-                            <a href="${submission.locationURL}" style="font-size: 11px; color: #2563eb; text-decoration: none; font-weight: 500;">Buka di Google Maps →</a>
+                        <div style="text-align: right; font-size: 12px; color: #94a3b8;">
+                            <p style="margin: 0; font-weight: 700;">${teacherData.name}</p>
+                            <p style="margin: 0;">${new Date().toLocaleDateString('id-ID', { dateStyle: 'long' })}</p>
                         </div>
                     </div>
 
-                    <div style="margin-bottom: 30px;">
-                        <label style="display: block; font-size: 10px; font-weight: 800; color: #94a3b8; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.5px;">Deskripsi Dari Siswa</label>
-                        <div style="background-color: #fffaf0; padding: 20px; border-radius: 12px; border: 1px dashed #fcd34d; font-style: italic; color: #451a03; line-height: 1.6; font-size: 14px;">
-                            "${submission.description}"
-                        </div>
-                    </div>
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="background: #f8fafc; border-bottom: 2px solid #e2e8f0;">
+                                <th style="padding: 12px; text-align: left; font-size: 11px; font-weight: 800; color: #94a3b8; text-transform: uppercase;">#</th>
+                                <th style="padding: 12px; text-align: left; font-size: 11px; font-weight: 800; color: #94a3b8; text-transform: uppercase;">Nama Siswa</th>
+                                <th style="padding: 12px; text-align: left; font-size: 11px; font-weight: 800; color: #94a3b8; text-transform: uppercase;">Kelas</th>
+                                <th style="padding: 12px; text-align: left; font-size: 11px; font-weight: 800; color: #94a3b8; text-transform: uppercase;">Judul Misi</th>
+                                <th style="padding: 12px; text-align: left; font-size: 11px; font-weight: 800; color: #94a3b8; text-transform: uppercase;">Tanggal</th>
+                                <th style="padding: 12px; text-align: center; font-size: 11px; font-weight: 800; color: #94a3b8; text-transform: uppercase;">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${tableRows}
+                        </tbody>
+                    </table>
 
-                    <div style="margin-top: 10px;">
-                        <label style="display: block; font-size: 10px; font-weight: 800; color: #94a3b8; text-transform: uppercase; margin-bottom: 12px; letter-spacing: 0.5px;">Foto Bukti Kegiatan</label>
-                        <div style="background: #0f172a; border-radius: 16px; padding: 10px; display: flex; justify-content: center; align-items: center;">
-                            <img src="${submission.photoURL}" style="max-width: 100%; border-radius: 8px; max-height: 500px; display: block;">
-                        </div>
-                    </div>
-
-                    <div style="margin-top: 50px; padding-top: 20px; border-top: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center;">
-                        <div style="font-size: 10px; color: #94a3b8;">
-                            Generated by SMKMYCKB Gamification System<br>
-                            ${new Date().toLocaleString('id-ID')}
-                        </div>
-                        <div style="text-align: center;">
-                            <div style="width: 120px; height: 1px; background: #e2e8f0; margin-bottom: 60px;"></div>
-                            <p style="font-size: 11px; font-weight: 700; color: #475569; margin: 0;">Petugas Verifikasi</p>
-                        </div>
+                    <div style="margin-top: 50px; text-align: right; color: #94a3b8; font-size: 11px;">
+                        <p>Total Submission: ${filteredSubmissions.value.length}</p>
+                        <p>Dicetak secara otomatis melalui Sistem Gamifikasi SMKMYCKB</p>
                     </div>
                 </div>
             `;
 
             const opt = {
-                margin: 0,
-                filename: `Laporan_Misi_${submission.studentName.replace(/\s+/g, '_')}.pdf`,
-                image: { type: 'jpeg', quality: 1.0 },
-                html2canvas: { scale: 2, useCORS: true, logging: false, letterRendering: true },
+                margin: 10,
+                filename: `Rekap_Bounty_${new Date().getTime()}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true },
                 jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
             };
 
-            // Using try-catch because html2pdf can fail on image loading
-            try {
-                html2pdf().from(element).set(opt).save();
-            } catch (err) {
-                console.error("PDF Export Error:", err);
-                alert("Gagal mencetak PDF. Pastikan koneksi internet stabil.");
-            }
-        };
-
-        const openCreateBountyModal = () => {
-            isCreateBountyModalOpen.value = true;
+            html2pdf().from(element).set(opt).save();
         };
 
         return {
@@ -1209,7 +1344,9 @@ const appVue = createApp({
             createBounty, deleteBounty, pendingSubmissionsCount,
             viewSubmissionImage, isSubmissionModalOpen, selectedSubmission,
             approveSubmission, rejectSubmission, openCreateBountyModal,
-            handleBountyImageUpload, exportToPDF
+            handleBountyImageUpload, exportToPDF,
+            submissionFilter, filteredSubmissions, printSettings,
+            isPrintSettingsModalOpen, openPrintSettings, printFilteredSubmissions
         };
     }
 });
