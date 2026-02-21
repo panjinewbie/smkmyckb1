@@ -4287,7 +4287,7 @@ async function setupTeachersPage() {
             // Re-assign shared modal buttons to teacher-specific handlers
             closeCameraBtn.onclick = closeCamera;
             captureBtn.onclick = () => {
-                if (!cameraStream) return;
+                if (!activeCameraStream) return;
                 const context = canvasEl.getContext('2d');
                 canvasEl.width = videoEl.videoWidth;
                 canvasEl.height = videoEl.videoHeight;
@@ -4299,26 +4299,26 @@ async function setupTeachersPage() {
 
             cameraModal.classList.remove('hidden');
             setTimeout(() => cameraModal.classList.remove('opacity-0'), 10);
-            try {
-                cameraStream = await navigator.mediaDevices.getUserMedia({ video: true });
-                videoEl.srcObject = cameraStream;
-            } catch (err) {
-                console.error("Gagal akses kamera:", err);
+
+            const success = await startCameraById(videoEl);
+            if (!success) {
                 showToast("Gagal mengakses kamera.", true);
                 closeCamera();
+            } else {
+                await setupCameraSwitching(videoEl);
             }
+
         };
     }
 
 
+
     function closeCamera() {
-        if (cameraStream) {
-            cameraStream.getTracks().forEach(track => track.stop());
-            cameraStream = null;
-        }
+        stopActiveCamera();
         cameraModal.classList.add('opacity-0');
         setTimeout(() => cameraModal.classList.add('hidden'), 300);
     }
+
 
     // --- Form Submit Handler ---
     if (teacherForm) {
@@ -4468,6 +4468,66 @@ function setupAdminDashboard() {
     let currentBattleState = {}; // Untuk menyimpan state battle (ID siswa, monster, dll)
     let html5QrCode;
 
+    // --- SHARED CAMERA STATE ---
+    let videoDevices = [];
+    let currentCameraIndex = 0;
+    let activeCameraStream = null;
+
+    const stopActiveCamera = () => {
+        if (activeCameraStream) {
+            activeCameraStream.getTracks().forEach(track => track.stop());
+            activeCameraStream = null;
+        }
+    };
+
+    const startCameraById = async (videoElement, deviceId) => {
+        stopActiveCamera();
+        const constraints = {
+            video: deviceId ? { deviceId: { exact: deviceId } } : { facingMode: "user" }
+        };
+        try {
+            activeCameraStream = await navigator.mediaDevices.getUserMedia(constraints);
+            videoElement.srcObject = activeCameraStream;
+            return true;
+        } catch (err) {
+            console.error("Gagal start camera:", err);
+            // Fallback jika exact device gagal
+            if (deviceId) {
+                try {
+                    activeCameraStream = await navigator.mediaDevices.getUserMedia({ video: true });
+                    videoElement.srcObject = activeCameraStream;
+                    return true;
+                } catch (e) {
+                    return false;
+                }
+            }
+            return false;
+        }
+    };
+
+    const setupCameraSwitching = async (videoElement) => {
+        const switchBtn = document.getElementById('switch-camera-btn');
+        try {
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            videoDevices = devices.filter(device => device.kind === 'videoinput');
+
+            if (videoDevices.length > 1) {
+                switchBtn.classList.remove('hidden');
+                currentCameraIndex = 0;
+                switchBtn.onclick = async () => {
+                    currentCameraIndex = (currentCameraIndex + 1) % videoDevices.length;
+                    await startCameraById(videoElement, videoDevices[currentCameraIndex].deviceId);
+                };
+            } else {
+                switchBtn.classList.add('hidden');
+            }
+        } catch (err) {
+            console.warn("Gagal enumerasi kamera:", err);
+            switchBtn.classList.add('hidden');
+        }
+    };
+
+
     // --- FUNGSI MODAL SISWA (DENGAN SUARA) ---
     const openModal = (isEdit = false) => {
         audioPlayer.openModal();
@@ -4574,20 +4634,18 @@ function setupAdminDashboard() {
     let studentCameraStream = null;
 
     const closeStudentCamera = () => {
-        if (studentCameraStream) {
-            studentCameraStream.getTracks().forEach(track => track.stop());
-            studentCameraStream = null;
-        }
+        stopActiveCamera();
         photoCaptureModal.classList.add('opacity-0');
         setTimeout(() => photoCaptureModal.classList.add('hidden'), 300);
     };
+
 
     if (studentOpenCameraBtn) {
         studentOpenCameraBtn.onclick = async () => {
             // Re-assign shared modal buttons to student-specific handlers
             closeCameraModalBtn.onclick = closeStudentCamera;
             capturePhotoBtn.onclick = () => {
-                if (!studentCameraStream) return;
+                if (!activeCameraStream) return;
                 const context = cameraCanvas.getContext('2d');
                 cameraCanvas.width = cameraPreview.videoWidth;
                 cameraCanvas.height = cameraPreview.videoHeight;
@@ -4596,25 +4654,25 @@ function setupAdminDashboard() {
                 // Convert to data URL
                 const dataUrl = cameraCanvas.toDataURL('image/jpeg', 0.8);
                 imagePreview.src = dataUrl;
-                imagePreviewContainer.classList.remove('hidden');
+                // imagePreviewContainer.classList.remove('hidden'); // Removed as per new layout
 
                 closeStudentCamera();
             };
 
             photoCaptureModal.classList.remove('hidden');
             setTimeout(() => photoCaptureModal.classList.remove('opacity-0'), 10);
-            try {
-                studentCameraStream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: "user" } // Selfie camera usually better for profile
-                });
-                cameraPreview.srcObject = studentCameraStream;
-            } catch (err) {
-                console.error("Gagal akses kamera:", err);
+
+            const success = await startCameraById(cameraPreview);
+            if (!success) {
                 showToast("Gagal mengakses kamera.", true);
                 closeStudentCamera();
+            } else {
+                await setupCameraSwitching(cameraPreview);
             }
+
         };
     }
+
 
     adminNavLinks.addEventListener('click', (e) => {
         e.preventDefault();
