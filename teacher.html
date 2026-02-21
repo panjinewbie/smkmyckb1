@@ -13,7 +13,7 @@
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.lordicon.com/lordicon.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-
+    <link rel="stylesheet" href="">
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -67,12 +67,13 @@
     </style>
 </head>
 
-<body class="bg-slate-50 text-slate-800 h-screen flex overflow-hidden">
+<body class="bg-[url(asset/gambar/wanita.png)] bg-size-[auto_-50px] bg-left bg-no-repeat">
 
-    <div id="app" class="flex w-full h-full" v-cloak>
+    <div id="app" class=" flex w-full h-full" v-cloak>
 
         <!-- Sidebar -->
-        <aside class="w-64 bg-white border-r border-slate-200 flex flex-col z-20 transition-all duration-300"
+        <aside
+            class="w-64 bg-white/90 backdrop-blur-sm border-r border-slate-200 flex flex-col z-20 transition-all duration-300"
             :class="{'hidden': isMobile && !isSidebarOpen, 'fixed inset-y-0 left-0': isMobile}">
 
             <!-- Logo Area -->
@@ -92,7 +93,7 @@
                     <img :src="teacherData.photoBase64 || `https://api.dicebear.com/7.x/avataaars/svg?seed=${teacherData.avatar_seed || 'Teacher'}`"
                         class="w-full h-full rounded-full object-cover border-4 border-slate-50 shadow-sm group-hover:border-blue-100 transition-all">
                     <div
-                        class="absolute bottom-0 right-0 bg-white rounded-full p-1.5 shadow-sm border border-slate-100 text-slate-400 group-hover:text-blue-500">
+                        class="absolute bottom-0 right-0 bg-white/90 backdrop-blur-sm rounded-full p-1.5 shadow-sm border border-slate-100 text-slate-400 group-hover:text-blue-500">
                         <i class="fas fa-pen text-xs"></i>
                     </div>
                 </div>
@@ -175,7 +176,7 @@
 
             <!-- Desktop Header -->
             <header
-                class="h-16 bg-white/80 backdrop-blur-md border-b border-slate-200 hidden md:flex items-center justify-between px-8 sticky top-0 z-10">
+                class="h-16 bg-white/90 backdrop-blur-sm/80 backdrop-blur-md border-b border-slate-200 hidden md:flex items-center justify-between px-8 sticky top-0 z-10">
                 <div class="flex items-center gap-4">
                     <h2 class="text-xl font-bold text-slate-800 tracking-tight">DREAMY <span
                             class="text-blue-600">Teacher</span></h2>
@@ -204,7 +205,7 @@
                         </button>
                         <!-- Dropdown (Simple/Placeholder) -->
                         <div
-                            class="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-slate-100 p-4 hidden group-hover:block transition-all transform origin-top-right">
+                            class="absolute right-0 mt-2 w-80 bg-white/90 backdrop-blur-sm rounded-xl shadow-lg border border-slate-100 p-4 hidden group-hover:block transition-all transform origin-top-right">
                             <h4 class="font-bold text-slate-800 mb-3 text-sm">Notifikasi</h4>
                             <div class="text-center py-8 text-slate-400 text-xs">
                                 <i class="fas fa-bell-slash text-2xl mb-2 opacity-50"></i>
@@ -217,7 +218,7 @@
 
             <!-- Mobile Header -->
             <header
-                class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:hidden flex-shrink-0">
+                class="h-16 bg-white/90 backdrop-blur-sm border-b border-slate-200 flex items-center justify-between px-4 md:hidden flex-shrink-0">
                 <div class="font-bold text-slate-800">SMKMYCKB</div>
                 <button @click="isSidebarOpen = true" class="text-slate-500 p-2">
                     <i class="fas fa-bars"></i>
@@ -234,11 +235,14 @@
                         <!-- DASHBOARD VIEW -->
                         <div v-if="currentTab === 'dashboard'" key="dashboard" class="space-y-6">
                             <!-- Header & Greetings -->
-                            <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 mb-8">
+                            <div
+                                class="bg-white/90 backdrop-blur-sm p-6 rounded-2xl shadow-sm border border-slate-100 flex justify-between items-center">
                                 <div>
                                     <h2 class="text-2xl font-bold text-slate-800">Wilujeng Enjing, <span
                                             class="text-blue-600">{{ firstName }}</span>! 👋</h2>
-                                    <p class="text-slate-500 text-sm mt-1">Siap mencerdaskan kehidupan bangsa hari ini?
+                                    <p class=" text-orange-500 bg-clip-text text-sm mt-1">Siap
+                                        mencerdaskan
+                                        kehidupan bangsa hari ini?
                                     </p>
                                 </div>
                                 <div class="text-right hidden md:block">
@@ -256,7 +260,7 @@
                                 <stat-card label="Experience" icon="star" color="yellow" :value="teacherData.xp"
                                     :max="teacherData.max_xp" unit="XP"></stat-card>
                                 <div
-                                    class="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex items-center justify-between">
+                                    class="bg-white/90 backdrop-blur-sm p-4 rounded-xl shadow-sm border border-slate-100 flex items-center justify-between">
                                     <div>
                                         <p class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Wealth
                                         </p>
@@ -273,7 +277,7 @@
                             <!-- Activity Cards -->
                             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                                 <!-- Placeholders for now -->
-                                <div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between"
+                                <div class="bg-white/90 backdrop-blur-sm p-5 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between"
                                     v-for="stat in quickStats" :key="stat.label">
                                     <div>
                                         <p class="text-xs text-slate-500 mb-1">{{ stat.label }}</p>
@@ -294,13 +298,17 @@
                                 <div class="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center">
                                     <i class="fas fa-wand-magic-sparkles text-purple-600 text-lg"></i>
                                 </div>
-                                <div>
-                                    <h2 class="text-2xl font-bold text-slate-800">Grimoire</h2>
-                                    <p class="text-xs text-slate-500">Mantra dan sihir yang kamu kuasai</p>
+                                <div
+                                    class="bg-white/90 backdrop-blur-sm p-6 rounded-2xl shadow-sm border border-slate-100 flex justify-between items-center">
+                                    <div>
+                                        <h2 class="text-2xl font-bold text-slate-800">Grimoire</h2>
+                                        <p class="text-xs text-slate-500">Mantra dan sihir yang kamu kuasai</p>
+                                    </div>
                                 </div>
                             </div>
 
-                            <div class="bg-white p-6 rounded-2xl shadow-sm border border-purple-100">
+                            <div
+                                class="bg-white/90 backdrop-blur-sm p-6 rounded-2xl shadow-sm border border-purple-100">
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <spell-card name="Silence Detection" desc="Cost: 20 MP • Lvl 5" color="purple"
                                         :locked="teacherData.level < 5" @cast="castSpell('noise')">
@@ -311,9 +319,10 @@
 
                         <!-- THE DAILY GRIND VIEW -->
                         <div v-if="currentTab === 'grind'" key="grind" class="space-y-6">
-                            <h2 class="text-2xl font-bold text-slate-800 mb-6">Jurnal Refleksi Guru</h2>
+                            <div class="bg-white/90 backdrop-blur-sm p-6 rounded-2xl shadow-sm border border-slate-200">
+                                <h2 class="text-2xl font-bold text-slate-800 mb-6">Jurnal Refleksi Guru</h2>
 
-                            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                                     <div>
                                         <label class="block text-xs font-bold text-slate-500 mb-1">Tanggal</label>
@@ -351,7 +360,7 @@
                                                 <input type="radio" v-model="journalForm.feeling" value="Senang"
                                                     class="hidden peer">
                                                 <div
-                                                    class="px-3 py-2 bg-white border border-slate-200 rounded-lg peer-checked:bg-green-100 peer-checked:border-green-400 peer-checked:text-green-700 flex items-center gap-2 hover:bg-slate-50">
+                                                    class="px-3 py-2 bg-white/90 backdrop-blur-sm border border-slate-200 rounded-lg peer-checked:bg-green-100 peer-checked:border-green-400 peer-checked:text-green-700 flex items-center gap-2 hover:bg-slate-50">
                                                     <i class="fas fa-smile text-yellow-500"></i> <span
                                                         class="text-sm">Senang</span>
                                                 </div>
@@ -360,7 +369,7 @@
                                                 <input type="radio" v-model="journalForm.feeling" value="Biasa"
                                                     class="hidden peer">
                                                 <div
-                                                    class="px-3 py-2 bg-white border border-slate-200 rounded-lg peer-checked:bg-blue-100 peer-checked:border-blue-400 peer-checked:text-blue-700 flex items-center gap-2 hover:bg-slate-50">
+                                                    class="px-3 py-2 bg-white/90 backdrop-blur-sm border border-slate-200 rounded-lg peer-checked:bg-blue-100 peer-checked:border-blue-400 peer-checked:text-blue-700 flex items-center gap-2 hover:bg-slate-50">
                                                     <i class="fas fa-meh text-blue-500"></i> <span
                                                         class="text-sm">Biasa</span>
                                                 </div>
@@ -369,7 +378,7 @@
                                                 <input type="radio" v-model="journalForm.feeling" value="Sedih"
                                                     class="hidden peer">
                                                 <div
-                                                    class="px-3 py-2 bg-white border border-slate-200 rounded-lg peer-checked:bg-red-100 peer-checked:border-red-400 peer-checked:text-red-700 flex items-center gap-2 hover:bg-slate-50">
+                                                    class="px-3 py-2 bg-white/90 backdrop-blur-sm border border-slate-200 rounded-lg peer-checked:bg-red-100 peer-checked:border-red-400 peer-checked:text-red-700 flex items-center gap-2 hover:bg-slate-50">
                                                     <i class="fas fa-frown text-red-500"></i> <span
                                                         class="text-sm">Sedih</span>
                                                 </div>
@@ -384,7 +393,7 @@
                                                 <input type="radio" v-model="journalForm.weather" value="Cerah"
                                                     class="hidden peer">
                                                 <div
-                                                    class="px-3 py-2 bg-white border border-slate-200 rounded-lg peer-checked:bg-yellow-100 peer-checked:border-yellow-400 peer-checked:text-yellow-700 flex items-center gap-2 hover:bg-slate-50">
+                                                    class="px-3 py-2 bg-white/90 backdrop-blur-sm border border-slate-200 rounded-lg peer-checked:bg-yellow-100 peer-checked:border-yellow-400 peer-checked:text-yellow-700 flex items-center gap-2 hover:bg-slate-50">
                                                     <i class="fas fa-sun text-orange-500"></i> <span
                                                         class="text-sm">Cerah</span>
                                                 </div>
@@ -393,7 +402,7 @@
                                                 <input type="radio" v-model="journalForm.weather" value="Hujan"
                                                     class="hidden peer">
                                                 <div
-                                                    class="px-3 py-2 bg-white border border-slate-200 rounded-lg peer-checked:bg-slate-200 peer-checked:border-slate-400 peer-checked:text-slate-700 flex items-center gap-2 hover:bg-slate-50">
+                                                    class="px-3 py-2 bg-white/90 backdrop-blur-sm border border-slate-200 rounded-lg peer-checked:bg-slate-200 peer-checked:border-slate-400 peer-checked:text-slate-700 flex items-center gap-2 hover:bg-slate-50">
                                                     <i class="fas fa-cloud-showers-heavy text-slate-500"></i> <span
                                                         class="text-sm">Hujan</span>
                                                 </div>
@@ -441,7 +450,7 @@
                             </div>
 
                             <!-- Journal History List -->
-                            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                            <div class="bg-white/90 backdrop-blur-sm p-6 rounded-2xl shadow-sm border border-slate-200">
                                 <h3 class="font-bold text-lg text-slate-800 mb-4">Riwayat Jurnal</h3>
 
                                 <!-- Filters -->
@@ -498,7 +507,7 @@
                                             <span class="text-xs text-slate-400">• {{ j.date }} ({{ j.day }})</span>
                                             <div class="flex gap-2 ml-auto mr-8">
                                                 <span v-if="j.feeling"
-                                                    class="text-xs px-2 py-0.5 rounded bg-white border border-slate-200"
+                                                    class="text-xs px-2 py-0.5 rounded bg-white/90 backdrop-blur-sm border border-slate-200"
                                                     :title="j.feeling">
                                                     <i v-if="j.feeling === 'Senang'"
                                                         class="fas fa-smile text-green-500"></i>
@@ -509,7 +518,7 @@
                                                     {{ j.feeling }}
                                                 </span>
                                                 <span v-if="j.weather"
-                                                    class="text-xs px-2 py-0.5 rounded bg-white border border-slate-200"
+                                                    class="text-xs px-2 py-0.5 rounded bg-white/90 backdrop-blur-sm border border-slate-200"
                                                     :title="j.weather">
                                                     <i v-if="j.weather === 'Cerah'"
                                                         class="fas fa-sun text-orange-500"></i>
@@ -539,7 +548,7 @@
                         <!-- ATTENDANCE VIEW -->
                         <div v-if="currentTab === 'absensi'" key="absensi" class="space-y-6">
                             <div
-                                class="flex flex-col md:flex-row justify-between items-center gap-4 bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+                                class="flex flex-col md:flex-row justify-between items-center gap-4 bg-white/90 backdrop-blur-sm p-4 rounded-xl shadow-sm border border-slate-100">
                                 <div>
                                     <h2 class="text-xl font-bold text-slate-800">Absensi Siswa</h2>
                                     <p class="text-xs text-slate-500">Catat kehadiran dan berikan reward/punishment.</p>
@@ -556,7 +565,8 @@
                             </div>
 
                             <!-- Attendance Table -->
-                            <div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+                            <div
+                                class="bg-white/90 backdrop-blur-sm rounded-xl shadow-sm border border-slate-100 overflow-hidden">
                                 <div v-if="loadingStudents" class="p-8 text-center text-slate-500">Loading data...</div>
                                 <div v-else-if="students.length === 0" class="p-8 text-center text-slate-400 italic">
                                     Pilih kelas untuk memuat data.</div>
@@ -579,7 +589,7 @@
                                                 <div class="inline-flex bg-slate-100 rounded-lg p-1">
                                                     <button v-for="status in ['H', 'S', 'I', 'A']" :key="status"
                                                         @click="updateStatus(student.uid, status)"
-                                                        :class="{'bg-white shadow-sm font-bold': attendanceUpdates[student.uid]?.status === status,
+                                                        :class="{'bg-white/90 backdrop-blur-sm shadow-sm font-bold': attendanceUpdates[student.uid]?.status === status,
                                                                       'text-green-600': attendanceUpdates[student.uid]?.status === 'H' && status === 'H',
                                                                       'text-red-500': attendanceUpdates[student.uid]?.status === 'A' && status === 'A',
                                                                       'text-slate-400': attendanceUpdates[student.uid]?.status !== status}"
@@ -615,7 +625,7 @@
 
                             <!-- Header -->
                             <div
-                                class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex justify-between items-center">
+                                class="bg-white/90 backdrop-blur-sm p-6 rounded-2xl shadow-sm border border-slate-100 flex justify-between items-center">
                                 <div>
                                     <h2 class="text-xl font-bold text-slate-800">Tas & Skill Guru</h2>
                                     <p class="text-xs text-slate-500">Kelola item, efek aktif, dan gunakan skill mu.</p>
@@ -633,7 +643,8 @@
                             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                                 <!-- Active Effects (Left Col) -->
                                 <div class="lg:col-span-1 space-y-6">
-                                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 h-full">
+                                    <div
+                                        class="bg-white/90 backdrop-blur-sm p-6 rounded-2xl shadow-sm border border-slate-100 h-full">
                                         <h3 class="font-bold text-md text-slate-800 mb-4 flex items-center gap-2">
                                             <i class="fas fa-magic text-purple-500"></i> Status Efek Aktif
                                         </h3>
@@ -644,7 +655,7 @@
                                         <div v-else class="space-y-3">
                                             <div v-for="(effect, index) in activeEffects" :key="index"
                                                 class="p-3 bg-purple-50 border border-purple-100 rounded-lg flex items-center gap-3">
-                                                <div class="bg-white p-2 rounded-full shadow-sm">
+                                                <div class="bg-white/90 backdrop-blur-sm p-2 rounded-full shadow-sm">
                                                     <img :src="effect.icon || 'https://via.placeholder.com/32'"
                                                         class="w-8 h-8 object-contain">
                                                 </div>
@@ -662,14 +673,15 @@
                                 <div class="lg:col-span-2 space-y-6">
 
                                     <!-- Skills Section -->
-                                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                                    <div
+                                        class="bg-white/90 backdrop-blur-sm p-6 rounded-2xl shadow-sm border border-slate-100">
                                         <h3 class="font-bold text-md text-slate-800 mb-4 flex items-center gap-2">
                                             <i class="fas fa-meteor text-orange-500"></i> Skill Guru
                                         </h3>
                                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <div v-for="skill in skills" :key="skill.id"
                                                 class="relative overflow-hidden p-4 rounded-xl border transition-all"
-                                                :class="skill.locked ? 'bg-slate-50 border-slate-200' : 'bg-white border-slate-200 hover:border-blue-300 hover:shadow-md'">
+                                                :class="skill.locked ? 'bg-slate-50 border-slate-200' : 'bg-white/90 backdrop-blur-sm border-slate-200 hover:border-blue-300 hover:shadow-md'">
 
                                                 <div class="flex justify-between items-start z-10 relative">
                                                     <div class="flex items-center gap-3">
@@ -703,7 +715,8 @@
                                     </div>
 
                                     <!-- Inventory Section -->
-                                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                                    <div
+                                        class="bg-white/90 backdrop-blur-sm p-6 rounded-2xl shadow-sm border border-slate-100">
                                         <h3 class="font-bold text-md text-slate-800 mb-4 flex items-center gap-2">
                                             <i class="fas fa-briefcase text-amber-600"></i> Tas Baramg
                                         </h3>
@@ -739,7 +752,7 @@
                         <div v-if="currentTab === 'shop'" key="shop" class="space-y-6">
                             <!-- Shop Header -->
                             <div
-                                class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex justify-between items-center">
+                                class="bg-white/90 backdrop-blur-sm p-6 rounded-2xl shadow-sm border border-slate-100 flex justify-between items-center">
                                 <div>
                                     <h2 class="text-xl font-bold text-slate-800">Toko Item</h2>
                                     <p class="text-xs text-slate-500">Beli item untuk membantu siswa atau diri sendiri.
@@ -756,7 +769,8 @@
                             </div>
 
                             <!-- Shop Grid -->
-                            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 h-full">
+                            <div
+                                class="bg-white/90 backdrop-blur-sm p-6 rounded-2xl shadow-sm border border-slate-100 h-full">
                                 <div v-if="shopItems.length === 0"
                                     class="flex flex-col items-center justify-center py-10 text-center">
                                     <i class="fas fa-store-slash text-4xl text-slate-300 mb-2"></i>
@@ -765,7 +779,7 @@
 
                                 <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                     <div v-for="item in shopItems" :key="item.id"
-                                        class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-md transition-all flex flex-col group relative">
+                                        class="bg-white/90 backdrop-blur-sm rounded-xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-md transition-all flex flex-col group relative">
 
                                         <!-- Item Image -->
                                         <div class="h-40 bg-slate-50 relative overflow-hidden">
@@ -778,7 +792,7 @@
                                                     HABIS</span>
                                             </div>
                                             <div
-                                                class="absolute top-2 right-2 bg-white/90 backdrop-blur-sm text-xs px-2 py-1 rounded shadow-sm text-slate-500 font-medium">
+                                                class="absolute top-2 right-2 bg-white/90 backdrop-blur-sm/90 backdrop-blur-sm text-xs px-2 py-1 rounded shadow-sm text-slate-500 font-medium">
                                                 Stok: {{ item.stock || 0 }}
                                             </div>
                                         </div>
@@ -818,7 +832,7 @@
 
                         <!-- QUIZ (QUEST) PAGE (Formerly Jadwal) -->
                         <div v-if="currentTab === 'jadwal'" key="bounty"
-                            class="flex flex-col h-full rounded-2xl bg-white p-6 shadow-sm border border-slate-100">
+                            class="flex flex-col h-full rounded-2xl bg-white/90 backdrop-blur-sm p-6 shadow-sm border border-slate-100">
                             <div class="flex justify-between items-center mb-6">
                                 <div>
                                     <h2 class="text-xl font-bold text-slate-800">Papan Misi (Bounty Board)</h2>
@@ -855,7 +869,7 @@
                                     <p>Belum ada misi yang dibuat.</p>
                                 </div>
                                 <div v-for="bounty in bounties" :key="bounty.id"
-                                    class="bg-white border border-slate-200 rounded-xl p-5 hover:shadow-md transition-shadow relative overflow-hidden group">
+                                    class="bg-white/90 backdrop-blur-sm border border-slate-200 rounded-xl p-5 hover:shadow-md transition-shadow relative overflow-hidden group">
                                     <div
                                         class="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-blue-500/10 to-transparent rounded-bl-3xl -mr-4 -mt-4">
                                     </div>
@@ -930,7 +944,7 @@
                                 </div>
                                 <div class="grid grid-cols-1 gap-4">
                                     <div v-for="submission in filteredSubmissions" :key="submission.id"
-                                        class="bg-white border border-slate-200 rounded-xl p-4 flex flex-col md:flex-row gap-4 items-start md:items-center">
+                                        class="bg-white/90 backdrop-blur-sm border border-slate-200 rounded-xl p-4 flex flex-col md:flex-row gap-4 items-start md:items-center">
                                         <div class="w-full md:w-32 h-32 bg-slate-100 rounded-lg overflow-hidden flex-shrink-0 cursor-pointer"
                                             @click="viewSubmissionImage(submission)">
                                             <img :src="submission.photoURL" class="w-full h-full object-cover">
@@ -1019,7 +1033,8 @@
         <transition name="fade">
             <div v-if="isSkillModalOpen"
                 class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-                <div class="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden transform transition-all">
+                <div
+                    class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl w-full max-w-md overflow-hidden transform transition-all">
                     <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
                         <h3 class="font-bold text-lg text-slate-800">
                             Gunakan Skill: <span :class="`text-${selectedSkill?.color}-600`">{{ selectedSkill?.name
@@ -1063,11 +1078,11 @@
             <div v-if="isTeacherChatOpen"
                 class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
                 <div
-                    class="bg-white rounded-2xl shadow-xl w-full max-w-4xl h-[80vh] flex overflow-hidden border border-slate-200">
+                    class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl w-full max-w-4xl h-[80vh] flex overflow-hidden border border-slate-200">
 
                     <!-- Sidebar (Recipients) -->
                     <div class="w-1/3 border-r border-slate-100 flex flex-col bg-slate-50">
-                        <div class="p-4 border-b border-slate-100 bg-white">
+                        <div class="p-4 border-b border-slate-100 bg-white/90 backdrop-blur-sm">
                             <h3 class="font-bold text-slate-800 mb-2">Pigeon Post</h3>
                             <input v-model="chatSearchQuery" type="text" placeholder="Cari Siswa..."
                                 class="w-full px-3 py-2 bg-slate-100 border-none rounded-lg text-sm focus:ring-2 focus:ring-blue-100 transition-all">
@@ -1080,8 +1095,8 @@
                             </div>
                             <div v-for="recipient in filteredChatRecipients" :key="recipient.uid"
                                 @click="selectChatRecipient(recipient)"
-                                class="p-3 border-b border-slate-100 cursor-pointer hover:bg-white transition-colors flex items-center gap-3 relative"
-                                :class="currentChatRecipient?.uid === recipient.uid ? 'bg-white border-l-4 border-l-blue-500 shadow-sm' : ''">
+                                class="p-3 border-b border-slate-100 cursor-pointer hover:bg-white/90 backdrop-blur-sm transition-colors flex items-center gap-3 relative"
+                                :class="currentChatRecipient?.uid === recipient.uid ? 'bg-white/90 backdrop-blur-sm border-l-4 border-l-blue-500 shadow-sm' : ''">
 
                                 <div class="relative">
                                     <img :src="recipient.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${recipient.name}`"
@@ -1108,7 +1123,7 @@
                     </div>
 
                     <!-- Chat Area -->
-                    <div class="flex-1 flex flex-col bg-white relative">
+                    <div class="flex-1 flex flex-col bg-white/90 backdrop-blur-sm relative">
                         <!-- Header -->
                         <div class="p-4 border-b border-slate-100 flex justify-between items-center shadow-sm z-10">
                             <div v-if="currentChatRecipient" class="flex items-center gap-3">
@@ -1144,7 +1159,7 @@
                                     :class="msg.senderId === user.uid ? 'ml-auto items-end' : 'items-start'">
 
                                     <div class="p-3 rounded-2xl text-sm relative group shadow-sm"
-                                        :class="msg.senderId === user.uid ? 'bg-blue-600 text-white rounded-br-none' : 'bg-white text-slate-700 border border-slate-100 rounded-bl-none'">
+                                        :class="msg.senderId === user.uid ? 'bg-blue-600 text-white rounded-br-none' : 'bg-white/90 backdrop-blur-sm text-slate-700 border border-slate-100 rounded-bl-none'">
                                         {{ msg.text }}
                                         <div class="text-[9px] mt-1 opacity-70 flex items-center justify-end gap-1">
                                             {{ formatTime(msg.timestamp) }}
@@ -1158,7 +1173,7 @@
                         </div>
 
                         <!-- Input -->
-                        <div class="p-4 border-t border-slate-100 bg-white">
+                        <div class="p-4 border-t border-slate-100 bg-white/90 backdrop-blur-sm">
                             <form @submit.prevent="sendChatMessage" class="flex gap-2">
                                 <input v-model="chatInput" type="text" placeholder="Tulis pesan..."
                                     :disabled="!currentChatRecipient"
@@ -1179,7 +1194,8 @@
         <transition name="fade">
             <div v-if="isProfileModalOpen"
                 class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-                <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden transform transition-all">
+                <div
+                    class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden transform transition-all">
                     <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
                         <h3 class="font-bold text-lg text-slate-800">Edit Profil Guru</h3>
                         <button @click="closeProfileModal" class="text-slate-400 hover:text-slate-600 transition">
@@ -1191,7 +1207,7 @@
                         <div class="text-center mb-6">
                             <div class="relative w-24 h-24 mx-auto mb-3">
                                 <img :src="editForm.photoBase64 || `https://api.dicebear.com/7.x/avataaars/svg?seed=${editForm.avatar_seed || 'Teacher'}`"
-                                    class="w-full h-full rounded-full object-cover border-4 border-white shadow-lg bg-white">
+                                    class="w-full h-full rounded-full object-cover border-4 border-white shadow-lg bg-white/90 backdrop-blur-sm">
                                 <button @click="startCamera"
                                     class="absolute bottom-0 right-0 bg-blue-600 text-white p-2 rounded-full shadow-md hover:bg-blue-700 transition"
                                     title="Ambil Foto">
@@ -1276,8 +1292,8 @@
                             <button @click="stopCamera"
                                 class="absolute left-6 text-white text-sm hover:text-slate-300">Batal</button>
                             <button @click="takePhoto"
-                                class="w-16 h-16 rounded-full border-4 border-white flex items-center justify-center hover:bg-white/20 transition active:scale-95">
-                                <div class="w-12 h-12 bg-white rounded-full"></div>
+                                class="w-16 h-16 rounded-full border-4 border-white flex items-center justify-center hover:bg-white/90 backdrop-blur-sm/20 transition active:scale-95">
+                                <div class="w-12 h-12 bg-white/90 backdrop-blur-sm rounded-full"></div>
                             </button>
                         </div>
                         <div v-else class="flex gap-4">
@@ -1296,7 +1312,8 @@
         <transition name="fade">
             <div v-if="isCreateBountyModalOpen"
                 class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-                <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden transform transition-all">
+                <div
+                    class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl w-full max-w-lg overflow-hidden transform transition-all">
                     <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
                         <h3 class="font-bold text-lg text-slate-800">Buat Misi Baru</h3>
                         <button @click="isCreateBountyModalOpen = false"
@@ -1399,7 +1416,7 @@
             <div v-if="isPrintSettingsModalOpen && selectedSubmission"
                 class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
                 <div
-                    class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all border border-slate-200">
+                    class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all border border-slate-200">
                     <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
                         <div class="flex items-center gap-3">
                             <div
@@ -1420,10 +1437,10 @@
 
                         <div class="space-y-4">
                             <label v-for="(val, key) in printSettings" :key="key"
-                                class="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100 cursor-pointer hover:bg-white hover:border-blue-200 transition-all group">
+                                class="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100 cursor-pointer hover:bg-white/90 backdrop-blur-sm hover:border-blue-200 transition-all group">
                                 <div class="flex items-center gap-3">
                                     <div
-                                        class="p-2 rounded-lg bg-white shadow-sm border border-slate-100 text-slate-400 group-hover:text-blue-500 transition-colors">
+                                        class="p-2 rounded-lg bg-white/90 backdrop-blur-sm shadow-sm border border-slate-100 text-slate-400 group-hover:text-blue-500 transition-colors">
                                         <i class="fas" :class="{
                                             'fa-camera': key === 'showPhoto',
                                             'fa-user': key === 'showName',
@@ -1446,7 +1463,7 @@
 
                     <div class="p-4 bg-slate-50 border-t border-slate-100 flex gap-3">
                         <button @click="isPrintSettingsModalOpen = false"
-                            class="flex-1 px-4 py-3 bg-white border border-slate-200 text-slate-600 rounded-xl text-sm font-bold hover:bg-slate-100 transition">Batal</button>
+                            class="flex-1 px-4 py-3 bg-white/90 backdrop-blur-sm border border-slate-200 text-slate-600 rounded-xl text-sm font-bold hover:bg-slate-100 transition">Batal</button>
                         <button @click="exportToPDF(selectedSubmission); isPrintSettingsModalOpen = false"
                             class="flex-1 px-4 py-3 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 shadow-lg shadow-blue-500/20 transition-all active:scale-95">
                             Cetak PDF
@@ -1461,7 +1478,7 @@
             <div v-if="isSubmissionModalOpen && selectedSubmission"
                 class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
                 <div
-                    class="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden transform transition-all flex flex-col md:flex-row h-[80vh] md:h-auto">
+                    class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden transform transition-all flex flex-col md:flex-row h-[80vh] md:h-auto">
 
                     <div class="w-full md:w-1/2 bg-black flex items-center justify-center relative">
                         <img :src="selectedSubmission.photoURL"
@@ -1473,12 +1490,12 @@
                         </div>
                     </div>
 
-                    <div class="w-full md:w-1/2 flex flex-col h-full bg-white">
+                    <div class="w-full md:w-1/2 flex flex-col h-full bg-white/90 backdrop-blur-sm">
                         <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
                             <div class="flex items-center gap-3">
                                 <h3 class="font-bold text-lg text-slate-800">Detail Submission</h3>
                                 <button @click="openPrintSettings(selectedSubmission)"
-                                    class="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition shadow-sm">
+                                    class="flex items-center gap-2 px-3 py-1.5 bg-white/90 backdrop-blur-sm border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition shadow-sm">
                                     <i class="fas fa-file-pdf text-red-500"></i>
                                     Cetak PDF
                                 </button>
