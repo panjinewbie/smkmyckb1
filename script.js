@@ -4284,6 +4284,19 @@ async function setupTeachersPage() {
     // --- Camera Logic ---
     if (openCameraBtn) {
         openCameraBtn.onclick = async () => {
+            // Re-assign shared modal buttons to teacher-specific handlers
+            closeCameraBtn.onclick = closeCamera;
+            captureBtn.onclick = () => {
+                if (!cameraStream) return;
+                const context = canvasEl.getContext('2d');
+                canvasEl.width = videoEl.videoWidth;
+                canvasEl.height = videoEl.videoHeight;
+                context.drawImage(videoEl, 0, 0, canvasEl.width, canvasEl.height);
+                const dataUrl = canvasEl.toDataURL('image/png');
+                photoPreview.src = dataUrl;
+                closeCamera();
+            };
+
             cameraModal.classList.remove('hidden');
             setTimeout(() => cameraModal.classList.remove('opacity-0'), 10);
             try {
@@ -4297,20 +4310,6 @@ async function setupTeachersPage() {
         };
     }
 
-    if (closeCameraBtn) closeCameraBtn.onclick = closeCamera;
-
-    if (captureBtn) {
-        captureBtn.onclick = () => {
-            if (!cameraStream) return;
-            const context = canvasEl.getContext('2d');
-            canvasEl.width = videoEl.videoWidth;
-            canvasEl.height = videoEl.videoHeight;
-            context.drawImage(videoEl, 0, 0, canvasEl.width, canvasEl.height);
-            const dataUrl = canvasEl.toDataURL('image/png');
-            photoPreview.src = dataUrl;
-            closeCamera();
-        };
-    }
 
     function closeCamera() {
         if (cameraStream) {
@@ -4476,7 +4475,7 @@ function setupAdminDashboard() {
         studentIdInput.value = '';
         authFields.style.display = isEdit ? 'none' : 'block';
         modalTitle.textContent = isEdit ? 'Edit Data Siswa' : 'Tambah Siswa Baru';
-        imagePreviewContainer.classList.add('hidden');
+        imagePreview.src = 'https://placehold.co/100x100/e2e8f0/3d4852?text=Foto'; // Reset placeholder
         studentModal.classList.remove('hidden');
         setTimeout(() => studentModal.classList.remove('opacity-0'), 10);
     };
@@ -4564,6 +4563,59 @@ function setupAdminDashboard() {
             reader.readAsDataURL(this.files[0]);
         }
     });
+
+    // --- LOGIKA KAMERA SISWA ---
+    const studentOpenCameraBtn = document.getElementById('student-photo-camera');
+    const photoCaptureModal = document.getElementById('photo-capture-modal');
+    const closeCameraModalBtn = document.getElementById('close-camera-modal');
+    const capturePhotoBtn = document.getElementById('capture-photo-btn');
+    const cameraPreview = document.getElementById('camera-preview');
+    const cameraCanvas = document.getElementById('camera-canvas');
+    let studentCameraStream = null;
+
+    const closeStudentCamera = () => {
+        if (studentCameraStream) {
+            studentCameraStream.getTracks().forEach(track => track.stop());
+            studentCameraStream = null;
+        }
+        photoCaptureModal.classList.add('opacity-0');
+        setTimeout(() => photoCaptureModal.classList.add('hidden'), 300);
+    };
+
+    if (studentOpenCameraBtn) {
+        studentOpenCameraBtn.onclick = async () => {
+            // Re-assign shared modal buttons to student-specific handlers
+            closeCameraModalBtn.onclick = closeStudentCamera;
+            capturePhotoBtn.onclick = () => {
+                if (!studentCameraStream) return;
+                const context = cameraCanvas.getContext('2d');
+                cameraCanvas.width = cameraPreview.videoWidth;
+                cameraCanvas.height = cameraPreview.videoHeight;
+                context.drawImage(cameraPreview, 0, 0, cameraCanvas.width, cameraCanvas.height);
+
+                // Convert to data URL
+                const dataUrl = cameraCanvas.toDataURL('image/jpeg', 0.8);
+                imagePreview.src = dataUrl;
+                imagePreviewContainer.classList.remove('hidden');
+
+                closeStudentCamera();
+            };
+
+            photoCaptureModal.classList.remove('hidden');
+            setTimeout(() => photoCaptureModal.classList.remove('opacity-0'), 10);
+            try {
+                studentCameraStream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: "user" } // Selfie camera usually better for profile
+                });
+                cameraPreview.srcObject = studentCameraStream;
+            } catch (err) {
+                console.error("Gagal akses kamera:", err);
+                showToast("Gagal mengakses kamera.", true);
+                closeStudentCamera();
+            }
+        };
+    }
+
     adminNavLinks.addEventListener('click', (e) => {
         e.preventDefault();
         const targetLink = e.target.closest('a');
@@ -4806,11 +4858,19 @@ function setupAdminDashboard() {
         };
 
         try {
-            if (fotoFile) {
-                showToast('Memproses foto...');
-                const base64String = await processImageToBase64(fotoFile);
-                const resizedBase64 = await resizeImage(base64String);
-                studentData.fotoProfilBase64 = resizedBase64;
+            // Priority: Check if imagePreview has a valid base64 image (either from upload or camera)
+            if (imagePreview.src && !imagePreview.src.includes('placehold.co')) {
+                // If it's already a data URL (base64), use it directly or resize it
+                if (imagePreview.src.startsWith('data:image')) {
+                    const resizedBase64 = await resizeImage(imagePreview.src);
+                    studentData.fotoProfilBase64 = resizedBase64;
+                } else if (fotoFile) {
+                    // Fallback for direct file if needed
+                    showToast('Memproses foto...');
+                    const base64String = await processImageToBase64(fotoFile);
+                    const resizedBase64 = await resizeImage(base64String);
+                    studentData.fotoProfilBase64 = resizedBase64;
+                }
             }
 
             if (id) {
